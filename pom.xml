@@ -12,10 +12,10 @@
   <packaging>pom</packaging>
 
   <scm>
-    <connection>scm:git:ssh://git@github.com:cloudfoundry/eclipse-integration-cloudfoundry.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com:cloudfoundry/eclipse-integration-cloudfoundry.git</developerConnection>
+    <connection>scm:git:ssh://git@github.com:eclipse/cft.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com:eclipse/cft.git</developerConnection>
     <tag>HEAD</tag>
-    <url>https://github.com/cloudfoundry/eclipse-integration-cloudfoundry</url>
+    <url>https://github.com/eclipse/cft</url>
   </scm>
 
   <modules>
@@ -39,7 +39,7 @@
     <name>Pivotal Software, Inc.</name>
     <url>http://www.pivotal.io</url>
   </organization>
-  <url>http://docs.run.pivotal.io</url>
+  <url>https://docs.cloudfoundry.org</url>
   <inceptionYear>2013</inceptionYear>
 
   <prerequisites>
@@ -47,12 +47,12 @@
   </prerequisites>
 
   <issueManagement>
-    <url>https://github.com/SpringSource/eclipse-integration-cloudfoundry</url>
+    <url>https://github.com/eclipse/cft</url>
     <system>GitHub</system>
   </issueManagement>
 
   <ciManagement>
-    <url>https://build.springsource.com/browse/STS</url>
+    <url>https://build.spring.io/browse/CFECLIPSE</url>
     <system>BAMBOO</system>
   </ciManagement>
 
