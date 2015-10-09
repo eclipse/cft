@@ -1,7 +1,7 @@
 # Eclipse Tools for Cloud Foundry
   
   Eclipse Tools for Cloud Foundry (CFT) is a framework that provides first-class support for the [Cloud Foundry
-  PaaS] (http://docs.cloudfoundry.org/). It allows users to directly deploy applications from their Eclipse
+  PaaS] (http://docs.cloudfoundry.org). It allows users to directly deploy applications from their Eclipse
   workspace to a running Cloud Foundry server instance, as well as view and manage deployed applications and services.
   
   Cloud Foundry vendors can also contribute their own Cloud Foundry target definitions for users of the tools
@@ -11,9 +11,11 @@
   
   https://projects.eclipse.org/projects/ecd.cft
   
+  CFT integrates into and requires Eclipse [Web Tools Platform (WTP)](http://eclipse.org/webtools).
+  
 ## IMPORTANT NOTE: Breaking Bundle and Extension Point Changes
   
-  All bundle names and extension point IDs have been renamed, therefore new versions of CFT are NOT be backward compatible with any older versions 
+  All bundle names and extension point IDs have been renamed, therefore new versions of CFT are NOT backward compatible with any older versions 
   of the plug-in, previously known as Cloud Foundry Eclipse, that used bundle names starting with:
   
   org.cloudfoundry.ide.eclipse.server
@@ -36,12 +38,12 @@
 
   Bugs and feature requests should be raised via bugzilla:
   
-  https://bugs.eclipse.org/bugs/
+  https://bugs.eclipse.org/bugs
 
 ## Installation
 
   Java 7 is a minimum execution environment required to install and run CFT.
-  Please make sure your Eclipse is using a Java 7 or higher.
+  Please make sure that your Eclipse is using Java 7 or higher.
 
 ## Getting started
 
@@ -49,10 +51,9 @@
 
   http://docs.cloudfoundry.org/buildpacks/java/sts.html
 
-  Note that this description is targeted at users of the Spring Tool Suite, but similar steps apply for
+  Note that this description is targeted at users of Spring Tool Suite, but similar steps apply for
   other Eclipse JEE users.
   
-
 ## Building the project
   
   The CFT uses Maven Tycho to do continuous integration builds and
