@@ -18,7 +18,7 @@
    <feature url="features/org.eclipse.cft.server.ui.feature_0.0.0.jar" id="org.eclipse.cft.server.ui.feature" version="0.0.0">
       <category name="UI / Cloud Foundry Tools"/>
    </feature>
-   <feature url="features/org.eclipse.cft.server.sdk_1.8.3.qualifier.jar" id="org.eclipse.cft.server.sdk" version="0.0.0">
+   <feature url="features/org.eclipse.cft.server.sdk_0.9.0.qualifier.jar" id="org.eclipse.cft.server.sdk" version="0.0.0">
       <category name="Resources / Cloud Foundry Tools"/>
    </feature>
    <category-def name="Core / Cloud Foundry Tools" label="Core / Cloud Foundry Tools"/>

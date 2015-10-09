@@ -8,7 +8,7 @@
 
   <groupId>org.eclipse.cft.server</groupId>
   <artifactId>org.eclipse.cft.server.parent</artifactId>
-  <version>1.8.3-SNAPSHOT</version>
+  <version>0.9.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <scm>
@@ -315,7 +315,7 @@
               <artifact>
                 <groupId>org.eclipse.cft.server</groupId>
                 <artifactId>org.eclipse.cft.server.target</artifactId>
-                <version>1.8.3-SNAPSHOT</version>
+                <version>0.9.0-SNAPSHOT</version>
                 <classifier>${dist.target.classifier}</classifier>
               </artifact>
             </target>

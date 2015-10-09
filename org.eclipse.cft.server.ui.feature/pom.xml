@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.eclipse.cft.server</groupId>
     <artifactId>org.eclipse.cft.server.parent</artifactId>
-    <version>1.8.3-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
   </parent>
   <artifactId>org.eclipse.cft.server.ui.feature</artifactId>
   <packaging>eclipse-feature</packaging>
