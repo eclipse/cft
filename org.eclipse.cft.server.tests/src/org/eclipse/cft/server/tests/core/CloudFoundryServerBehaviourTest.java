@@ -2,17 +2,18 @@
  * Copyright (c) 2012, 2015 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ * The Eclipse Public License is available at
+ *
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * and the Apache License v2.0 is available at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * You may elect to redistribute this code under either of these licenses.
  *
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
@@ -116,18 +117,16 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		assertEquals(CloudUtil.DEFAULT_MEMORY, info.getMemory());
 
 		assertEquals("JAVA_OPTS", appModule.getDeploymentInfo().getEnvVariables().get(0).getVariable());
-		assertEquals("-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n", appModule
-				.getDeploymentInfo().getEnvVariables().get(0).getValue());
+		assertEquals("-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n",
+				appModule.getDeploymentInfo().getEnvVariables().get(0).getValue());
 
 		assertTrue(actualApp.getEnvAsMap().containsKey("JAVA_OPTS"));
-		assertEquals("-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n", actualApp.getEnvAsMap()
-				.get("JAVA_OPTS"));
+		assertEquals("-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n",
+				actualApp.getEnvAsMap().get("JAVA_OPTS"));
 		assertEquals("sqlService", appModule.getDeploymentInfo().getServices().get(0).getName());
 		assertEquals("sqlService", actualApp.getServices().get(0));
 
 	}
-
-	
 
 	public void testCloudFoundryModuleCreationNonWSTPublish() throws Exception {
 		// Test that a cloud foundry module is created when an application is
@@ -274,7 +273,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		waitForAppToStop(appModule);
 
 		// Check the helper method assertions have correct values
-		assertTrue("Expected application to be stopped", appModule.getApplication().getState().equals(AppState.STOPPED));
+		assertTrue("Expected application to be stopped",
+				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == IServer.STATE_STOPPED);
 	}
 
@@ -288,7 +288,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		waitForAppToStop(appModule);
 
-		assertTrue("Expected application to be stopped", appModule.getApplication().getState().equals(AppState.STOPPED));
+		assertTrue("Expected application to be stopped",
+				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == IServer.STATE_STOPPED);
 
 		serverBehavior.startModule(new IModule[] { appModule.getLocalModule() }, new NullProgressMonitor());
@@ -430,7 +431,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		// Cloud module should have been created.
 		Collection<CloudFoundryApplicationModule> appModules = cloudServer.getExistingCloudModules();
-		assertEquals(harness.getDefaultWebAppName(appPrefix), appModules.iterator().next().getDeployedApplicationName());
+		assertEquals(harness.getDefaultWebAppName(appPrefix),
+				appModules.iterator().next().getDeployedApplicationName());
 
 		serverBehavior.disconnect(new NullProgressMonitor());
 

@@ -1,19 +1,20 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
- * 
+ * Copyright (c) 2012, 2014 Pivotal Software, Inc.
+ *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Apache License, 
- * Version 2.0 (the "License�); you may not use this file except in compliance 
- * with the License. You may obtain a copy of the License at
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ * The Eclipse Public License is available at
+ *
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * and the Apache License v2.0 is available at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *  
+ * You may elect to redistribute this code under either of these licenses.
+ *
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
@@ -28,8 +29,6 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import junit.framework.TestCase;
-
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture;
 import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture.Harness;
@@ -39,6 +38,8 @@ import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
 import org.eclipse.wst.server.core.ServerUtil;
 import org.eclipse.wst.server.core.internal.Server;
+
+import junit.framework.TestCase;
 
 /**
  * @author Steffen Pingel

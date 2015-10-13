@@ -2,17 +2,18 @@
  * Copyright (c) 2015 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ * The Eclipse Public License is available at
+ *
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * and the Apache License v2.0 is available at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * You may elect to redistribute this code under either of these licenses.
  *
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
@@ -135,11 +136,9 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 		cp.save();
 
 		asynchExecuteOperationWaitForRefresh(
-				cloudServer
-						.getBehaviour()
-						.operations()
-						.environmentVariablesUpdate(appModule.getLocalModule(), appModule.getDeployedApplicationName(),
-								cp.getEnvVariables()), prefix, CloudServerEvent.EVENT_APPLICATION_REFRESHED);
+				cloudServer.getBehaviour().operations().environmentVariablesUpdate(appModule.getLocalModule(),
+						appModule.getDeployedApplicationName(), cp.getEnvVariables()),
+				prefix, CloudServerEvent.EVENT_APPLICATION_REFRESHED);
 
 		// Get updated module
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
@@ -208,7 +207,8 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 
 		boolean stopped = new WaitForApplicationToStopOp(cloudServer, appModule).run(new NullProgressMonitor());
 		assertTrue("Expected application to be stopped", stopped);
-		assertTrue("Expected application to be stopped", appModule.getApplication().getState().equals(AppState.STOPPED));
+		assertTrue("Expected application to be stopped",
+				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
 
 	}
@@ -221,7 +221,8 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 		createWebApplicationProject();
 		CloudFoundryApplicationModule appModule = deployApplication(prefix, true);
 
-		assertTrue("Expected application to be stopped", appModule.getApplication().getState().equals(AppState.STOPPED));
+		assertTrue("Expected application to be stopped",
+				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
 
 		asynchExecuteOperationWaitForRefresh(
@@ -232,14 +233,15 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
-		assertTrue("Expected application to be started", appModule.getApplication().getState().equals(AppState.STARTED));
+		assertTrue("Expected application to be started",
+				appModule.getApplication().getState().equals(AppState.STARTED));
 		assertTrue("Expected application to be started", appModule.getState() == Server.STATE_STARTED);
 
 		// Verify that instances info is available
-		assertEquals("Expected instances information for running app", 1, appModule.getInstancesInfo().getInstances()
-				.size());
-		assertNotNull("Expected instances information for running app", appModule.getInstancesInfo().getInstances()
-				.get(0).getSince());
+		assertEquals("Expected instances information for running app", 1,
+				appModule.getInstancesInfo().getInstances().size());
+		assertNotNull("Expected instances information for running app",
+				appModule.getInstancesInfo().getInstances().get(0).getSince());
 
 		assertEquals("Expected instance stats for running app", 1, appModule.getApplicationStats().getRecords().size());
 
@@ -252,7 +254,8 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 		createWebApplicationProject();
 		CloudFoundryApplicationModule appModule = deployApplication(prefix, true);
 
-		assertTrue("Expected application to be stopped", appModule.getApplication().getState().equals(AppState.STOPPED));
+		assertTrue("Expected application to be stopped",
+				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
 
 		asynchExecuteOperationWaitForRefresh(
@@ -263,14 +266,15 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
-		assertTrue("Expected application to be started", appModule.getApplication().getState().equals(AppState.STARTED));
+		assertTrue("Expected application to be started",
+				appModule.getApplication().getState().equals(AppState.STARTED));
 		assertTrue("Expected application to be started", appModule.getState() == Server.STATE_STARTED);
 
 		// Verify that instances info is available
-		assertEquals("Expected instances information for running app", 1, appModule.getInstancesInfo().getInstances()
-				.size());
-		assertNotNull("Expected instances information for running app", appModule.getInstancesInfo().getInstances()
-				.get(0).getSince());
+		assertEquals("Expected instances information for running app", 1,
+				appModule.getInstancesInfo().getInstances().size());
+		assertNotNull("Expected instances information for running app",
+				appModule.getInstancesInfo().getInstances().get(0).getSince());
 
 		assertEquals("Expected instance stats for running app", 1, appModule.getApplicationStats().getRecords().size());
 
@@ -283,26 +287,26 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 		createWebApplicationProject();
 		CloudFoundryApplicationModule appModule = deployApplication(prefix, true);
 
-		assertTrue("Expected application to be stopped", appModule.getApplication().getState().equals(AppState.STOPPED));
+		assertTrue("Expected application to be stopped",
+				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
 
-		asynchExecuteOperationWaitForRefresh(
-				cloudServer.getBehaviour().operations()
-						.applicationDeployment(appModule, ApplicationAction.UPDATE_RESTART), prefix,
-				CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
+		asynchExecuteOperationWaitForRefresh(cloudServer.getBehaviour().operations().applicationDeployment(appModule,
+				ApplicationAction.UPDATE_RESTART), prefix, CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
 
 		waitForApplicationToStart(appModule.getLocalModule(), prefix);
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
-		assertTrue("Expected application to be started", appModule.getApplication().getState().equals(AppState.STARTED));
+		assertTrue("Expected application to be started",
+				appModule.getApplication().getState().equals(AppState.STARTED));
 		assertTrue("Expected application to be started", appModule.getState() == Server.STATE_STARTED);
 
 		// Verify that instances info is available
-		assertEquals("Expected instances information for running app", 1, appModule.getInstancesInfo().getInstances()
-				.size());
-		assertNotNull("Expected instances information for running app", appModule.getInstancesInfo().getInstances()
-				.get(0).getSince());
+		assertEquals("Expected instances information for running app", 1,
+				appModule.getInstancesInfo().getInstances().size());
+		assertNotNull("Expected instances information for running app",
+				appModule.getInstancesInfo().getInstances().get(0).getSince());
 
 		assertEquals("Expected instance stats for running app", 1, appModule.getApplicationStats().getRecords().size());
 	}
@@ -321,7 +325,8 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(expectedAppName);
 
-		assertTrue("Expected application to be stopped", appModule.getApplication().getState().equals(AppState.STOPPED));
+		assertTrue("Expected application to be stopped",
+				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
 	}
 
@@ -344,14 +349,15 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
-		assertTrue("Expected application to be started", appModule.getApplication().getState().equals(AppState.STARTED));
+		assertTrue("Expected application to be started",
+				appModule.getApplication().getState().equals(AppState.STARTED));
 		assertTrue("Expected application to be started", appModule.getState() == Server.STATE_STARTED);
 
 		// Verify that instances info is available
-		assertEquals("Expected instances information for running app", 1, appModule.getInstancesInfo().getInstances()
-				.size());
-		assertNotNull("Expected instances information for running app", appModule.getInstancesInfo().getInstances()
-				.get(0).getSince());
+		assertEquals("Expected instances information for running app", 1,
+				appModule.getInstancesInfo().getInstances().size());
+		assertNotNull("Expected instances information for running app",
+				appModule.getInstancesInfo().getInstances().get(0).getSince());
 
 		assertEquals("Expected instance stats for running app", 1, appModule.getApplicationStats().getRecords().size());
 	}
