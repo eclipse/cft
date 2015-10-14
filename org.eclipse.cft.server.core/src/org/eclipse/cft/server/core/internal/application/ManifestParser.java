@@ -20,14 +20,9 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.application;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -50,6 +45,7 @@ import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
 import org.eclipse.cft.server.core.internal.client.LocalCloudService;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.Assert;
@@ -111,46 +107,6 @@ public class ManifestParser {
 	}
 
 	/**
-	 * Input stream to the manifest file, if the file exists. Caller must
-	 * properly dispose any open resources and close the stream.
-	 * @return input stream to the manifest file, ONLY if the file exists and is
-	 * accessible. Null otherwise.
-	 * @throws FileNotFoundException if file exists, but input stream could not
-	 * be opened to it.
-	 */
-	protected InputStream getInputStream() throws FileNotFoundException {
-
-		File file = getFile();
-		if (file != null && file.exists()) {
-			return new FileInputStream(file);
-		}
-		return null;
-	}
-
-	/**
-	 * Output stream to the manifest file. Existing manifest files are deleted.
-	 * If the manifest does not exist, it will be created. Caller must properly
-	 * dispose any open resources and close the stream.
-	 * @return output stream to an existing manifest file, or null if it does
-	 * not exist
-	 * @throws IOException if error while creating a manifest file.
-	 */
-	protected OutputStream getOutStream() throws IOException, FileNotFoundException {
-		File file = getFile();
-		if (file != null) {
-			if (file.exists()) {
-				file.delete();
-			}
-
-			if (file.createNewFile()) {
-				return new FileOutputStream(file);
-			}
-		}
-
-		return null;
-	}
-
-	/**
 	 * If the application module has an accessible workspace project, return the
 	 * manifest file contained in the project. Otherwise return null. The file
 	 * itself may not yet exist, but if returned, it at least means the
@@ -158,18 +114,14 @@ public class ManifestParser {
 	 * @return Manifest file in the workspace project for the application, or
 	 * null if the project does not exists or is not accessible.
 	 */
-	protected File getFile() {
+	private IFile getFile() {
 		IProject project = CloudFoundryProjectUtil.getProject(appModule);
 		if (project == null) {
 			return null;
 		}
-		IResource resource = project.getFile(relativePath);
-		if (resource != null) {
-			URI locationURI = resource.getLocationURI();
-			return new File(locationURI);
-
-		}
-		return null;
+		IFile resource = project.getFile(relativePath);
+		
+		return resource;
 	}
 
 	/**
@@ -178,8 +130,8 @@ public class ManifestParser {
 	 * file. A false in this case would mean the file is not accessible.
 	 */
 	public boolean hasManifest() {
-		File file = getFile();
-		return file != null && file.exists();
+		IFile file = getFile();
+		return file != null && file.exists(); 
 	}
 
 	/**
@@ -591,13 +543,12 @@ public class ManifestParser {
 	protected Map<Object, Object> parseManifestFromFile() throws CoreException {
 
 		InputStream inputStream = null;
-		try {
-			inputStream = getInputStream();
-		}
-		catch (FileNotFoundException fileException) {
-			throw CloudErrorUtil.toCoreException(fileException);
-		}
+		IFile resource = getFile();
 
+		if(resource != null && resource.exists()) {
+			inputStream = resource.getContents(); 
+		} 
+		
 		if (inputStream != null) {
 			Yaml yaml = new Yaml();
 
@@ -848,36 +799,23 @@ public class ManifestParser {
 						+ " contained values but yaml parser failed to serialise the map. : " + deploymentInfoYaml); //$NON-NLS-1$
 			}
 
-			OutputStream outStream = null;
-			try {
-				outStream = getOutStream();
-				if (outStream == null) {
-					throw CloudErrorUtil.toCoreException("No output stream could be opened to: " + relativePath //$NON-NLS-1$
-							+ ". Unable to write changes to the application's manifest file for: " //$NON-NLS-1$
-							+ appModule.getDeployedApplicationName());
-				}
+			IFile file = getFile();
 
-				outStream.write(manifestValue.getBytes());
-				outStream.flush();
-
+			if(file != null) {
+				ByteArrayInputStream bais = new ByteArrayInputStream(manifestValue.getBytes());
+				
+				file.create(bais, true, subProgress);
+				
 				subProgress.worked(1);
 				refreshProject(monitor);
 				subProgress.worked(1);
 				return true;
-
-			}
-			catch (IOException io) {
-				throw CloudErrorUtil.toCoreException(io);
-			}
-			finally {
-				if (outStream != null) {
-					try {
-						outStream.close();
-					}
-					catch (IOException io) {
-						// Ignore
-					}
-				}
+				
+				
+			} else {
+				throw CloudErrorUtil.toCoreException("No changes could be written to: " + relativePath //$NON-NLS-1$
+						+ ". Unable to write changes to the application's manifest file for: " //$NON-NLS-1$
+						+ appModule.getDeployedApplicationName());
 			}
 
 		}

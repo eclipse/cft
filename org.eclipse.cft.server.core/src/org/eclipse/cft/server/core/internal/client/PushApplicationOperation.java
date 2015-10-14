@@ -36,6 +36,7 @@ import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
@@ -92,19 +93,27 @@ public class PushApplicationOperation extends StartOperation {
 
 			}
 			catch (CoreException e) {
-				// Do not log the error. The application may not exist
+				// For diagnostic purposes, log as info only.
+				CloudFoundryPlugin.log(new Status(Status.INFO, CloudFoundryPlugin.PLUGIN_ID, "CoreException thrown during deployment.", e)); // $NON-NLS-1$ 
+				
+				// Do not throw the error. The application may not exist
 				// anymore. If it is a network error, it will become evident
 				// in further steps
 			}
+			
 		}
 		else {
 			try {
+				
 				CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
 
 				// prompt user for missing details
 				return CloudFoundryPlugin.getCallback().prepareForDeployment(cloudServer, appModule, monitor);
 			}
 			catch (OperationCanceledException oce) {
+				
+				CloudFoundryPlugin.log(new Status(Status.INFO, CloudFoundryPlugin.PLUGIN_ID, "Operation cancelled during prepareForDeployment.", oce)); //$NON-NLS-1$
+				
 				// Prepare for deployment prompts the user for missing
 				// information for a non-published app. If a user
 				// cancels
