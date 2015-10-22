@@ -31,7 +31,9 @@ import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.CloudService;
+import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
+import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
@@ -256,8 +258,11 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		int moduleState = server.getModuleState(new IModule[] { module });
 		assertEquals(IServer.STATE_STOPPED, moduleState);
 
+		InstanceState state = new ApplicationInstanceRunningTracker(appModule, cloudServer)
+				.track(new NullProgressMonitor());
+
 		assertFalse("Expected application to be stopped, but server behaviour indicated it is running",
-				serverBehavior.isApplicationRunning(appModule, new NullProgressMonitor()));
+				state == InstanceState.RUNNING);
 
 	}
 
@@ -308,9 +313,11 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		CloudFoundryApplicationModule appModule = deployAndWaitForAppStart(prefix);
 
-		// Verify that the server behaviour API to determine that an app is
-		// running tests correctly
-		assertTrue(serverBehavior.isApplicationRunning(appModule, new NullProgressMonitor()));
+		InstanceState state = new ApplicationInstanceRunningTracker(appModule, cloudServer)
+				.track(new NullProgressMonitor());
+
+		assertTrue("Expected application to be started, but server behaviour indicated it is stopped",
+				state == InstanceState.RUNNING);
 
 		// The following are the expected conditions for the server behaviour to
 		// determine that the app is running

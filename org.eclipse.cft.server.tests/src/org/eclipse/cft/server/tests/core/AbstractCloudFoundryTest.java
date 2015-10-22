@@ -30,6 +30,8 @@ import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
+import org.cloudfoundry.client.lib.domain.InstanceState;
+import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudUtil;
@@ -149,30 +151,14 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 	}
 
 	protected void assertApplicationIsRunning(CloudFoundryApplicationModule appModule) throws Exception {
-		int total = 10;
-		int attempts = total;
-		long wait = 10000;
-		boolean running = false;
 
 		// Test the Server behaviour API that checks if application is running
-		for (; !running && attempts > 0; attempts--) {
-			running = cloudServer.getBehaviour().isApplicationRunning(appModule, new NullProgressMonitor());
+		InstanceState state = new ApplicationInstanceRunningTracker(appModule, cloudServer)
+				.track(new NullProgressMonitor());
 
-			if (!running) {
-				try {
-					Thread.sleep(wait);
-				}
-				catch (InterruptedException e) {
-
-				}
-			}
-
-		}
-
-		// Verify separately that the app did indeed start
-		assertTrue("Application has not started after waiting for (ms): " + (wait * total), running);
 		assertEquals(IServer.STATE_STARTED, appModule.getState());
 		assertEquals(AppState.STARTED, appModule.getApplication().getState());
+		assertEquals(state, InstanceState.RUNNING);
 
 	}
 

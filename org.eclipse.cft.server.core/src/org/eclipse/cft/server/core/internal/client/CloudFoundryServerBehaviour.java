@@ -44,7 +44,6 @@ import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudService;
@@ -56,6 +55,7 @@ import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.eclipse.cft.server.core.AbstractApplicationDelegate;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
+import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CachingApplicationArchive;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
@@ -1111,27 +1111,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		return getClient((CloudCredentials) null, monitor);
 	}
 
-	private boolean isApplicationReady(CloudApplication application) {
-		// app may be null
-		return application != null && AppState.STARTED.equals(application.getState());
-	}
-
-	boolean waitForStart(CloudFoundryOperations client, String deploymentId, IProgressMonitor monitor)
-			throws InterruptedException, CoreException {
-		long initialInterval = CloudOperationsConstants.SHORT_INTERVAL;
-		Thread.sleep(initialInterval);
-		long timeLeft = CloudOperationsConstants.DEPLOYMENT_TIMEOUT - initialInterval;
-		while (timeLeft > 0) {
-			CloudApplication deploymentDetails = getCloudApplication(deploymentId, monitor);
-			if (isApplicationReady(deploymentDetails)) {
-				return true;
-			}
-			Thread.sleep(CloudOperationsConstants.ONE_SECOND_INTERVAL);
-			timeLeft -= CloudOperationsConstants.ONE_SECOND_INTERVAL;
-		}
-		return false;
-	}
-
 	@Override
 	protected void initialize(IProgressMonitor monitor) {
 		super.initialize(monitor);
@@ -1380,31 +1359,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 						|| isChildModuleChanged(currentChild, monitor)) {
 					return true;
 				}
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * True if the application is running. False otherwise. Note that an
-	 * application refresh is performed on the cloud module, therefore the
-	 * mapping between the cloud application and the module will always be
-	 * updated with this call.
-	 * @param appModule
-	 * @param monitor
-	 * @return true if application is running. False otherwise.
-	 */
-	public boolean isApplicationRunning(CloudFoundryApplicationModule appModule, IProgressMonitor monitor) {
-		if (appModule != null) {
-			try {
-				updateInstancesAndStats(appModule, monitor);
-				ApplicationStats stats = appModule.getApplicationStats();
-				InstancesInfo info = appModule.getInstancesInfo();
-				return stats != null && info != null && appModule.isDeployed()
-						&& isApplicationReady(appModule.getApplication());
-			}
-			catch (CoreException e) {
-				CloudFoundryPlugin.logError(e);
 			}
 		}
 		return false;
@@ -2217,5 +2171,10 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		}
 
 		return super.canRestartModule(modules);
+	}
+
+	public ApplicationInstanceRunningTracker getApplicationInstanceRunningTracker(
+			CloudFoundryApplicationModule appModule) throws CoreException {
+		return new ApplicationInstanceRunningTracker(appModule, getCloudFoundryServer());
 	}
 }

@@ -29,6 +29,12 @@ public class Messages extends NLS {
 	public static String AbstractApplicationDelegate_ERROR_MISSING_DEPLOY_INFO;
 
 	public static String AbstractApplicationDelegate_ERROR_MISSING_MEM;
+	
+	public static String ApplicationInstanceStartingTracker_STARTING_TRACKING;
+	
+	public static String ApplicationInstanceStartingTracker_APPLICATION_IS_RUNNING;
+	
+	public static String ApplicationInstanceStartingTracker_APPLICATION_IS_NOT_RUNNING;
 
 	public static String ApplicationLogConsoleManager_NO_RECENT_LOGS;
 
