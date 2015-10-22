@@ -34,6 +34,8 @@ import org.eclipse.osgi.util.NLS;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 
@@ -182,6 +184,20 @@ public class CloudErrorUtil {
 		return false;
 	}
 
+	public static boolean is503Error(Throwable t) {
+		HttpServerErrorException httpException = getHttpServerError(t);
+
+		if (httpException != null) {
+			String message = getHttpErrorMessage(httpException);
+
+			if (message != null) {
+				message = message.toLowerCase();
+				return message.contains("503"); //$NON-NLS-1$
+			}
+		}
+		return false;
+	}
+
 	public static String getHostTakenError(Exception e) {
 		HttpClientErrorException badRequestException = getBadRequestException(e);
 		if (badRequestException != null) {
@@ -204,7 +220,7 @@ public class CloudErrorUtil {
 	 * description is found, it will return the exception error or HTTP status
 	 * text message, if present. May return null if no message can be resolved.
 	 */
-	protected static String getHttpErrorMessage(HttpClientErrorException error) {
+	protected static String getHttpErrorMessage(HttpStatusCodeException error) {
 		String message = null;
 		if (error instanceof CloudFoundryException) {
 			message = ((CloudFoundryException) error).getDescription();
@@ -276,6 +292,24 @@ public class CloudErrorUtil {
 
 	}
 
+	protected static HttpServerErrorException getHttpServerError(Throwable t) {
+		if (t == null) {
+			return null;
+		}
+		HttpServerErrorException httpException = null;
+		if (t instanceof HttpServerErrorException) {
+			httpException = (HttpServerErrorException) t;
+		}
+		else {
+			Throwable cause = t.getCause();
+			if (cause instanceof HttpServerErrorException) {
+				httpException = (HttpServerErrorException) cause;
+			}
+		}
+		return httpException;
+
+	}
+
 	public static CoreException toCoreException(Throwable e) {
 		if (e instanceof CloudFoundryException) {
 			if (((CloudFoundryException) e).getDescription() != null) {
@@ -283,8 +317,8 @@ public class CloudErrorUtil {
 						((CloudFoundryException) e).getDescription(), e.getMessage()), e));
 			}
 		}
-		return new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID, NLS.bind(
-				Messages.ERROR_PERFORMING_CLOUD_FOUNDRY_OPERATION, e.getMessage()), e));
+		return new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID,
+				NLS.bind(Messages.ERROR_PERFORMING_CLOUD_FOUNDRY_OPERATION, e.getMessage()), e));
 	}
 
 	/**

@@ -335,8 +335,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 				applicationUrlLookup = new ApplicationUrlLookupService(getCloudFoundryServer());
 			}
 			catch (CoreException e) {
-				CloudFoundryPlugin.logError(
-						"Failed to create the Cloud Foundry Application URL lookup service due to {" + //$NON-NLS-1$
+				CloudFoundryPlugin
+						.logError("Failed to create the Cloud Foundry Application URL lookup service due to {" + //$NON-NLS-1$
 								e.getMessage(), e);
 			}
 		}
@@ -409,8 +409,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public void reconnect(IProgressMonitor monitor) throws CoreException {
 		final SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
 
-		subMonitor.subTask(NLS.bind(Messages.CloudFoundryServerBehaviour_RECONNECTING_SERVER, getCloudFoundryServer()
-				.getServer().getId()));
+		subMonitor.subTask(NLS.bind(Messages.CloudFoundryServerBehaviour_RECONNECTING_SERVER,
+				getCloudFoundryServer().getServer().getId()));
 
 		disconnect(subMonitor.newChild(40));
 
@@ -469,16 +469,25 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * use {@link #updateCloudModule(String, IProgressMonitor)}
 	 * @param appName
 	 * @param monitor
-	 * @return Cloud application. Not null.
+	 * @return Cloud application. If null it may indicate that the application
+	 * is not yet available
 	 * @throws CoreException if error occurs while resolving the Cloud
 	 * application, or the application does not exist.
 	 */
 	public CloudApplication getCloudApplication(final String appName, IProgressMonitor monitor) throws CoreException {
-		CloudApplication app = new BehaviourRequest<CloudApplication>(NLS.bind(
-				Messages.CloudFoundryServerBehaviour_GET_APPLICATION, appName)) {
+
+		final String serverId = getCloudFoundryServer().getServer().getId();
+		CloudApplication app = new ApplicationRequest<CloudApplication>(
+				NLS.bind(Messages.CloudFoundryServerBehaviour_GET_APPLICATION, appName)) {
 			@Override
 			protected CloudApplication doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 				return client.getApplication(appName);
+			}
+
+			@Override
+			protected String get503Error(Throwable error) {
+				return NLS.bind(Messages.CloudFoundryServerBehaviour_ERROR_GET_APPLICATION_SERVER_503, appName,
+						serverId);
 			}
 		}.run(monitor);
 
@@ -650,21 +659,29 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 */
 	public List<CloudApplication> getApplications(IProgressMonitor monitor) throws CoreException {
 
-		final String label = NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_APPS, getCloudFoundryServer()
-				.getServer().getId());
-		return new BehaviourRequest<List<CloudApplication>>(label) {
+		final String serverId = getCloudFoundryServer().getServer().getId();
+
+		final String label = NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_APPS, serverId);
+
+		return new ApplicationRequest<List<CloudApplication>>(label) {
 			@Override
 			protected List<CloudApplication> doRun(CloudFoundryOperations client, SubMonitor progress)
 					throws CoreException {
 				return client.getApplications();
 			}
+
+			@Override
+			protected String get503Error(Throwable error) {
+				return NLS.bind(Messages.CloudFoundryServerBehaviour_ERROR_GET_APPLICATIONS_SERVER, serverId);
+			}
+
 		}.run(monitor);
 	}
 
 	public ApplicationStats getApplicationStats(final String applicationId, IProgressMonitor monitor)
 			throws CoreException {
-		return new StagingAwareRequest<ApplicationStats>(NLS.bind(Messages.CloudFoundryServerBehaviour_APP_STATS,
-				applicationId)) {
+		return new StagingAwareRequest<ApplicationStats>(
+				NLS.bind(Messages.CloudFoundryServerBehaviour_APP_STATS, applicationId)) {
 			@Override
 			protected ApplicationStats doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 				return client.getApplicationStats(applicationId);
@@ -673,8 +690,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	public InstancesInfo getInstancesInfo(final String applicationId, IProgressMonitor monitor) throws CoreException {
-		return new StagingAwareRequest<InstancesInfo>(NLS.bind(Messages.CloudFoundryServerBehaviour_APP_INFO,
-				applicationId)) {
+		return new StagingAwareRequest<InstancesInfo>(
+				NLS.bind(Messages.CloudFoundryServerBehaviour_APP_INFO, applicationId)) {
 			@Override
 			protected InstancesInfo doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 				return client.getApplicationInstances(applicationId);
@@ -730,11 +747,12 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	public List<CloudService> getServices(IProgressMonitor monitor) throws CoreException {
 
-		final String label = NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_SERVICES, getCloudFoundryServer()
-				.getServer().getId());
+		final String label = NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_SERVICES,
+				getCloudFoundryServer().getServer().getId());
 		return new BehaviourRequest<List<CloudService>>(label) {
 			@Override
-			protected List<CloudService> doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected List<CloudService> doRun(CloudFoundryOperations client, SubMonitor progress)
+					throws CoreException {
 				return client.getServices();
 			}
 		}.run(monitor);
@@ -1063,8 +1081,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 			String url = cloudServer.getUrl();
 			if (!cloudServer.hasCloudSpace()) {
-				throw CloudErrorUtil.toCoreException(NLS.bind(Messages.ERROR_FAILED_CLIENT_CREATION_NO_SPACE,
-						cloudServer.getServerId()));
+				throw CloudErrorUtil.toCoreException(
+						NLS.bind(Messages.ERROR_FAILED_CLIENT_CREATION_NO_SPACE, cloudServer.getServerId()));
 			}
 
 			CloudFoundrySpace cloudFoundrySpace = cloudServer.getCloudFoundrySpace();
@@ -1094,23 +1112,17 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	private boolean isApplicationReady(CloudApplication application) {
-		/*
-		 * RestTemplate restTemplate = new RestTemplate(); String response =
-		 * restTemplate.getForObject(application.getUris().get(0),
-		 * String.class); if
-		 * (response.contains("B29 ROUTER: 404 - FILE NOT FOUND")) { return
-		 * false; }
-		 */
-		return AppState.STARTED.equals(application.getState());
+		// app may be null
+		return application != null && AppState.STARTED.equals(application.getState());
 	}
 
 	boolean waitForStart(CloudFoundryOperations client, String deploymentId, IProgressMonitor monitor)
-			throws InterruptedException {
+			throws InterruptedException, CoreException {
 		long initialInterval = CloudOperationsConstants.SHORT_INTERVAL;
 		Thread.sleep(initialInterval);
 		long timeLeft = CloudOperationsConstants.DEPLOYMENT_TIMEOUT - initialInterval;
 		while (timeLeft > 0) {
-			CloudApplication deploymentDetails = client.getApplication(deploymentId);
+			CloudApplication deploymentDetails = getCloudApplication(deploymentId, monitor);
 			if (isApplicationReady(deploymentDetails)) {
 				return true;
 			}
@@ -1202,13 +1214,14 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		// as there may be features that may allow an app to
 		// be redeployed without drag/drop (i.e. clicking
 		// "Start").
-		IStatus errorStatus = CloudFoundryPlugin.getErrorStatus(NLS.bind(Messages.ERROR_FAILED_TO_PUSH_APP,
-				e.getMessage()));
+		IStatus errorStatus = CloudFoundryPlugin
+				.getErrorStatus(NLS.bind(Messages.ERROR_FAILED_TO_PUSH_APP, e.getMessage()));
 		CloudFoundryPlugin.getCallback().handleError(errorStatus);
 	}
 
 	@Override
-	protected void publishModules(int kind, List modules, List deltaKind2, MultiStatus multi, IProgressMonitor monitor) {
+	protected void publishModules(int kind, List modules, List deltaKind2, MultiStatus multi,
+			IProgressMonitor monitor) {
 		// NOTE: this is a workaround to avoid server-wide publish when removing
 		// a module (i.e., deleting an application) as
 		// well as publishing
@@ -1293,8 +1306,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 				final CloudFoundryServer cloudServer = getCloudFoundryServer();
 				final CloudFoundryApplicationModule cloudModule = cloudServer.getCloudModule(module[0]);
 				if (cloudModule.getApplication() != null) {
-					new BehaviourRequest<Void>(NLS.bind(Messages.DELETING_MODULE,
-							cloudModule.getDeployedApplicationName())) {
+					new BehaviourRequest<Void>(
+							NLS.bind(Messages.DELETING_MODULE, cloudModule.getDeployedApplicationName())) {
 						@Override
 						protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 							client.deleteApplication(cloudModule.getDeployedApplicationName());
@@ -1407,7 +1420,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		return new BehaviourRequest<CloudOrgsAndSpaces>("Getting orgs and spaces") { //$NON-NLS-1$
 
 			@Override
-			protected CloudOrgsAndSpaces doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected CloudOrgsAndSpaces doRun(CloudFoundryOperations client, SubMonitor progress)
+					throws CoreException {
 				return internalGetCloudSpaces(client);
 			}
 
@@ -1468,7 +1482,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 		return new ClientRequest<CloudOrgsAndSpaces>("Getting orgs and spaces") { //$NON-NLS-1$
 			@Override
-			protected CloudOrgsAndSpaces doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected CloudOrgsAndSpaces doRun(CloudFoundryOperations client, SubMonitor progress)
+					throws CoreException {
 				return internalGetCloudSpaces(client);
 			}
 
@@ -1641,8 +1656,9 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			// NOTE that using a space API with null org and space will result
 			// in errors as that API will
 			// expect valid org and space values.
-			return cloudSpace != null ? CloudFoundryPlugin.getCloudFoundryClientFactory().getCloudFoundryOperations(
-					credentials, url, cloudSpace.getOrgName(), cloudSpace.getSpaceName(), selfSigned)
+			return cloudSpace != null
+					? CloudFoundryPlugin.getCloudFoundryClientFactory().getCloudFoundryOperations(credentials, url,
+							cloudSpace.getOrgName(), cloudSpace.getSpaceName(), selfSigned)
 					: CloudFoundryPlugin.getCloudFoundryClientFactory().getCloudFoundryOperations(credentials, url,
 							selfSigned);
 		}
@@ -1710,7 +1726,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			super(label);
 		}
 
-		protected long getWaitInterval(Throwable exception, SubMonitor monitor) throws CoreException {
+		protected long waitOnErrorInterval(Throwable exception, SubMonitor monitor) throws CoreException {
 
 			if (exception instanceof CoreException) {
 				exception = ((CoreException) exception).getCause();
@@ -1741,7 +1757,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			super(label);
 		}
 
-		protected long getWaitInterval(Throwable exception, SubMonitor monitor) throws CoreException {
+		protected long waitOnErrorInterval(Throwable exception, SubMonitor monitor) throws CoreException {
 
 			if (exception instanceof CoreException) {
 				exception = ((CoreException) exception).getCause();
@@ -1831,7 +1847,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	private ApplicationArchive getApplicationArchive(CloudFoundryApplicationModule cloudModule,
 			IProgressMonitor monitor, AbstractApplicationDelegate delegate, IModuleResource[] resources)
-			throws CoreException {
+					throws CoreException {
 		return delegate.getApplicationArchive(cloudModule, getCloudFoundryServer(), resources, monitor);
 	}
 
@@ -1850,7 +1866,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * operation, which will append "..." to the message
 	 * @throws CoreException
 	 */
-	protected void clearAndPrintlnConsole(CloudFoundryApplicationModule appModule, String message) throws CoreException {
+	protected void clearAndPrintlnConsole(CloudFoundryApplicationModule appModule, String message)
+			throws CoreException {
 		message += '\n';
 		printToConsole(appModule, message, true, false);
 	}
@@ -1964,6 +1981,42 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	}
 
+	/**
+	 * [Bug 480364] - Fetching applications from Diego-enabled targets results
+	 * in 503 Server errors if application is starting. Retry the operation when
+	 * 503 is encountered.
+	 */
+	abstract class ApplicationRequest<T> extends BehaviourRequest<T> {
+
+		public ApplicationRequest(String label) {
+			super(label);
+		}
+
+		@Override
+		protected long waitOnErrorInterval(Throwable exception, SubMonitor monitor) throws CoreException {
+			if (CloudErrorUtil.is503Error(exception)) {
+				return 2000;
+			}
+			return super.waitOnErrorInterval(exception, monitor);
+		}
+
+		@Override
+		protected long getTotalTimeWait() {
+			return CloudOperationsConstants.DEFAULT_INTERVAL;
+		}
+
+		@Override
+		protected CoreException getErrorOnLastFailedAttempt(Throwable error) {
+
+			if (CloudErrorUtil.is503Error(error)) {
+				return CloudErrorUtil.asCoreException(get503Error(error), error, true);
+			}
+			return super.getErrorOnLastFailedAttempt(error);
+		}
+
+		protected abstract String get503Error(Throwable rce);
+	}
+
 	BaseClientRequest<?> getUpdateApplicationMemoryRequest(final CloudFoundryApplicationModule appModule,
 			final int memory) {
 		return new AppInStoppedStateAwareRequest<Void>(NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_APP_MEMORY,
@@ -1977,29 +2030,30 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	BaseClientRequest<?> getUpdateAppUrlsRequest(final String appName, final List<String> urls) {
-		return new AppInStoppedStateAwareRequest<Void>(NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_APP_URLS,
-				appName)) {
+		return new AppInStoppedStateAwareRequest<Void>(
+				NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_APP_URLS, appName)) {
 			@Override
 			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 
 				// Look up the existing urls locally first to avoid a client
 				// call
-				CloudFoundryApplicationModule existingAppModule = getCloudFoundryServer().getExistingCloudModule(
-						appName);
+				CloudFoundryApplicationModule existingAppModule = getCloudFoundryServer()
+						.getExistingCloudModule(appName);
 
-				List<String> oldUrls = existingAppModule != null && existingAppModule.getDeploymentInfo() != null ? existingAppModule
-						.getDeploymentInfo().getUris() : null;
+				List<String> oldUrls = existingAppModule != null && existingAppModule.getDeploymentInfo() != null
+						? existingAppModule.getDeploymentInfo().getUris() : null;
 
 				if (oldUrls == null) {
-					oldUrls = client.getApplication(appName).getUris();
+					oldUrls = getCloudApplication(appName, progress).getUris();
 				}
 
 				client.updateApplicationUris(appName, urls);
 
 				if (existingAppModule != null) {
-					ServerEventHandler.getDefault().fireServerEvent(
-							new AppUrlChangeEvent(getCloudFoundryServer(), CloudServerEvent.EVENT_APP_URL_CHANGED,
-									existingAppModule.getLocalModule(), Status.OK_STATUS, oldUrls, urls));
+					ServerEventHandler.getDefault()
+							.fireServerEvent(new AppUrlChangeEvent(getCloudFoundryServer(),
+									CloudServerEvent.EVENT_APP_URL_CHANGED, existingAppModule.getLocalModule(),
+									Status.OK_STATUS, oldUrls, urls));
 
 				}
 				return null;
@@ -2008,8 +2062,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	BaseClientRequest<?> getUpdateServicesRequest(final String appName, final List<String> services) {
-		return new StagingAwareRequest<Void>(NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_SERVICE_BINDING,
-				appName)) {
+		return new StagingAwareRequest<Void>(
+				NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_SERVICE_BINDING, appName)) {
 			@Override
 			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 
@@ -2046,7 +2100,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	BaseClientRequest<List<CloudService>> getDeleteServicesRequest(final List<String> services) {
 		return new BehaviourRequest<List<CloudService>>(Messages.CloudFoundryServerBehaviour_DELETE_SERVICES) {
 			@Override
-			protected List<CloudService> doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected List<CloudService> doRun(CloudFoundryOperations client, SubMonitor progress)
+					throws CoreException {
 
 				SubMonitor serviceProgress = SubMonitor.convert(progress, services.size());
 
@@ -2061,7 +2116,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 						shouldDelete = bindings == null || bindings.isEmpty();
 					}
 					catch (Throwable t) {
-						// If it is a server or network error, it will still be caught below
+						// If it is a server or network error, it will still be
+						// caught below
 						// when fetching the list of apps:
 						// [96494172] - If fetching service instances fails, try
 						// finding an app with the bound service through the
@@ -2069,7 +2125,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 						// apps. This is treated as an alternate way only if the
 						// primary form fails as fetching list of
 						// apps may be potentially slower
-						List<CloudApplication> apps = client.getApplications();
+						List<CloudApplication> apps = getApplications(progress);
 						if (apps != null) {
 							for (int i = 0; shouldDelete && i < apps.size(); i++) {
 								CloudApplication app = apps.get(i);
@@ -2107,9 +2163,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 						}
 					}
 					String boundServs = writer.toString();
-					CloudFoundryPlugin.getCallback().handleError(
-							CloudFoundryPlugin.getErrorStatus(NLS.bind(
-									Messages.CloudFoundryServerBehaviour_ERROR_DELETE_SERVICES_BOUND, boundServs)));
+					CloudFoundryPlugin.getCallback().handleError(CloudFoundryPlugin.getErrorStatus(
+							NLS.bind(Messages.CloudFoundryServerBehaviour_ERROR_DELETE_SERVICES_BOUND, boundServs)));
 				}
 				return client.getServices();
 			}
@@ -2119,13 +2174,14 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	BaseClientRequest<List<CloudService>> getCreateServicesRequest(final CloudService[] services) {
 		return new BehaviourRequest<List<CloudService>>(Messages.CloudFoundryServerBehaviour_CREATE_SERVICES) {
 			@Override
-			protected List<CloudService> doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected List<CloudService> doRun(CloudFoundryOperations client, SubMonitor progress)
+					throws CoreException {
 
 				SubMonitor serviceProgress = SubMonitor.convert(progress, services.length);
 
 				for (CloudService service : services) {
-					serviceProgress.subTask(NLS.bind(Messages.CloudFoundryServerBehaviour_CREATING_SERVICE,
-							service.getName()));
+					serviceProgress.subTask(
+							NLS.bind(Messages.CloudFoundryServerBehaviour_CREATING_SERVICE, service.getName()));
 					client.createService(service);
 					serviceProgress.worked(1);
 				}
@@ -2133,13 +2189,13 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			}
 		};
 	}
-	
+
 	@Override
-	public boolean canRestartModule (IModule[] modules) {
+	public boolean canRestartModule(IModule[] modules) {
 		try {
 			CloudFoundryServer cloudServer = getCloudFoundryServer();
 			IServer server = cloudServer.getServerOriginal();
-			
+
 			// If module is started, we should return true, regardless of the
 			// publish state (this is for example an unlinked project that is
 			// available and running, just not bound to any project in the
@@ -2148,7 +2204,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			if (moduleState == IServer.STATE_STARTED) {
 				return true;
 			}
-						
+
 			int publishState = server.getModulePublishState(modules);
 			// If state is unknown, then inform module(s) can't be
 			// restarted (which will disable push/start context menu operations)
@@ -2159,7 +2215,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		catch (CoreException ce) {
 			CloudFoundryPlugin.logError(ce);
 		}
-		
+
 		return super.canRestartModule(modules);
 	}
 }
