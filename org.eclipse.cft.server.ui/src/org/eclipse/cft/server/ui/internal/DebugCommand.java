@@ -73,7 +73,7 @@ public class DebugCommand {
 			return;
 		}
 		catch (CoreException ce) {
-			CloudFoundryPlugin.getCallback().handleError(ce.getStatus());
+			CloudFoundryPlugin.getCallback().displayAndLogError(ce.getStatus());
 		}
 	}
 

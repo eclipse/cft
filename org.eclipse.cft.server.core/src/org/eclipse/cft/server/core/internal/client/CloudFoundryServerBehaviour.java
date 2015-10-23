@@ -1217,7 +1217,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		// "Start").
 		IStatus errorStatus = CloudFoundryPlugin
 				.getErrorStatus(NLS.bind(Messages.ERROR_FAILED_TO_PUSH_APP, e.getMessage()));
-		CloudFoundryPlugin.getCallback().handleError(errorStatus);
+	
+		CloudFoundryPlugin.log(errorStatus);
 	}
 
 	@Override
@@ -2139,7 +2140,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 						}
 					}
 					String boundServs = writer.toString();
-					CloudFoundryPlugin.getCallback().handleError(CloudFoundryPlugin.getErrorStatus(
+					CloudFoundryPlugin.log(CloudFoundryPlugin.getErrorStatus(
 							NLS.bind(Messages.CloudFoundryServerBehaviour_ERROR_DELETE_SERVICES_BOUND, boundServs)));
 				}
 				return client.getServices();

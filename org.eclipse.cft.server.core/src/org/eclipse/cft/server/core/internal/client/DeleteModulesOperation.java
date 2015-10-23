@@ -130,9 +130,9 @@ public class DeleteModulesOperation extends BehaviourOperation {
 			// Delete the module locally
 			cloudServer.removeApplication(appModule);
 
-			ServerEventHandler.getDefault().fireServerEvent(
-					new ModuleChangeEvent(getBehaviour().getCloudFoundryServer(), CloudServerEvent.EVENT_APP_DELETED,
-							appModule.getLocalModule(), Status.OK_STATUS));
+			ServerEventHandler.getDefault()
+					.fireServerEvent(new ModuleChangeEvent(getBehaviour().getCloudFoundryServer(),
+							CloudServerEvent.EVENT_APP_DELETED, appModule.getLocalModule(), Status.OK_STATUS));
 
 			// Be sure the cloud application mapping is removed
 			// in case other components still have a reference to
@@ -147,10 +147,10 @@ public class DeleteModulesOperation extends BehaviourOperation {
 
 		}
 		if (!failedToDeleteApps.isEmpty() && failedDeleteError != null) {
-			String errorMessage = NLS.bind(Messages.DeleteModulesOperation_ERROR_DELETE_APP_MESSAGE,
-					failedToDeleteApps, failedDeleteError.getMessage());
+			String errorMessage = NLS.bind(Messages.DeleteModulesOperation_ERROR_DELETE_APP_MESSAGE, failedToDeleteApps,
+					failedDeleteError.getMessage());
 			IStatus status = CloudFoundryPlugin.getErrorStatus(errorMessage, failedDeleteError);
-			CloudFoundryPlugin.getCallback().handleError(status);
+			CloudFoundryPlugin.log(status);
 		}
 	}
 
