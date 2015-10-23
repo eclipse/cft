@@ -77,6 +77,8 @@ public class CloudFoundryImages {
 			.getImageDescriptor(ISharedImages.IMG_TOOL_DELETE);
 
 	public static final ImageDescriptor OVERLAY_ERROR = create(OBJ, "error_overlay.png"); //$NON-NLS-1$
+	
+	public static final ImageDescriptor OVERLAY_WARNING = create(OBJ, "warning_overlay.gif"); //$NON-NLS-1$
 
 	public static final ImageDescriptor RESTART_DEBUG_MODE = create(OBJ, "restart_debug.png"); //$NON-NLS-1$
 

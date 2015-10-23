@@ -29,6 +29,7 @@ import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
@@ -38,6 +39,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.internal.Server;
 
 /**
  * 
@@ -86,8 +88,8 @@ public class CloudBehaviourOperations {
 	 * @param instanceCount must be 1 or higher.
 	 * @throws CoreException if operation was not created
 	 */
-	public ICloudFoundryOperation instancesUpdate(final CloudFoundryApplicationModule appModule, final int instanceCount)
-			throws CoreException {
+	public ICloudFoundryOperation instancesUpdate(final CloudFoundryApplicationModule appModule,
+			final int instanceCount) throws CoreException {
 
 		return new BehaviourOperation(behaviour, appModule.getLocalModule()) {
 
@@ -128,8 +130,8 @@ public class CloudBehaviourOperations {
 	 */
 	public ICloudFoundryOperation memoryUpdate(final CloudFoundryApplicationModule appModule, final int memory)
 			throws CoreException {
-		return new ApplicationUpdateOperation(behaviour.getUpdateApplicationMemoryRequest(appModule, memory),
-				behaviour, appModule);
+		return new ApplicationUpdateOperation(behaviour.getUpdateApplicationMemoryRequest(appModule, memory), behaviour,
+				appModule);
 	}
 
 	/**
@@ -138,16 +140,16 @@ public class CloudBehaviourOperations {
 	 */
 	public ICloudFoundryOperation mappedUrlsUpdate(final String appName, final List<String> urls) throws CoreException {
 
-		final CloudFoundryApplicationModule appModule = behaviour.getCloudFoundryServer().getExistingCloudModule(
-				appName);
+		final CloudFoundryApplicationModule appModule = behaviour.getCloudFoundryServer()
+				.getExistingCloudModule(appName);
 
 		if (appModule != null) {
 			return new ApplicationUpdateOperation(behaviour.getUpdateAppUrlsRequest(appName, urls), behaviour,
 					appModule.getLocalModule());
 		}
 		else {
-			throw CloudErrorUtil
-					.toCoreException("Expected an existing Cloud application module but found none. Unable to update application URLs"); //$NON-NLS-1$
+			throw CloudErrorUtil.toCoreException(
+					"Expected an existing Cloud application module but found none. Unable to update application URLs"); //$NON-NLS-1$
 		}
 	}
 
@@ -157,8 +159,9 @@ public class CloudBehaviourOperations {
 	 */
 	public ICloudFoundryOperation bindServices(final CloudFoundryApplicationModule appModule,
 			final List<String> services) throws CoreException {
-		return new ApplicationUpdateOperation(behaviour.getUpdateServicesRequest(
-				appModule.getDeployedApplicationName(), services), behaviour, appModule.getLocalModule());
+		return new ApplicationUpdateOperation(
+				behaviour.getUpdateServicesRequest(appModule.getDeployedApplicationName(), services), behaviour,
+				appModule.getLocalModule());
 	}
 
 	/**
@@ -260,14 +263,16 @@ public class CloudBehaviourOperations {
 			@Override
 			public void run(IProgressMonitor monitor) throws CoreException {
 
+				CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
+
 				SubMonitor subMonitor = SubMonitor.convert(monitor);
-				subMonitor.beginTask(
-						NLS.bind(Messages.CloudBehaviourOperations_REFRESHING_APPS_AND_SERVICES, getBehaviour()
-								.getCloudFoundryServer().getServer().getId()), 100);
+				subMonitor.beginTask(NLS.bind(Messages.CloudBehaviourOperations_REFRESHING_APPS_AND_SERVICES,
+						cloudServer.getServer().getId()), 100);
 
 				if (getModule() != null) {
 					getBehaviour().updateCloudModuleWithInstances(getModule(), subMonitor.newChild(40));
-				} else {
+				}
+				else {
 					subMonitor.worked(40);
 				}
 				// Get updated list of cloud applications from the server
@@ -280,12 +285,23 @@ public class CloudBehaviourOperations {
 					deployedApplicationsByName.put(application.getName(), application);
 				}
 
-				getBehaviour().getCloudFoundryServer().updateModules(deployedApplicationsByName);
+				cloudServer.updateModules(deployedApplicationsByName);
+
+				// Clear publish error
+				Server server = (Server) cloudServer.getServer();
+
+				for (IModule module : server.getModules()) {
+					CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
+					if (appModule != null) {
+						appModule.setStatus(null);
+						appModule.validateDeploymentInfo();
+					}
+				}
 
 				List<CloudService> services = getBehaviour().getServices(subMonitor.newChild(20));
 
-				ServerEventHandler.getDefault().fireServerEvent(
-						new CloudRefreshEvent(getBehaviour().getCloudFoundryServer(), getModule(),
+				ServerEventHandler.getDefault()
+						.fireServerEvent(new CloudRefreshEvent(getBehaviour().getCloudFoundryServer(), getModule(),
 								CloudServerEvent.EVENT_SERVER_REFRESHED, services));
 
 				subMonitor.worked(20);
@@ -327,7 +343,14 @@ public class CloudBehaviourOperations {
 							getBehaviour().getCloudFoundryServer().getServerId());
 				}
 
-				getBehaviour().updateCloudModuleWithInstances(module, monitor);
+				CloudFoundryApplicationModule appModule = getBehaviour().updateCloudModuleWithInstances(module,
+						monitor);
+
+				// Clear the publish errors for now
+				if (appModule != null) {
+					appModule.setStatus(null);
+					appModule.validateDeploymentInfo();
+				}
 
 				ServerEventHandler.getDefault().fireApplicationRefreshed(behaviour.getCloudFoundryServer(), module);
 			}

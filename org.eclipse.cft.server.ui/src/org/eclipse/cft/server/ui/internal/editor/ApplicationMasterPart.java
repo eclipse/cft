@@ -311,9 +311,15 @@ public class ApplicationMasterPart extends SectionPart {
 					IModule module = (IModule) element;
 					CloudFoundryApplicationModule appModule = editorPage.getCloudServer()
 							.getExistingCloudModule(module);
-					if (appModule != null && appModule.getErrorMessage() != null) {
-						return CloudFoundryImages.getImage(new DecorationOverlayIcon(image,
-								CloudFoundryImages.OVERLAY_ERROR, IDecoration.BOTTOM_LEFT));
+					if (appModule != null && appModule.getStatus() != null && !appModule.getStatus().isOK()) {
+						if (appModule.getStatus().getSeverity() == IStatus.ERROR) {
+							return CloudFoundryImages.getImage(new DecorationOverlayIcon(image,
+									CloudFoundryImages.OVERLAY_ERROR, IDecoration.BOTTOM_LEFT));
+						}
+						else if (appModule.getStatus().getSeverity() == IStatus.WARNING) {
+							return CloudFoundryImages.getImage(new DecorationOverlayIcon(image,
+									CloudFoundryImages.OVERLAY_WARNING, IDecoration.BOTTOM_LEFT));
+						}
 					}
 				}
 

@@ -69,7 +69,7 @@ public class RestartOperation extends ApplicationOperation {
 		final Server server = (Server) getBehaviour().getServer();
 
 		try {
-			appModule.setErrorStatus(null);
+			appModule.setStatus(null);
 
 			final String deploymentName = appModule.getDeploymentInfo().getDeploymentName();
 
@@ -211,7 +211,7 @@ public class RestartOperation extends ApplicationOperation {
 			}
 		}
 		catch (CoreException e) {
-			appModule.setErrorStatus(e);
+			appModule.setError(e);
 			server.setModulePublishState(getModules(), IServer.PUBLISH_STATE_UNKNOWN);
 			throw e;
 		}

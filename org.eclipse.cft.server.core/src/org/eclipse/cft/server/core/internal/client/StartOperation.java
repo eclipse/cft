@@ -119,7 +119,7 @@ public class StartOperation extends RestartOperation {
 
 			// Update the local cloud module representing the application
 			// first.
-			appModule.setErrorStatus(null);
+			appModule.setStatus(null);
 
 			server.setModuleState(getModules(), IServer.STATE_STARTING);
 
@@ -210,7 +210,7 @@ public class StartOperation extends RestartOperation {
 
 		}
 		catch (CoreException e) {
-			appModule.setErrorStatus(e);
+			appModule.setError(e);
 			server.setModulePublishState(getModules(), IServer.PUBLISH_STATE_UNKNOWN);
 			throw e;
 		}
