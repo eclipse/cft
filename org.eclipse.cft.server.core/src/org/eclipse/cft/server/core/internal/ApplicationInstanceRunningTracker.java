@@ -23,7 +23,6 @@ package org.eclipse.cft.server.core.internal;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.InstanceState;
-import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -96,16 +95,7 @@ public class ApplicationInstanceRunningTracker {
 	}
 
 	protected ApplicationStats getStats(IProgressMonitor monitor) throws CoreException {
-		try {
-			return cloudServer.getBehaviour().getApplicationStats(appName, monitor);
-		}
-		catch (CoreException ce) {
-			// Stats may not be available if app is still stopped or starting
-			if (CloudErrorUtil.isAppStoppedStateError(ce) || CloudErrorUtil.getBadRequestException(ce) != null) {
-				return null;
-			}
-			throw ce;
-		}
+		return cloudServer.getBehaviour().getApplicationStats(appName, monitor);
 	}
 
 	public static InstanceState getRunState(ApplicationStats stats, CloudApplication app) {

@@ -684,7 +684,18 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 				NLS.bind(Messages.CloudFoundryServerBehaviour_APP_STATS, applicationId)) {
 			@Override
 			protected ApplicationStats doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				return client.getApplicationStats(applicationId);
+				try {
+					return client.getApplicationStats(applicationId);
+				}
+				catch (RestClientException ce) {
+					// Stats may not be available if app is still stopped or
+					// starting
+					if (CloudErrorUtil.isAppStoppedStateError(ce)
+							|| CloudErrorUtil.getBadRequestException(ce) != null) {
+						return null;
+					}
+					throw ce;
+				}
 			}
 		}.run(monitor);
 	}
@@ -694,7 +705,18 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 				NLS.bind(Messages.CloudFoundryServerBehaviour_APP_INFO, applicationId)) {
 			@Override
 			protected InstancesInfo doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				return client.getApplicationInstances(applicationId);
+				try {
+					return client.getApplicationInstances(applicationId);
+				}
+				catch (RestClientException ce) {
+					// Info may not be available if app is still stopped or
+					// starting
+					if (CloudErrorUtil.isAppStoppedStateError(ce)
+							|| CloudErrorUtil.getBadRequestException(ce) != null) {
+						return null;
+					}
+					throw ce;
+				}
 			}
 		}.run(monitor);
 	}
