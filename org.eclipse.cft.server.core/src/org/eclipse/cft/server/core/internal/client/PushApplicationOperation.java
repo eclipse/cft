@@ -69,8 +69,8 @@ public class PushApplicationOperation extends StartOperation {
 	 * 
 	 */
 
-	public PushApplicationOperation(CloudFoundryServerBehaviour behaviour, IModule[] modules) {
-		super(behaviour, false, modules);
+	public PushApplicationOperation(CloudFoundryServerBehaviour behaviour, IModule[] modules, boolean clearConsole) {
+		super(behaviour, false, modules, clearConsole);
 	}
 
 	@Override

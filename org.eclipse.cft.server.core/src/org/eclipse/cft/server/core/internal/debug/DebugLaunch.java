@@ -49,6 +49,12 @@ public class DebugLaunch {
 
 	private ILaunchConfigurationType launchConfigType;
 
+	private int debugPort = DEFAULT_REMOTE_PORT;
+	
+	public static int DEFAULT_REMOTE_PORT = 45283;
+
+	private int instance = 0;
+
 	DebugLaunch(CloudFoundryServer server, CloudFoundryApplicationModule appModule, IDebugProvider provider) {
 		this.server = server;
 		this.appModule = appModule;
@@ -119,8 +125,8 @@ public class DebugLaunch {
 	 * configuration
 	 * @throws OperationCanceledException if cancelled.
 	 */
-	public ILaunchConfiguration resolveLaunchConfiguration(IProgressMonitor monitor) throws CoreException,
-			OperationCanceledException {
+	public ILaunchConfiguration resolveLaunchConfiguration(IProgressMonitor monitor)
+			throws CoreException, OperationCanceledException {
 
 		DebugConnectionDescriptor connectionDescriptor = resolveDescriptor(monitor);
 		return resolveLaunchConfiguration(connectionDescriptor.getIp(), connectionDescriptor.getPort(), 60000);
@@ -172,14 +178,14 @@ public class DebugLaunch {
 
 		}
 		else {
-			throw CloudErrorUtil
-					.toCoreException("No debug launch configuration found for - " + provider.getLaunchConfigurationID()); //$NON-NLS-1$
+			throw CloudErrorUtil.toCoreException(
+					"No debug launch configuration found for - " + provider.getLaunchConfigurationID()); //$NON-NLS-1$
 		}
 
 	}
 
 	public boolean configure(final IProgressMonitor monitor) throws CoreException {
-		return provider.configureApp(getApplicationModule(), getCloudFoundryServer(), monitor);
+		return provider.configureApp(getApplicationModule(), getCloudFoundryServer(), debugPort, monitor);
 	}
 
 	/**
@@ -189,11 +195,11 @@ public class DebugLaunch {
 	 * @throws CoreException if failed to resolve descriptor
 	 * @throws OperationCanceledException if cancelled
 	 */
-	protected DebugConnectionDescriptor resolveDescriptor(IProgressMonitor monitor) throws CoreException,
-			OperationCanceledException {
+	protected DebugConnectionDescriptor resolveDescriptor(IProgressMonitor monitor)
+			throws CoreException, OperationCanceledException {
 
 		DebugConnectionDescriptor descriptor = provider.getDebugConnectionDescriptor(getApplicationModule(),
-				getCloudFoundryServer(), monitor);
+				getCloudFoundryServer(), debugPort, instance, monitor);
 
 		return descriptor;
 	}

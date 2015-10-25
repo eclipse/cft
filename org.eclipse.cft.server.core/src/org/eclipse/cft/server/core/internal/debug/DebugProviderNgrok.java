@@ -58,9 +58,9 @@ import org.eclipse.jdt.core.JavaModelException;
  * Performs a connection to a given server and module. Handles network timeouts,
  * including retrying if connections failed.
  */
-public class DebugProvider implements IDebugProvider {
+public class DebugProviderNgrok implements IDebugProvider {
 
-	private static DebugProvider defaultProvider;
+	private static DebugProviderNgrok defaultProvider;
 
 	private static final String JAVA_OPTS = "JAVA_OPTS"; //$NON-NLS-1$
 
@@ -68,12 +68,12 @@ public class DebugProvider implements IDebugProvider {
 
 	@Override
 	public DebugConnectionDescriptor getDebugConnectionDescriptor(final CloudFoundryApplicationModule appModule,
-			final CloudFoundryServer cloudServer, IProgressMonitor monitor) throws CoreException,
-			OperationCanceledException {
+			final CloudFoundryServer cloudServer, int debugPort, int instance, IProgressMonitor monitor)
+					throws CoreException, OperationCanceledException {
 
 		SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
 
-		IFile ngrokFile = getFile(appModule.getLocalModule().getProject(), ".profile.d", "ngrok.sh"); //$NON-NLS-1$ //$NON-NLS-2$ 
+		IFile ngrokFile = getFile(appModule.getLocalModule().getProject(), ".profile.d", "ngrok.sh"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		String remoteNgrokOutputFile = null;
 
@@ -128,15 +128,17 @@ public class DebugProvider implements IDebugProvider {
 			DebugConnectionDescriptor descriptor = new DebugConnectionDescriptor("ngrok.com", port); //$NON-NLS-1$
 
 			if (!descriptor.areValidIPandPort()) {
-				throw CloudErrorUtil
-						.toCoreException("Invalid port:" + descriptor.getPort() + " or ngrok server address: " + descriptor.getIp() //$NON-NLS-1$ //$NON-NLS-2$ 
+				throw CloudErrorUtil.toCoreException(
+						"Invalid port:" + descriptor.getPort() + " or ngrok server address: " + descriptor.getIp() //$NON-NLS-1$ //$NON-NLS-2$
 								+ " parsed from ngrok output file in the Cloud."); //$NON-NLS-1$
 			}
 			return descriptor;
 		}
 		else {
-			throw CloudErrorUtil
-					.toCoreException("Unable to parse port or ngrok server address from the ngrok output file in the Cloud for " + appModule.getDeployedApplicationName() + ". Please verify that ngrok executable is present in the application deployment and running in the Cloud"); //$NON-NLS-1$  //$NON-NLS-2$ 
+			throw CloudErrorUtil.toCoreException(
+					"Unable to parse port or ngrok server address from the ngrok output file in the Cloud for " //$NON-NLS-1$
+							+ appModule.getDeployedApplicationName()
+							+ ". Please verify that ngrok executable is present in the application deployment and running in the Cloud"); //$NON-NLS-1$
 		}
 	}
 
@@ -144,9 +146,8 @@ public class DebugProvider implements IDebugProvider {
 	 * @return non-null file content
 	 * @throws CoreException if error occurred, or file not found
 	 */
-	protected String getFileContent(final CloudFoundryApplicationModule appModule,
-			final CloudFoundryServer cloudServer, final String outputFilePath, IProgressMonitor monitor)
-			throws CoreException, OperationCanceledException {
+	protected String getFileContent(final CloudFoundryApplicationModule appModule, final CloudFoundryServer cloudServer,
+			final String outputFilePath, IProgressMonitor monitor) throws CoreException, OperationCanceledException {
 
 		final int attempts = 100;
 		SubMonitor subMonitor = SubMonitor.convert(monitor, 100 * attempts);
@@ -244,7 +245,7 @@ public class DebugProvider implements IDebugProvider {
 	}
 
 	@Override
-	public boolean configureApp(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer,
+	public boolean configureApp(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer, int debugPort,
 			IProgressMonitor monitor) throws CoreException {
 
 		ApplicationDeploymentInfo info = appModule.getDeploymentInfo();
@@ -269,11 +270,8 @@ public class DebugProvider implements IDebugProvider {
 
 			javaOpts.setValue(value);
 
-			cloudServer
-					.getBehaviour()
-					.operations()
-					.environmentVariablesUpdate(appModule.getLocalModule(), appModule.getDeployedApplicationName(),
-							vars).run(monitor);
+			cloudServer.getBehaviour().operations().environmentVariablesUpdate(appModule.getLocalModule(),
+					appModule.getDeployedApplicationName(), vars).run(monitor);
 
 		}
 		return true;
@@ -285,9 +283,10 @@ public class DebugProvider implements IDebugProvider {
 				&& (var.getValue().contains("-Xdebug") || var.getValue().contains("-Xrunjdwp")); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
-	public static DebugProvider getCurrent(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer) {
+	public static DebugProviderNgrok getCurrent(CloudFoundryApplicationModule appModule,
+			CloudFoundryServer cloudServer) {
 		if (defaultProvider == null) {
-			defaultProvider = new DebugProvider();
+			defaultProvider = new DebugProviderNgrok();
 		}
 		return defaultProvider;
 	}

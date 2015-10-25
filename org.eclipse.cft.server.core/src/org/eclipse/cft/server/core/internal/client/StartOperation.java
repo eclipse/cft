@@ -29,14 +29,12 @@ import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.eclipse.cft.server.core.AbstractApplicationDelegate;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CachingApplicationArchive;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
-import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.application.CloudApplicationArchive;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -93,8 +91,9 @@ public class StartOperation extends RestartOperation {
 	 * @param cloudFoundryServerBehaviour
 	 * @param alwaysStart if true, application will always start. if false,
 	 */
-	public StartOperation(CloudFoundryServerBehaviour behaviour, boolean incrementalPublish, IModule[] modules) {
-		super(behaviour, modules);
+	public StartOperation(CloudFoundryServerBehaviour behaviour, boolean incrementalPublish, IModule[] modules,
+			boolean clearConsole) {
+		super(behaviour, modules, clearConsole);
 		this.incrementalPublish = incrementalPublish;
 	}
 
@@ -182,13 +181,16 @@ public class StartOperation extends RestartOperation {
 
 				getBehaviour().new BehaviourRequest<Void>(getOperationName() + " - " + deploymentName) { //$NON-NLS-1$
 					@Override
-					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress) throws CoreException, OperationCanceledException {
+					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress)
+							throws CoreException, OperationCanceledException {
 
 						getBehaviour().printlnToConsole(appModuleFin, getRequestLabel());
 
-						// Check for cancel here prior to pushing the application
+						// Check for cancel here prior to pushing the
+						// application
 						if (progress.isCanceled()) {
-						   throw new OperationCanceledException(Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
+							throw new OperationCanceledException(
+									Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
 						}
 						pushApplication(client, appModuleFin, applicationArchiveFin, progress);
 
@@ -247,8 +249,8 @@ public class StartOperation extends RestartOperation {
 		}
 		catch (CoreException e) {
 			if (CloudErrorUtil.isNotFoundException(e)) {
-				throw CloudErrorUtil.toCoreException(
-						NLS.bind(Messages.ERROR_FAILED_TO_PUSH_APP_DOES_NOT_EXIST, appName), e);
+				throw CloudErrorUtil
+						.toCoreException(NLS.bind(Messages.ERROR_FAILED_TO_PUSH_APP_DOES_NOT_EXIST, appName), e);
 			}
 			else {
 				throw e;
@@ -319,7 +321,8 @@ public class StartOperation extends RestartOperation {
 					}
 					// Check for cancel
 					if (monitor.isCanceled()) {
-						throw new OperationCanceledException(Messages.bind(Messages.OPERATION_CANCELED, getOperationName()));
+						throw new OperationCanceledException(
+								Messages.bind(Messages.OPERATION_CANCELED, getOperationName()));
 					}
 				}
 				finally {
@@ -336,14 +339,17 @@ public class StartOperation extends RestartOperation {
 				}
 			}
 			else {
-				throw CloudErrorUtil
-						.toCoreException("Failed to deploy application " + appModule.getDeploymentInfo().getDeploymentName() + //$NON-NLS-1$
+				throw CloudErrorUtil.toCoreException(
+						"Failed to deploy application " + appModule.getDeploymentInfo().getDeploymentName() + //$NON-NLS-1$
 								" since no deployable war or application archive file was generated."); //$NON-NLS-1$
 			}
 		}
 		catch (IOException e) {
-			throw new CoreException(CloudFoundryPlugin.getErrorStatus("Failed to deploy application " + //$NON-NLS-1$ 
-					appModule.getDeploymentInfo().getDeploymentName() + " due to " + e.getMessage(), e)); //$NON-NLS-1$
+			throw new CoreException(
+					CloudFoundryPlugin.getErrorStatus(
+							"Failed to deploy application " + //$NON-NLS-1$
+									appModule.getDeploymentInfo().getDeploymentName() + " due to " + e.getMessage(), //$NON-NLS-1$
+							e));
 		}
 
 	}

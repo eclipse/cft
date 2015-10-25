@@ -54,8 +54,8 @@ public class RestartOperation extends ApplicationOperation {
 	 * 
 	 */
 
-	public RestartOperation(CloudFoundryServerBehaviour behaviour, IModule[] modules) {
-		super(behaviour, modules);
+	public RestartOperation(CloudFoundryServerBehaviour behaviour, IModule[] modules, boolean clearConsole) {
+		super(behaviour, modules, clearConsole);
 	}
 
 	@Override

@@ -199,7 +199,12 @@ public class CloudBehaviourOperations {
 			ApplicationAction action) throws CoreException {
 		IModule[] modules = new IModule[] { application.getLocalModule() };
 
-		return applicationDeployment(modules, action);
+		return applicationDeployment(modules, action, true);
+	}
+
+	public ICloudFoundryOperation applicationDeployment(IModule[] modules, ApplicationAction action)
+			throws CoreException {
+		return applicationDeployment(modules, action, true);
 	}
 
 	/**
@@ -213,8 +218,8 @@ public class CloudBehaviourOperations {
 	 * @return Non-null application operation.
 	 * @throws CoreException if operation cannot be resolved.
 	 */
-	public ICloudFoundryOperation applicationDeployment(IModule[] modules, ApplicationAction action)
-			throws CoreException {
+	public ICloudFoundryOperation applicationDeployment(IModule[] modules, ApplicationAction action,
+			boolean clearConsole) throws CoreException {
 
 		if (modules == null || modules.length == 0) {
 			throw CloudErrorUtil.toCoreException(INTERNAL_ERROR_NO_WST_MODULE);
@@ -225,21 +230,22 @@ public class CloudBehaviourOperations {
 		case START:
 			boolean incrementalPublish = false;
 			// A start operation that always performs a full publish
-			operation = new StartOperation(behaviour, incrementalPublish, modules);
+			operation = new StartOperation(behaviour, incrementalPublish, modules, clearConsole);
 			break;
 		case STOP:
 			operation = new StopApplicationOperation(behaviour, modules);
 			break;
 		case RESTART:
-			operation = new RestartOperation(behaviour, modules);
+			operation = new RestartOperation(behaviour, modules, clearConsole);
 			break;
 		case UPDATE_RESTART:
 			// Check the full publish preference to determine if full or
 			// incremental publish should be done when starting an application
-			operation = new StartOperation(behaviour, CloudFoundryPlugin.getDefault().getIncrementalPublish(), modules);
+			operation = new StartOperation(behaviour, CloudFoundryPlugin.getDefault().getIncrementalPublish(), modules,
+					clearConsole);
 			break;
 		case PUSH:
-			operation = new PushApplicationOperation(behaviour, modules);
+			operation = new PushApplicationOperation(behaviour, modules, clearConsole);
 			break;
 		}
 

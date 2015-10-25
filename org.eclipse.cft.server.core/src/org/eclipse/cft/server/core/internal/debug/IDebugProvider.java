@@ -41,7 +41,8 @@ public interface IDebugProvider {
 	 * @throws OperationCanceledException if connection operation was canceled
 	 */
 	public DebugConnectionDescriptor getDebugConnectionDescriptor(CloudFoundryApplicationModule appModule,
-			CloudFoundryServer cloudServer, IProgressMonitor monitor) throws CoreException, OperationCanceledException;
+			CloudFoundryServer cloudServer, int debugPort, int instance, IProgressMonitor monitor)
+					throws CoreException, OperationCanceledException;
 
 	/**
 	 * Determine if the application is in a state where it can be launched. If
@@ -90,7 +91,7 @@ public interface IDebugProvider {
 	 * @return true if application is ready to be launched. False if debug
 	 * launch should stop.
 	 */
-	public boolean configureApp(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer,
+	public boolean configureApp(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer, int debugPort,
 			IProgressMonitor monitor) throws CoreException;
 
 }
