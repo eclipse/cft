@@ -91,16 +91,6 @@ IBM - Adding a dynamic provider for CloudFoundry Urls
                </documentation>
             </annotation>
          </attribute>
-         <attribute name="wizardBanner" type="string">
-            <annotation>
-               <documentation>
-                  
-               </documentation>
-               <appInfo>
-                  <meta.attribute kind="resource"/>
-               </appInfo>
-            </annotation>
-         </attribute>
          <attribute name="provideServices" type="boolean" use="required">
             <annotation>
                <documentation>

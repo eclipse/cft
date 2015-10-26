@@ -83,18 +83,6 @@
 	        runtimeTypeIds="org.cloudfoundry.appcloudserver.runtime.10"
 	        class="org.eclipse.cft.server.core.internal.CloudFoundryRuntimeClasspathProvider"/>
      </extension>
-     <extension point="org.eclipse.wst.server.ui.serverImages">
-		<image 
-			id="org.cloudfoundry.appcloudserver" 
-			icon="icons/obj16/cloud_obj.png"
-			typeIds="cloudfoundry.standalone.app, org.cloudfoundry.appcloudserver.10, org.cloudfoundry.appcloudserver.runtime.10" />
-	</extension>
-	<extension point="org.eclipse.wst.server.ui.wizardFragments">
-		<fragment
-			id="org.cloudfoundry.appcloudserver.10"
-			typeIds="org.cloudfoundry.appcloudserver.10"
-			class="org.eclipse.cft.server.ui.internal.wizards.CloudFoundryServerWizardFragment"/>
-	</extension>
 	 <extension
        point="org.eclipse.cft.server.core.branding">
 	    <service
@@ -102,8 +90,7 @@
            provideServices="true"
            remoteSystemTypeId="org.cloudfoundry.cloudfoundryserver"
            serverDisplayName="Pivotal Cloud Foundry"
-           serverTypeId="org.cloudfoundry.appcloudserver.10"
-           wizardBanner="icons/wizban/wizban_cloudfoundry.png">
+           serverTypeId="org.cloudfoundry.appcloudserver.10">
         <defaultUrl
               name="Pivotal Cloud Foundry Hosted Developer Edition"
               signupURL="https://console.run.pivotal.io/register"
@@ -124,16 +111,5 @@
         -->
     </service>
      </extension>
-    <extension
-       point="org.eclipse.rse.core.systemTypes">
-    <systemType
-          icon="icons/obj16/cloud_obj.png"
-          iconLive="icons/obj16/cloud_obj.png"
-          id="org.cloudfoundry.cloudfoundryserver"
-          label="Pivotal"
-          name="Pivotal"
-          subsystemConfigurationIds="cloudserver.applications">
-    </systemType>
- </extension>
 
 </plugin>
