@@ -402,18 +402,7 @@ public class CloudFoundryBrandingExtensionPoint {
 		return brandingServerTypeIds;
 	}
 
-	public static String getWizardBannerPath(String serverTypeId) {
-		if (!read) {
-			readBrandingDefinitions();
-		}
-		IConfigurationElement config = brandingDefinitions.get(serverTypeId);
-		if (config != null) {
-			return config.getAttribute(ATTR_WIZ_BAN);
-		}
-		return null;
-	}
-
-	private static void readBrandingDefinitions() {
+	protected static void readBrandingDefinitions() {
 		IExtensionPoint brandingExtPoint = Platform.getExtensionRegistry().getExtensionPoint(POINT_ID);
 		if (brandingExtPoint != null) {
 			brandingServerTypeIds.clear();
