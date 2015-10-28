@@ -151,7 +151,7 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 
 	private final IServer server;
 
-	private CoreException error;
+	private IStatus validationStatus;
 
 	/**
 	 * Creates a cloud module that has a corresponding local module. This should
@@ -296,7 +296,9 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		if (delegate == null) {
 			return AbstractApplicationDelegate.basicValidateDeploymentInfo(deploymentInfo);
 		}
-		return delegate.validateDeploymentInfo(deploymentInfo);
+		IStatus status =  delegate.validateDeploymentInfo(deploymentInfo);
+		setStatus(status);
+		return status;
 	}
 
 	/**
@@ -347,15 +349,20 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		return localModule == this;
 	}
 
-	public synchronized void setErrorStatus(CoreException error) {
-		this.error = error;
+	public synchronized void setError(CoreException error) {
+		this.validationStatus = error != null ? error.getStatus() : null;
+	}
+	
+	public synchronized void setStatus(IStatus status) {
+		if (status == null || status.isOK()) {
+			this.validationStatus = null;
+		} else {
+			this.validationStatus = status;
+		}
 	}
 
-	public synchronized String getErrorMessage() {
-		if (error == null) {
-			return null;
-		}
-		return error.getMessage();
+	public synchronized IStatus getStatus() {
+		return this.validationStatus;
 	}
 
 	public synchronized void setApplicationStats(ApplicationStats applicationStats) {

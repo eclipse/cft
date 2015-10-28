@@ -14,7 +14,8 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.equinox.security,
  org.eclipse.wst.common.project.facet.core,
  org.eclipse.debug.core,
- org.eclipse.core.externaltools
+ org.eclipse.core.externaltools,
+ com.jcraft.jsch
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,

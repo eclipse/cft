@@ -69,8 +69,8 @@ public class PushApplicationOperation extends StartOperation {
 	 * 
 	 */
 
-	public PushApplicationOperation(CloudFoundryServerBehaviour behaviour, IModule[] modules) {
-		super(behaviour, false, modules);
+	public PushApplicationOperation(CloudFoundryServerBehaviour behaviour, IModule[] modules, boolean clearConsole) {
+		super(behaviour, false, modules, clearConsole);
 	}
 
 	@Override
@@ -94,26 +94,28 @@ public class PushApplicationOperation extends StartOperation {
 			}
 			catch (CoreException e) {
 				// For diagnostic purposes, log as info only.
-				CloudFoundryPlugin.log(new Status(Status.INFO, CloudFoundryPlugin.PLUGIN_ID, "CoreException thrown during deployment.", e)); // $NON-NLS-1$ 
-				
+				CloudFoundryPlugin.log(new Status(Status.INFO, CloudFoundryPlugin.PLUGIN_ID,
+						"CoreException thrown during deployment.", e)); // $NON-NLS-1$
+
 				// Do not throw the error. The application may not exist
 				// anymore. If it is a network error, it will become evident
 				// in further steps
 			}
-			
+
 		}
 		else {
 			try {
-				
+
 				CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
 
 				// prompt user for missing details
 				return CloudFoundryPlugin.getCallback().prepareForDeployment(cloudServer, appModule, monitor);
 			}
 			catch (OperationCanceledException oce) {
-				
-				CloudFoundryPlugin.log(new Status(Status.INFO, CloudFoundryPlugin.PLUGIN_ID, "Operation cancelled during prepareForDeployment.", oce)); //$NON-NLS-1$
-				
+
+				CloudFoundryPlugin.log(new Status(Status.INFO, CloudFoundryPlugin.PLUGIN_ID,
+						"Operation cancelled during prepareForDeployment.", oce)); //$NON-NLS-1$
+
 				// Prepare for deployment prompts the user for missing
 				// information for a non-published app. If a user
 				// cancels
@@ -130,17 +132,19 @@ public class PushApplicationOperation extends StartOperation {
 			ApplicationArchive applicationArchive, final IProgressMonitor monitor) throws CoreException {
 		String appName = appModule.getDeploymentInfo().getDeploymentName();
 
-		List<CloudApplication> existingApps = client.getApplications();
-		boolean found = false;
-		for (CloudApplication existingApp : existingApps) {
-			if (existingApp.getName().equals(appName)) {
-				found = true;
-				break;
+		CloudApplication existingApp = null;
+
+		try {
+			existingApp = getBehaviour().getCloudApplication(appName, monitor);
+		}
+		catch (CoreException ce) {
+			if (!CloudErrorUtil.isNotFoundException(ce)) {
+				throw ce;
 			}
 		}
 
 		// Create the application if it doesn't already exist
-		if (!found) {
+		if (existingApp == null) {
 			String creatingAppLabel = NLS.bind(Messages.CONSOLE_APP_CREATION, appName);
 			getBehaviour().printlnToConsole(appModule, creatingAppLabel);
 
@@ -152,8 +156,8 @@ public class PushApplicationOperation extends StartOperation {
 			// variables
 			// and instances
 			Staging staging = appModule.getDeploymentInfo().getStaging();
-			List<String> uris = appModule.getDeploymentInfo().getUris() != null ? appModule.getDeploymentInfo()
-					.getUris() : new ArrayList<String>(0);
+			List<String> uris = appModule.getDeploymentInfo().getUris() != null
+					? appModule.getDeploymentInfo().getUris() : new ArrayList<String>(0);
 			List<String> services = appModule.getDeploymentInfo().asServiceBindingList();
 			List<EnvironmentVariable> variables = appModule.getDeploymentInfo().getEnvVariables();
 			int instances = appModule.getDeploymentInfo().getInstances();

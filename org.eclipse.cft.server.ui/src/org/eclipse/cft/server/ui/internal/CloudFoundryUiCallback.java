@@ -212,8 +212,7 @@ public class CloudFoundryUiCallback extends CloudFoundryCallback {
 	}
 
 	@Override
-	public void handleError(final IStatus status) {
-
+	public void displayAndLogError(final IStatus status) {
 		if (status != null && status.getSeverity() == IStatus.ERROR) {
 
 			CloudFoundryPlugin.log(status);

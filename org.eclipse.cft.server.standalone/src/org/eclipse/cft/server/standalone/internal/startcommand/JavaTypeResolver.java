@@ -119,9 +119,10 @@ public class JavaTypeResolver {
 								}
 
 							} else {
+							
 								CloudFoundryPlugin
 										.getCallback()
-										.handleError(
+										.displayAndLogError(
 												CloudFoundryPlugin.getErrorStatus(NLS
 														.bind(Messages.SelectMainTypeWizardPage_NO_SHELL,
 																project.getProject()

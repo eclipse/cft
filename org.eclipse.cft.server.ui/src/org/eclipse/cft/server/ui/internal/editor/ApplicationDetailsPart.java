@@ -51,13 +51,13 @@ import org.eclipse.cft.server.ui.internal.CloudUiUtil;
 import org.eclipse.cft.server.ui.internal.DebugCommand;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.actions.DebugApplicationEditorAction;
+import org.eclipse.cft.server.ui.internal.actions.EditorAction.RefreshArea;
 import org.eclipse.cft.server.ui.internal.actions.RemoveServicesFromApplicationAction;
 import org.eclipse.cft.server.ui.internal.actions.ShowConsoleEditorAction;
 import org.eclipse.cft.server.ui.internal.actions.StartStopApplicationAction;
 import org.eclipse.cft.server.ui.internal.actions.TerminateDebugEditorAction;
 import org.eclipse.cft.server.ui.internal.actions.UpdateApplicationMemoryAction;
 import org.eclipse.cft.server.ui.internal.actions.UpdateInstanceCountAction;
-import org.eclipse.cft.server.ui.internal.actions.EditorAction.RefreshArea;
 import org.eclipse.cft.server.ui.internal.editor.AppStatsContentProvider.InstanceStatsAndInfo;
 import org.eclipse.cft.server.ui.internal.wizards.EnvVarsWizard;
 import org.eclipse.cft.server.ui.internal.wizards.MappedURLsWizard;
@@ -210,8 +210,8 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		this.editorPage = editorPage;
 		this.cloudServer = cloudServer;
 		this.serverBehaviour = cloudServer.getBehaviour();
-		this.provideServices = CloudFoundryBrandingExtensionPoint.getProvideServices(editorPage.getServer()
-				.getServerType().getId());
+		this.provideServices = CloudFoundryBrandingExtensionPoint
+				.getProvideServices(editorPage.getServer().getServerType().getId());
 	}
 
 	public void createContents(Composite parent) {
@@ -280,7 +280,8 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 
 	protected void refreshDeploymentButtons(CloudFoundryApplicationModule appModule) {
 
-		if (topButtonRow == null || lowerButtonRow == null || lowerButtonRow.isDisposed() || topButtonRow.isDisposed()) {
+		if (topButtonRow == null || lowerButtonRow == null || lowerButtonRow.isDisposed()
+				|| topButtonRow.isDisposed()) {
 			return;
 		}
 		int state = appModule.getState();
@@ -322,10 +323,9 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		// Do not show the update button if there is not accessible
 		// module project in the workspace, as no source update would be
 		// possible within Eclipse
-		if (state == IServer.STATE_STOPPED
-				|| state == IServer.STATE_UNKNOWN
-				|| !CloudFoundryProperties.isModuleProjectAccessible
-						.testProperty(new IModule[] { module }, cloudServer)) {
+		if (state == IServer.STATE_STOPPED || state == IServer.STATE_UNKNOWN
+				|| !CloudFoundryProperties.isModuleProjectAccessible.testProperty(new IModule[] { module },
+						cloudServer)) {
 			updateRestartAppButton.setEnabled(false);
 		}
 		else {
@@ -473,11 +473,18 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 
 		canUpdate = true;
 
-		if (appModule.getErrorMessage() != null) {
-			editorPage.setMessage(appModule.getErrorMessage(), IMessageProvider.ERROR);
+		if (appModule.getStatus() != null && !appModule.getStatus().isOK()) {
+
+			if (appModule.getStatus().getSeverity() == IStatus.ERROR) {
+				editorPage.setMessage(appModule.getStatus().getMessage(), IMessageProvider.ERROR);
+			}
+			else if (appModule.getStatus().getSeverity() == IStatus.WARNING) {
+				editorPage.setMessage(appModule.getStatus().getMessage(), IMessageProvider.WARNING);
+			}
 		}
 		else {
 			editorPage.setMessage(null, IMessageProvider.ERROR);
+			editorPage.setMessage(null, IMessageProvider.WARNING);
 		}
 	}
 
@@ -498,8 +505,8 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 				// asynchronously may result in the job running after the viewer
 				// is disposed (e.g. the editor is closed between scheduling the
 				// job and the job actually running)
-				deploymentInfo = appModule.resolveDeploymentInfoWorkingCopy(ProgressManager.getInstance()
-						.getDefaultMonitor());
+				deploymentInfo = appModule
+						.resolveDeploymentInfoWorkingCopy(ProgressManager.getInstance().getDefaultMonitor());
 
 				serviceNames = deploymentInfo.asServiceBindingList();
 			}
@@ -749,9 +756,8 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 
 						public IStatus run(IProgressMonitor monitor) {
 
-							ServerEventHandler.getDefault().fireServerEvent(
-									new ModuleChangeEvent(cloudServer, CloudServerEvent.EVENT_JREBEL_REMOTING_UPDATE,
-											module, Status.OK_STATUS));
+							ServerEventHandler.getDefault().fireServerEvent(new ModuleChangeEvent(cloudServer,
+									CloudServerEvent.EVENT_JREBEL_REMOTING_UPDATE, module, Status.OK_STATUS));
 
 							return Status.OK_STATUS;
 						}
@@ -923,8 +929,8 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 			}
 		});
 
-		updateRestartAppButton = toolkit.createButton(topButtonRow,
-				Messages.ApplicationDetailsPart_TEXT_UPDATE_RESTART, SWT.PUSH);
+		updateRestartAppButton = toolkit.createButton(topButtonRow, Messages.ApplicationDetailsPart_TEXT_UPDATE_RESTART,
+				SWT.PUSH);
 		updateRestartAppButton.setImage(CloudFoundryImages.getImage(CloudFoundryImages.RESTART));
 		updateRestartAppButton.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
@@ -983,9 +989,9 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 								// Fetch an updated cloud module to ensure that
 								// only up-to-date information is written to
 								// manifest
-								CloudFoundryApplicationModule updatedMod = cloudServer
-										.getBehaviour()
-										.updateCloudModuleWithInstances(appModule.getDeployedApplicationName(), monitor);
+								CloudFoundryApplicationModule updatedMod = cloudServer.getBehaviour()
+										.updateCloudModuleWithInstances(appModule.getDeployedApplicationName(),
+												monitor);
 
 								// Update the bound service mappings so they
 								// point
@@ -1016,7 +1022,8 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		}
 
 		if (errorStatus[0] != null && !errorStatus[0].isOK()) {
-			logError(NLS.bind(Messages.ApplicationDetailsPart_ERROR_WRITE_TO_MANIFEST_DUE, errorStatus[0].getMessage()));
+			logError(
+					NLS.bind(Messages.ApplicationDetailsPart_ERROR_WRITE_TO_MANIFEST_DUE, errorStatus[0].getMessage()));
 		}
 
 	}
@@ -1185,8 +1192,8 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		// editorPage.getSite().registerContextMenu(ID_MENU_SERVICES,
 		// menuManager, servicesViewer);
 
-		servicesSection.setVisible(CloudFoundryBrandingExtensionPoint.getProvideServices(editorPage.getServer()
-				.getServerType().getId()));
+		servicesSection.setVisible(
+				CloudFoundryBrandingExtensionPoint.getProvideServices(editorPage.getServer().getServerType().getId()));
 	}
 
 	private TableViewer createTableViewer(Composite parent, String[] columnNames, String[] columnTooltips,
@@ -1198,8 +1205,9 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		// container.setLayout(layout);
 
 		Table table = toolkit.createTable(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI);
-		
-		// Allow for some space vertically as the viewer doesn't seem to refresh when instances are added
+
+		// Allow for some space vertically as the viewer doesn't seem to refresh
+		// when instances are added
 		// and is not easy to select the first instance or scroll.
 		GridDataFactory.fillDefaults().grab(true, true).hint(SWT.DEFAULT, 60).applyTo(table);
 		table.setHeaderVisible(true);
@@ -1263,7 +1271,8 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 					manager.add(new ShowConsoleEditorAction(cloudServer, appModule, Integer.parseInt(stats.getId())));
 				}
 				catch (CoreException ce) {
-					logApplicationModuleFailureError(Messages.ApplicationDetailsPart_ERROR_GENERATE_APP_INSTANCE_CONTEXT_MENU);
+					logApplicationModuleFailureError(
+							Messages.ApplicationDetailsPart_ERROR_GENERATE_APP_INSTANCE_CONTEXT_MENU);
 				}
 				catch (NumberFormatException e) {
 					// ignore
@@ -1281,8 +1290,9 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
 
 		if (appModule == null) {
-			String errorMessage = module != null ? NLS.bind(Messages.ApplicationDetailsPart_ERROR_NO_CF_APP_MODULE_FOR,
-					module.getId()) : Messages.ApplicationDetailsPart_ERROR_NO_CF_APP_MODULE;
+			String errorMessage = module != null
+					? NLS.bind(Messages.ApplicationDetailsPart_ERROR_NO_CF_APP_MODULE_FOR, module.getId())
+					: Messages.ApplicationDetailsPart_ERROR_NO_CF_APP_MODULE;
 			throw CloudErrorUtil.toCoreException(errorMessage);
 		}
 
@@ -1332,8 +1342,8 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 			new StartStopApplicationAction(editorPage, action, appModule, serverBehaviour).run();
 		}
 		catch (CoreException ce) {
-			logApplicationModuleFailureError(NLS.bind(Messages.ApplicationDetailsPart_ERROR_PERFORM,
-					action.getDisplayName()));
+			logApplicationModuleFailureError(
+					NLS.bind(Messages.ApplicationDetailsPart_ERROR_PERFORM, action.getDisplayName()));
 		}
 	}
 

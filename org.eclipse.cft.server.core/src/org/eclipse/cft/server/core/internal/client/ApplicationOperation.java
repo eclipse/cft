@@ -51,8 +51,11 @@ public abstract class ApplicationOperation extends AbstractPublishApplicationOpe
 	 */
 	private DeploymentConfiguration configuration;
 
-	protected ApplicationOperation(CloudFoundryServerBehaviour behaviour, IModule[] modules) {
+	private boolean clearConsole = true;
+
+	protected ApplicationOperation(CloudFoundryServerBehaviour behaviour, IModule[] modules, boolean clearConsole) {
 		super(behaviour, modules);
+		this.clearConsole = clearConsole;
 	}
 
 	/**
@@ -109,8 +112,15 @@ public abstract class ApplicationOperation extends AbstractPublishApplicationOpe
 			// stage, and consoles are mapped by application name.
 			// This prevents two different consoles with different names
 			// from appearing for the same application
-			getBehaviour().clearAndPrintlnConsole(appModule,
-					NLS.bind(Messages.CONSOLE_PREPARING_APP, appModule.getDeployedApplicationName()));
+			if (clearConsole) {
+				getBehaviour().clearAndPrintlnConsole(appModule,
+						NLS.bind(Messages.CONSOLE_PREPARING_APP, appModule.getDeployedApplicationName()));
+
+			}
+			else {
+				getBehaviour().printlnToConsole(appModule,
+						NLS.bind(Messages.CONSOLE_PREPARING_APP, appModule.getDeployedApplicationName()));
+			}
 
 			performDeployment(appModule, subMonitor.newChild(60));
 

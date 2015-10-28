@@ -29,6 +29,12 @@ public class Messages extends NLS {
 	public static String AbstractApplicationDelegate_ERROR_MISSING_DEPLOY_INFO;
 
 	public static String AbstractApplicationDelegate_ERROR_MISSING_MEM;
+	
+	public static String ApplicationInstanceStartingTracker_STARTING_TRACKING;
+	
+	public static String ApplicationInstanceStartingTracker_APPLICATION_IS_RUNNING;
+	
+	public static String ApplicationInstanceStartingTracker_APPLICATION_IS_NOT_RUNNING;
 
 	public static String ApplicationLogConsoleManager_NO_RECENT_LOGS;
 
@@ -169,6 +175,10 @@ public class Messages extends NLS {
 	public static String CloudFoundryServerBehaviour_DELETE_SERVICES;
 
 	public static String CloudFoundryServerBehaviour_ERROR_DELETE_SERVICES_BOUND;
+	
+	public static String CloudFoundryServerBehaviour_ERROR_GET_APPLICATION_SERVER_503;
+	
+	public static String CloudFoundryServerBehaviour_ERROR_GET_APPLICATIONS_SERVER;
 
 	public static String CloudFoundryServerBehaviour_DELETING_SERVICE;
 

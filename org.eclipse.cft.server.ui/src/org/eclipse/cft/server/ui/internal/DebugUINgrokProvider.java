@@ -38,18 +38,19 @@ import org.eclipse.wst.server.core.IModule;
  * operations, for example prompting the user for additional information via
  * dialogues.
  */
-class DebugUIProvider implements IDebugProvider {
+class DebugUINgrokProvider implements IDebugProvider {
 
 	private final IDebugProvider provider;
 
-	public DebugUIProvider(IDebugProvider provider) {
+	public DebugUINgrokProvider(IDebugProvider provider) {
 		this.provider = provider;
 	}
 
 	@Override
 	public DebugConnectionDescriptor getDebugConnectionDescriptor(CloudFoundryApplicationModule appModule,
-			CloudFoundryServer cloudServer, IProgressMonitor monitor) throws CoreException {
-		return provider.getDebugConnectionDescriptor(appModule, cloudServer, monitor);
+			CloudFoundryServer cloudServer, int debugPort, int instance, IProgressMonitor monitor)
+					throws CoreException {
+		return provider.getDebugConnectionDescriptor(appModule, cloudServer, debugPort, instance, monitor);
 	}
 
 	@Override
@@ -69,7 +70,7 @@ class DebugUIProvider implements IDebugProvider {
 	}
 
 	@Override
-	public boolean configureApp(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer,
+	public boolean configureApp(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer, int debugPort,
 			IProgressMonitor monitor) throws CoreException {
 		IModule[] mod = new IModule[] { appModule.getLocalModule() };
 
@@ -98,7 +99,7 @@ class DebugUIProvider implements IDebugProvider {
 				return false;
 			}
 		}
-		provider.configureApp(appModule, cloudServer, monitor);
+		provider.configureApp(appModule, cloudServer, debugPort, monitor);
 
 		if (shouldRestart) {
 			// Perform a full push and start

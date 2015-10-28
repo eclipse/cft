@@ -34,6 +34,7 @@ import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.ILightweightLabelDecorator;
 import org.eclipse.jface.viewers.LabelProvider;
@@ -107,8 +108,12 @@ public class CloudFoundryDecorator extends LabelProvider implements ILightweight
 						decoration.addSuffix(Messages.CloudFoundryDecorator_SUFFIX_NOT_DEPLOYED);
 					}
 
-					if (module.getErrorMessage() != null) {
-						decoration.addOverlay(CloudFoundryImages.OVERLAY_ERROR, IDecoration.BOTTOM_LEFT);
+					if (module.getStatus() != null && !module.getStatus().isOK()) {
+						if (module.getStatus().getSeverity() == IStatus.ERROR) {
+							decoration.addOverlay(CloudFoundryImages.OVERLAY_ERROR, IDecoration.BOTTOM_LEFT);
+						} else if (module.getStatus().getSeverity() == IStatus.WARNING) {
+							decoration.addOverlay(CloudFoundryImages.OVERLAY_WARNING, IDecoration.BOTTOM_LEFT);
+						}
 					}
 				}
 			}

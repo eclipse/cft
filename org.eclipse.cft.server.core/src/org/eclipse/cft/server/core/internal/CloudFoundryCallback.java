@@ -106,8 +106,8 @@ public abstract class CloudFoundryCallback {
 	 * not be modified in this case.
 	 */
 	public abstract DeploymentConfiguration prepareForDeployment(CloudFoundryServer server,
-			CloudFoundryApplicationModule module, IProgressMonitor monitor) throws CoreException,
-			OperationCanceledException;
+			CloudFoundryApplicationModule module, IProgressMonitor monitor)
+					throws CoreException, OperationCanceledException;
 
 	public abstract void deleteServices(List<String> services, CloudFoundryServer cloudServer);
 
@@ -117,7 +117,7 @@ public abstract class CloudFoundryCallback {
 		return true;
 	}
 
-	public void handleError(IStatus status) {
+	public void displayAndLogError(IStatus status) {
 
 	}
 

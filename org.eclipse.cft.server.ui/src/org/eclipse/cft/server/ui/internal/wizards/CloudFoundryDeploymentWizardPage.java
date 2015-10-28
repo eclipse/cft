@@ -33,7 +33,6 @@ import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.ValueValidationUtil;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.core.internal.debug.DebugProvider;
 import org.eclipse.cft.server.ui.internal.CloudApplicationUrlPart;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.IEventSource;
@@ -285,7 +284,7 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 	}
 
 	protected boolean isServerDebugModeAllowed() {
-		return DebugProvider.getCurrent(module, server).isCloudSpaceDebugEnabled();
+		return false;
 	}
 
 	protected void makeStartDeploymentControlsVisible(boolean makeVisible) {

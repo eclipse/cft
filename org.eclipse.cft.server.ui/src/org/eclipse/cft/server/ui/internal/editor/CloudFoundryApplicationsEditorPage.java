@@ -228,8 +228,8 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 		public void serverChanged(final CloudServerEvent event) {
 
 			if (event.getServer() == null) {
-				CloudFoundryPlugin
-						.logError("Internal error: unable to refresh editor. No Cloud server specified in the server event."); // $NON-NLS-1$
+				CloudFoundryPlugin.logError(
+						"Internal error: unable to refresh editor. No Cloud server specified in the server event."); // $NON-NLS-1$
 				return;
 			}
 			// Do not refresh if not from the same server
@@ -283,28 +283,29 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 		refreshJob.schedule();
 	}
 
-	protected void setErrorInPage(String message) {
-		if (message == null) {
+
+	protected void setMessageInPage(IStatus status) {
+		String message = status != null ? status.getMessage() : null;
+		if (message == null || status == null || status.isOK()) {
 			setMessage(null, IMessageProvider.NONE);
 		}
 		else {
-			setMessage(message, IMessageProvider.ERROR);
-		}
-	}
+			int providerStatus = IMessageProvider.NONE;
+			switch (status.getSeverity()) {
+			case IStatus.INFO:
+				providerStatus = IMessageProvider.INFORMATION;
+				break;
+			case IStatus.WARNING:
+				providerStatus = IMessageProvider.WARNING;
+				break;
+			case IStatus.ERROR:
+				providerStatus = IMessageProvider.ERROR;
+				break;
+			}
 
-	protected void setMessageInPage(IStatus status) {
-		String message = status.getMessage();
-		int providerStatus = IMessageProvider.NONE;
-		switch (status.getSeverity()) {
-		case IStatus.INFO:
-			providerStatus = IMessageProvider.INFORMATION;
-			break;
-		case IStatus.WARNING:
-			providerStatus = IMessageProvider.WARNING;
-			break;
+			setMessage(message, providerStatus);
 		}
 
-		setMessage(message, providerStatus);
 	}
 
 	/**
@@ -342,7 +343,8 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 			}
 
 			if (event instanceof CloudRefreshEvent
-					&& (this.type == CloudServerEvent.EVENT_UPDATE_SERVICES || this.type == CloudServerEvent.EVENT_SERVER_REFRESHED)
+					&& (this.type == CloudServerEvent.EVENT_UPDATE_SERVICES
+							|| this.type == CloudServerEvent.EVENT_SERVER_REFRESHED)
 					&& status.getSeverity() != IStatus.ERROR) {
 				List<CloudService> services = ((CloudRefreshEvent) event).getServices();
 				if (services == null) {
@@ -362,7 +364,7 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 			}
 			else if (error != null || status.getSeverity() == IStatus.ERROR) {
 				StatusManager.getManager().handle(status, StatusManager.LOG);
-				setErrorInPage(status.getMessage());
+				setMessageInPage(status);
 			}
 			else {
 				IModule currentModule = getMasterDetailsBlock().getCurrentModule();
@@ -370,14 +372,14 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 				// If no error is found, be sure to set null for the
 				// message to
 				// clear any error messages
-				String errorMessage = null;
+				IStatus status = null;
 				if (currentModule != null) {
 					CloudFoundryApplicationModule appModule = getCloudServer().getExistingCloudModule(currentModule);
-					if (appModule != null && appModule.getErrorMessage() != null) {
-						errorMessage = appModule.getErrorMessage();
+					if (appModule != null) {
+						status = appModule.getStatus();
 					}
 				}
-				setErrorInPage(errorMessage);
+				setMessageInPage(status);
 			}
 		}
 	}

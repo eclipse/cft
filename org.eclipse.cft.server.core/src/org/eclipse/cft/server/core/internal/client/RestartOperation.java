@@ -22,6 +22,7 @@ package org.eclipse.cft.server.core.internal.client;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.StartingInfo;
+import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.eclipse.cft.server.core.AbstractAppStateTracker;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
@@ -53,8 +54,8 @@ public class RestartOperation extends ApplicationOperation {
 	 * 
 	 */
 
-	public RestartOperation(CloudFoundryServerBehaviour behaviour, IModule[] modules) {
-		super(behaviour, modules);
+	public RestartOperation(CloudFoundryServerBehaviour behaviour, IModule[] modules, boolean clearConsole) {
+		super(behaviour, modules, clearConsole);
 	}
 
 	@Override
@@ -68,7 +69,7 @@ public class RestartOperation extends ApplicationOperation {
 		final Server server = (Server) getBehaviour().getServer();
 
 		try {
-			appModule.setErrorStatus(null);
+			appModule.setStatus(null);
 
 			final String deploymentName = appModule.getDeploymentInfo().getDeploymentName();
 
@@ -77,8 +78,8 @@ public class RestartOperation extends ApplicationOperation {
 			if (deploymentName == null) {
 				server.setModuleState(getModules(), IServer.STATE_STOPPED);
 
-				throw CloudErrorUtil
-						.toCoreException("Unable to start application. Missing application deployment name in application deployment information."); //$NON-NLS-1$
+				throw CloudErrorUtil.toCoreException(
+						"Unable to start application. Missing application deployment name in application deployment information."); //$NON-NLS-1$
 			}
 
 			SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
@@ -108,21 +109,26 @@ public class RestartOperation extends ApplicationOperation {
 
 				getBehaviour().new BehaviourRequest<Void>(startLabel) {
 					@Override
-					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress) throws CoreException, OperationCanceledException {
+					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress)
+							throws CoreException, OperationCanceledException {
 						CloudFoundryPlugin.trace("Application " + deploymentName + " starting"); //$NON-NLS-1$ //$NON-NLS-2$
 
 						client.stopApplication(deploymentName);
-						// Can be more fine-grained.  Could pass progress to client's stopApplication method.  
-						// For now, we should check for cancel at this point, prior to starting the application
+						// Can be more fine-grained. Could pass progress to
+						// client's stopApplication method.
+						// For now, we should check for cancel at this point,
+						// prior to starting the application
 						if (progress.isCanceled()) {
-							throw new OperationCanceledException(Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
+							throw new OperationCanceledException(
+									Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
 						}
 
 						StartingInfo info = client.startApplication(deploymentName);
-						
+
 						// Similarly, check for cancel at this point
 						if (progress.isCanceled()) {
-							throw new OperationCanceledException(Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
+							throw new OperationCanceledException(
+									Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
 						}
 						if (info != null) {
 
@@ -140,29 +146,27 @@ public class RestartOperation extends ApplicationOperation {
 				// This should be staging aware, in order to reattempt on
 				// staging related issues when checking if an app has
 				// started or not
-				getBehaviour().new StagingAwareRequest<Void>(NLS.bind(
-						Messages.CloudFoundryServerBehaviour_WAITING_APP_START, deploymentName)) {
+				getBehaviour().new StagingAwareRequest<Void>(
+						NLS.bind(Messages.CloudFoundryServerBehaviour_WAITING_APP_START, deploymentName)) {
 					@Override
-					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress)
+							throws CoreException {
 
 						// Now verify that the application did start
-						try {
-							if (!RestartOperation.this.getBehaviour().waitForStart(client, deploymentName, progress)) {
-								server.setModuleState(getModules(), IServer.STATE_STOPPED);
-
-								throw new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID,
-										"Starting of " + cloudModule.getDeployedApplicationName() + " timed out")); //$NON-NLS-1$ //$NON-NLS-2$
-							}
-						}
-						catch (InterruptedException e) {
+						if (RestartOperation.this.getBehaviour().getApplicationInstanceRunningTracker(cloudModule)
+								.track(progress) != InstanceState.RUNNING) {
 							server.setModuleState(getModules(), IServer.STATE_STOPPED);
-							throw new OperationCanceledException(Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
+
+							throw new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID,
+									"Starting of " + cloudModule.getDeployedApplicationName() + " timed out")); //$NON-NLS-1$ //$NON-NLS-2$
 						}
+
 						AbstractAppStateTracker curTracker = CloudFoundryPlugin.getAppStateTracker(
 								RestartOperation.this.getBehaviour().getServer().getServerType().getId(), cloudModule);
 						// Check for cancel
 						if (progress.isCanceled()) {
-							throw new OperationCanceledException(Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
+							throw new OperationCanceledException(
+									Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
 						}
 						if (curTracker != null) {
 							curTracker.setServer(RestartOperation.this.getBehaviour().getServer());
@@ -207,7 +211,7 @@ public class RestartOperation extends ApplicationOperation {
 			}
 		}
 		catch (CoreException e) {
-			appModule.setErrorStatus(e);
+			appModule.setError(e);
 			server.setModulePublishState(getModules(), IServer.PUBLISH_STATE_UNKNOWN);
 			throw e;
 		}

@@ -21,12 +21,16 @@
 package org.eclipse.cft.server.standalone.internal.application;
 
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
+import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.application.ModuleResourceApplicationDelegate;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.wst.server.core.model.IModuleResource;
 
 /**
@@ -50,6 +54,19 @@ public class StandaloneApplicationDelegate extends
 	@Override
 	public boolean shouldSetDefaultUrl(CloudFoundryApplicationModule appModule) {
 		return CloudFoundryProjectUtil.isSpringBoot(appModule);
+	}
+	
+	@Override
+	public IStatus validateDeploymentInfo(ApplicationDeploymentInfo deploymentInfo) {
+
+		IStatus status = super.validateDeploymentInfo(deploymentInfo);
+		if (status.isOK() && ((deploymentInfo.getUris() == null || deploymentInfo.getUris().isEmpty()))) {
+			String errorMessage = Messages.JavaWebApplicationDelegate_ERROR_NO_MAPPED_APP_URL;
+			status = CloudFoundryPlugin.getStatus(errorMessage, IStatus.WARNING);
+		}
+
+		return status;
+
 	}
 
 	/*

@@ -25,7 +25,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.debug.DebugLaunch;
 import org.eclipse.cft.server.core.internal.debug.DebugOperations;
-import org.eclipse.cft.server.core.internal.debug.DebugProvider;
+import org.eclipse.cft.server.core.internal.debug.IDebugProvider;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -73,7 +73,7 @@ public class DebugCommand {
 			return;
 		}
 		catch (CoreException ce) {
-			CloudFoundryPlugin.getCallback().handleError(ce.getStatus());
+			CloudFoundryPlugin.getCallback().displayAndLogError(ce.getStatus());
 		}
 	}
 
@@ -113,11 +113,9 @@ public class DebugCommand {
 	}
 
 	public static DebugCommand getCommand(CloudFoundryServer cloudServer, CloudFoundryApplicationModule appModule) {
-		DebugProvider provider = DebugProvider.getCurrent(appModule, cloudServer);
-
+		IDebugProvider provider = DebugProviderRegistry.getCurrent(cloudServer, appModule);
 		if (provider != null) {
-			final DebugLaunch launch = DebugOperations.getDebugLaunch(cloudServer, appModule, new DebugUIProvider(
-					provider));
+			final DebugLaunch launch = DebugOperations.getDebugLaunch(cloudServer, appModule, provider);
 			if (launch != null) {
 				return new DebugCommand(launch);
 			}
