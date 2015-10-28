@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<!--
+/*******************************************************************************
+ * Copyright (c) 2015 IBM Corporation and others.
+ * 
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution. 
+ * 
+ * The Eclipse Public License is available at 
+ * 
+ * http://www.eclipse.org/legal/epl-v10.html
+ * 
+ * and the Apache License v2.0 is available at 
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * You may elect to redistribute this code under either of these licenses.
+ *  
+ *  Contributors:
+ *     IBM Corporation - initial API and implementation
+ ********************************************************************************/
+-->
+<plugin>
+
+    <extension 
+    		point="org.eclipse.ui.menus">
+    	<menuContribution
+          allPopups="true"
+          class="org.eclipse.cft.server.standalone.internal.ui.ProjectExplorerMenuFactory"
+          locationURI="popup:org.eclipse.ui.projectConfigure?endof=additions">
+    	</menuContribution>
+	</extension>
+	
+    <extension
+          point="org.eclipse.cft.server.ui.applicationWizard">
+       <applicationWizardDelegate
+             class="org.eclipse.cft.server.standalone.internal.ui.StandaloneApplicationWizardDelegate"
+             providerID="org.eclipse.cft.server.application.standalone">
+       </applicationWizardDelegate>
+    </extension>
+
+    <extension
+          point="org.eclipse.cft.server.standalone.core.archiverDelegate">
+       <archiver
+             class="org.eclipse.cft.server.standalone.ui.internal.application.JavaCloudFoundryArchiver">
+       </archiver>
+    </extension>
+
+</plugin>
