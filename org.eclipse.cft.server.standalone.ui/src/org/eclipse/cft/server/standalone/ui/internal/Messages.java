@@ -26,7 +26,7 @@ import org.eclipse.osgi.util.NLS;
 public class Messages extends NLS {
 	private static final String BUNDLE_NAME =  CloudFoundryJavaStandaloneUIPlugin.PLUGIN_ID + ".internal.Messages"; //$NON-NLS-1$
 
-	public static String JavaCloudFoundryArchiver_ERROR_MODULE_OR_SERVER_NOT_DEFINED;
+	public static String JavaCloudFoundryArchiver_ERROR_ARCHIVER_NOT_INITIALIZED;
 	
 	public static String JavaCloudFoundryArchiver_ERROR_CREATE_CF_ARCHIVE;
 

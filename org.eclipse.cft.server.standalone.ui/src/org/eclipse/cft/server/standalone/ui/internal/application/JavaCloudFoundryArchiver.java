@@ -81,6 +81,8 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 	private CloudFoundryApplicationModule appModule;
 
 	private CloudFoundryServer cloudServer;
+	
+	private boolean initialized = false;
 
 	private static final String META_FOLDER_NAME = "META-INF"; //$NON-NLS-1$
 
@@ -90,14 +92,17 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 			CloudFoundryServer cloudServer) {
 		this.appModule = appModule;
 		this.cloudServer = cloudServer;
+		// Need to know whether initalized or not to mimic the earlier behavior where the it was
+		// initialized within the constructor. Now it is being created from an extension point. 
+		initialized = true;
 	}
 
 	public ApplicationArchive getApplicationArchive(IProgressMonitor monitor)
 			throws CoreException {
 		
-		if (this.appModule == null || this.cloudServer == null) {
-			// Typically due to not invoking initialize() prior to this call
-			throw CloudErrorUtil.toCoreException(Messages.JavaCloudFoundryArchiver_ERROR_MODULE_OR_SERVER_NOT_DEFINED);
+		if (!initialized) {
+			// Seems like initialize() wasn't invoked prior to this call
+			throw CloudErrorUtil.toCoreException(Messages.JavaCloudFoundryArchiver_ERROR_ARCHIVER_NOT_INITIALIZED);
 		}
 
 		ApplicationArchive archive = JavaWebApplicationDelegate
