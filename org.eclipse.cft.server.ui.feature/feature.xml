@@ -37,13 +37,6 @@
          unpack="false"/>
 
    <plugin
-         id="org.eclipse.cft.server.branding"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
          id="org.eclipse.cft.server.standalone"
          download-size="0"
          install-size="0"
@@ -52,6 +45,13 @@
 
    <plugin
          id="org.eclipse.cft.server.verify.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.cft.server.branding.ui"
          download-size="0"
          install-size="0"
          version="0.0.0"
