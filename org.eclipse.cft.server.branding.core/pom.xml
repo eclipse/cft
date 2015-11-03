@@ -8,7 +8,7 @@
     <artifactId>org.eclipse.cft.server.parent</artifactId>
     <version>0.9.0-SNAPSHOT</version>
   </parent>
-  <artifactId>org.eclipse.cft.server.branding</artifactId>
+  <artifactId>org.eclipse.cft.server.branding.core</artifactId>
   <packaging>eclipse-plugin</packaging>
 
   <build>
