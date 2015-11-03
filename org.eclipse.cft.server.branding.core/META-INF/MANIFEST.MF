@@ -1,0 +1,17 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Cloud Foundry Tools
+Bundle-SymbolicName: org.eclipse.cft.server.branding.core;singleton:=true
+Bundle-Version: 0.9.0.qualifier
+Bundle-Vendor: Pivotal Software, Inc.
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-ActivationPolicy: lazy
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.wst.server.core,
+ org.eclipse.wst.server.ui,
+ org.eclipse.wst.common.project.facet.core,
+ org.eclipse.jst.server.core,
+ org.eclipse.jst.common.project.facet.core,
+ org.eclipse.cft.server.core,
+ org.eclipse.cft.server.ui

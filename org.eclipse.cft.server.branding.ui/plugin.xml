@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<!--
+/*******************************************************************************
+ * Copyright (c) 2012, 2013 Pivotal Software, Inc.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *     Pivotal Software, Inc. - initial API and implementation
+ *******************************************************************************/
+-->
+<plugin>
+	<extension point="org.eclipse.wst.server.ui.serverImages">
+		<image 
+			id="org.cloudfoundry.appcloudserver" 
+			icon="icons/obj16/cloud_obj.png"
+			typeIds="cloudfoundry.standalone.app, org.cloudfoundry.appcloudserver.10, org.cloudfoundry.appcloudserver.runtime.10" />
+	</extension>
+	<extension point="org.eclipse.wst.server.ui.wizardFragments">
+		<fragment
+			id="org.cloudfoundry.appcloudserver.10"
+			typeIds="org.cloudfoundry.appcloudserver.10"
+			class="org.eclipse.cft.server.ui.internal.wizards.CloudFoundryServerWizardFragment"/>
+	</extension>
+	<extension point="org.eclipse.rse.core.systemTypes">
+		<systemType
+			icon="icons/obj16/cloud_obj.png"
+			iconLive="icons/obj16/cloud_obj.png"
+			id="org.cloudfoundry.cloudfoundryserver"
+			label="Pivotal"
+			name="Pivotal"
+			subsystemConfigurationIds="cloudserver.applications">
+		</systemType>
+	</extension>
+ <extension
+       point="org.eclipse.cft.server.ui.brandingUI">
+    <service
+          name="Cloud Foundry"
+          serverTypeId="org.cloudfoundry.appcloudserver.10"
+          wizardBanner="icons/wizban/wizban_cloudfoundry.png">
+    </service>
+ </extension>
+</plugin>

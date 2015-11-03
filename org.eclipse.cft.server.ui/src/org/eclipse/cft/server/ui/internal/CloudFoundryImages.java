@@ -121,7 +121,7 @@ public class CloudFoundryImages {
 
 	public static ImageDescriptor getWizardBanner(String serverTypeId) {
 		IConfigurationElement config = CloudFoundryBrandingExtensionPoint.getConfigurationElement(serverTypeId);
-		String wizBanner = CloudFoundryBrandingExtensionPoint.getWizardBannerPath(serverTypeId);
+		String wizBanner = CloudFoundryBrandingUIExtensionPoint.getWizardBannerPath(serverTypeId);
 		if (config != null && wizBanner != null && wizBanner.trim().length() > 0) {
 			String bundle = config.getContributor().getName();
 			return AbstractUIPlugin.imageDescriptorFromPlugin(bundle, wizBanner);
