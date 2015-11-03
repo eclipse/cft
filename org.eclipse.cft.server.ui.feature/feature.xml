@@ -4,7 +4,7 @@
       label="%featureName"
       version="0.9.0.qualifier"
       provider-name="%providerName"
-      plugin="org.eclipse.cft.server.branding">
+      plugin="org.eclipse.cft.server.branding.ui">
 
    <description>
       %description
@@ -37,13 +37,6 @@
          unpack="false"/>
 
    <plugin
-         id="org.eclipse.cft.server.standalone"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
          id="org.eclipse.cft.server.verify.ui"
          download-size="0"
          install-size="0"
@@ -52,6 +45,13 @@
 
    <plugin
          id="org.eclipse.cft.server.branding.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.cft.server.standalone.ui"
          download-size="0"
          install-size="0"
          version="0.0.0"

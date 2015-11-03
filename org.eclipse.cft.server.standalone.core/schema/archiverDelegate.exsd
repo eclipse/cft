@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!-- Schema file written by PDE -->
-<schema targetNamespace="org.eclipse.cft.server.standalone" xmlns="http://www.w3.org/2001/XMLSchema">
+<schema targetNamespace="org.eclipse.cft.server.standalone.core" xmlns="http://www.w3.org/2001/XMLSchema">
 <annotation>
       <appinfo>
-         <meta.schema plugin="org.eclipse.cft.server.standalone" id="archiverDelegate" name="Cloud Foundry Archiver Delegate"/>
+         <meta.schema plugin="org.eclipse.cft.server.standalone.core" id="archiverDelegate" name="Cloud Foundry Archiver Delegate"/>
       </appinfo>
       <documentation>
          This extension point provides a mechanism to plug-in specific archivers
