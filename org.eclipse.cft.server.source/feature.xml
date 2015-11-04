@@ -52,16 +52,30 @@
          install-size="0"
          version="0.0.0"
          unpack="false"/>
-
+         
    <plugin
-         id="org.eclipse.cft.server.branding.source"
+         id="org.eclipse.cft.server.branding.core.source"
          download-size="0"
          install-size="0"
          version="0.0.0"
          unpack="false"/>
 
    <plugin
-         id="org.eclipse.cft.server.standalone.source"
+         id="org.eclipse.cft.server.standalone.core.source"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.cft.server.branding.ui.source"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.cft.server.standalone.ui.source"
          download-size="0"
          install-size="0"
          version="0.0.0"
