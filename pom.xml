@@ -26,8 +26,10 @@
     <module>org.eclipse.cft.server.tests</module>
     <module>org.eclipse.cft.server.ui</module>
     <module>org.eclipse.cft.server.verify.ui</module>
-    <module>org.eclipse.cft.server.standalone</module>
-    <module>org.eclipse.cft.server.branding</module>
+    <module>org.eclipse.cft.server.standalone.core</module>
+    <module>org.eclipse.cft.server.standalone.ui</module>
+    <module>org.eclipse.cft.server.branding.core</module>
+    <module>org.eclipse.cft.server.branding.ui</module>
     <module>org.eclipse.cft.server.site</module>
     <module>org.eclipse.cft.server.target</module>
     <module>org.eclipse.cft.server.source</module>
