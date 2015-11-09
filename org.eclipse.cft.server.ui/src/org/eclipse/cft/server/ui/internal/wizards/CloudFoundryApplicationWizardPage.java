@@ -20,8 +20,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.wizards;
 
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,8 +28,8 @@ import java.util.regex.Pattern;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.ModuleCache;
-import org.eclipse.cft.server.core.internal.ValueValidationUtil;
 import org.eclipse.cft.server.core.internal.ModuleCache.ServerData;
+import org.eclipse.cft.server.core.internal.ValueValidationUtil;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
@@ -82,17 +81,17 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 	protected final ApplicationWizardDescriptor descriptor;
 
 	// Preserving the old constructor to avoid API breakage
-	public CloudFoundryApplicationWizardPage(CloudFoundryServer server,
-			CloudFoundryDeploymentWizardPage deploymentPage, CloudFoundryApplicationModule module,
-			ApplicationWizardDescriptor descriptor) {
+	public CloudFoundryApplicationWizardPage(CloudFoundryServer server, CloudFoundryDeploymentWizardPage deploymentPage,
+			CloudFoundryApplicationModule module, ApplicationWizardDescriptor descriptor) {
 		super(Messages.CloudFoundryApplicationWizardPage_TEXT_DEPLOY_WIZ, null, null);
 		this.server = server;
-		// Simply ignore the deploymentPage, this is preserved to avoid API breakage
+		// Simply ignore the deploymentPage, this is preserved to avoid API
+		// breakage
 		this.module = module;
 		this.descriptor = descriptor;
 		this.serverTypeId = module.getServerTypeId();
 	}
-	
+
 	public CloudFoundryApplicationWizardPage(CloudFoundryServer server, CloudFoundryApplicationModule module,
 			ApplicationWizardDescriptor descriptor) {
 		super(Messages.CloudFoundryApplicationWizardPage_TEXT_DEPLOY_WIZ, null, null);
@@ -104,8 +103,8 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 
 	protected void init() {
 		appName = descriptor.getDeploymentInfo().getDeploymentName();
-		buildpack = descriptor.getDeploymentInfo().getStaging() != null ? descriptor.getDeploymentInfo().getStaging()
-				.getBuildpackUrl() : null;
+		buildpack = descriptor.getDeploymentInfo().getStaging() != null
+				? descriptor.getDeploymentInfo().getStaging().getBuildpackUrl() : null;
 	}
 
 	protected CloudFoundryApplicationWizard getApplicationWizard() {
@@ -175,17 +174,17 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 
 		return composite;
 	}
-	
+
 	protected void createManifestSection(Composite composite) {
-		
+
 		Label emptyLabel = new Label(composite, SWT.NONE);
 		emptyLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 2, 1));
-		
+
 		final Button saveToManifest = new Button(composite, SWT.CHECK);
 		saveToManifest.setText(Messages.CloudFoundryApplicationWizardPage_BUTTON_SAVE_MANIFEST);
 		saveToManifest.setToolTipText(Messages.CloudFoundryApplicationWizardPage_TEXT_SAVE_MANIFEST_TOOLTIP);
 		saveToManifest.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, false, false, 2, 1));
-		
+
 		saveToManifest.setSelection(false);
 
 		saveToManifest.addSelectionListener(new SelectionAdapter() {
@@ -211,17 +210,20 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 		// buildpack URL is optional, so an empty URL is acceptable
 		if (!ValueValidationUtil.isEmpty(buildpack)) {
 			try {
-				URL urlObject = new URL(buildpack);
-				String host = urlObject.getHost();
-				if (host == null || host.length() == 0) {
-					status = CloudFoundryPlugin.getErrorStatus(Messages.COMMONTXT_ENTER_VALID_URL);
+				// Allow for names and URLs
+				URI uriObject = URI.create(buildpack);
+				if (uriObject.isAbsolute()) {
+					String host = uriObject.getHost();
+					if (host == null || host.length() == 0) {
+						status = CloudFoundryPlugin.getErrorStatus(Messages.COMMONTXT_ENTER_VALID_URL);
+					}
 				}
-				else {
+				if (status.isOK()) {
 					// Only set valid buildpack URLs
 					descriptor.setBuildpack(buildpack);
 				}
 			}
-			catch (MalformedURLException e) {
+			catch (IllegalArgumentException e) {
 				status = CloudFoundryPlugin.getErrorStatus(Messages.COMMONTXT_ENTER_VALID_URL);
 			}
 		}
@@ -284,7 +286,7 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 			nameText.addModifyListener(new ModifyListener() {
 				public void modifyText(ModifyEvent e) {
 					appName = nameText.getText();
-					
+
 					// Utilize the observer to do the notification
 					descriptor.getDeploymentInfo().setDeploymentName(appName);
 					// If first time initialising, dont update the wizard
