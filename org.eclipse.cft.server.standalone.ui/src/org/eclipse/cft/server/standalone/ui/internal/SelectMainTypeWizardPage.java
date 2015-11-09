@@ -18,11 +18,10 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.standalone.ui.internal.ui;
+package org.eclipse.cft.server.standalone.ui.internal;
 
 import java.util.List;
 
-import org.eclipse.cft.server.standalone.ui.internal.Messages;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;

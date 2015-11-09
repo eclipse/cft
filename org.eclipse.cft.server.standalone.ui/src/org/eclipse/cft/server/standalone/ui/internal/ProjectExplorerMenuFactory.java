@@ -18,13 +18,12 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.standalone.ui.internal.ui;
+package org.eclipse.cft.server.standalone.ui.internal;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.cft.server.standalone.core.internal.application.StandaloneFacetHandler;
-import org.eclipse.cft.server.standalone.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.actions.AbstractMenuContributionFactory;
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IProject;

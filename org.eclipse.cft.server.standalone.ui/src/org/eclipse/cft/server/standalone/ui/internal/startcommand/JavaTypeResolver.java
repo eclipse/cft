@@ -25,7 +25,7 @@ import java.util.List;
 
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.standalone.ui.internal.Messages;
-import org.eclipse.cft.server.standalone.ui.internal.ui.SelectMainTypeWizard;
+import org.eclipse.cft.server.standalone.ui.internal.SelectMainTypeWizard;
 import org.eclipse.cft.server.ui.internal.CloudUiUtil;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.IJavaElement;

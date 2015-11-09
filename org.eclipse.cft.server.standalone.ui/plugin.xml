@@ -28,7 +28,7 @@
     		point="org.eclipse.ui.menus">
     	<menuContribution
           allPopups="true"
-          class="org.eclipse.cft.server.standalone.internal.ui.ProjectExplorerMenuFactory"
+          class="org.eclipse.cft.server.standalone.ui.internal.ProjectExplorerMenuFactory"
           locationURI="popup:org.eclipse.ui.projectConfigure?endof=additions">
     	</menuContribution>
 	</extension>
@@ -36,7 +36,7 @@
     <extension
           point="org.eclipse.cft.server.ui.applicationWizard">
        <applicationWizardDelegate
-             class="org.eclipse.cft.server.standalone.internal.ui.StandaloneApplicationWizardDelegate"
+             class="org.eclipse.cft.server.standalone.ui.internal.StandaloneApplicationWizardDelegate"
              providerID="org.eclipse.cft.server.application.standalone">
        </applicationWizardDelegate>
     </extension>

@@ -45,7 +45,7 @@
       <extension
          point="org.eclipse.wst.server.core.moduleArtifactAdapters">
       <moduleArtifactAdapter
-            class="org.eclipse.cft.server.standalone.internal.application.StandaloneArtifactAdapter"
+            class="org.eclipse.cft.server.standalone.core.internal.application.StandaloneArtifactAdapter"
             id="org.eclipse.cft.server.core.StandaloneArtifactAdapter"
             priority="1">
          <enablement>
@@ -60,7 +60,7 @@
     <extension
          point="org.eclipse.wst.server.core.moduleFactories">
       <moduleFactory
-            class="org.eclipse.cft.server.standalone.internal.application.StandAloneModuleFactory"
+            class="org.eclipse.cft.server.standalone.core.internal.application.StandAloneModuleFactory"
             id="org.eclipse.cft.server.core.StandAloneModuleFactory"
             order="1"
             projects="true">
