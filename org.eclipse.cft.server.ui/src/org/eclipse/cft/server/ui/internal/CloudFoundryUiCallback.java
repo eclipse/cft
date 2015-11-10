@@ -48,7 +48,6 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.progress.UIJob;
 
 /**
  * @author Christian Dupuis
@@ -217,29 +216,26 @@ public class CloudFoundryUiCallback extends CloudFoundryCallback {
 
 			CloudFoundryPlugin.log(status);
 
-			UIJob job = new UIJob(Messages.CloudFoundryUiCallback_JOB_CF_ERROR) {
-				public IStatus runInUIThread(IProgressMonitor monitor) {
+			Display.getDefault().asyncExec(new Runnable() {
+
+				@Override
+				public void run() {
 					Shell shell = CloudUiUtil.getShell();
 					if (shell != null) {
-						new MessageDialog(shell, Messages.CloudFoundryUiCallback_ERROR_CALLBACK_TITLE, null,
-								status.getMessage(), MessageDialog.ERROR, new String[] { Messages.COMMONTXT_OK }, 0)
-										.open();
+						MessageDialog.openError(shell, Messages.CloudFoundryUiCallback_ERROR_CALLBACK_TITLE,
+								status.getMessage());
 					}
-					return Status.OK_STATUS;
 				}
-			};
-			job.setSystem(true);
-			job.schedule();
-
+			});
 		}
 	}
-	
+
 	public boolean prompt(final String title, final String message) {
-		final boolean[] shouldContinue = new boolean[] {false};
+		final boolean[] shouldContinue = new boolean[] { false };
 		Display.getDefault().syncExec(new Runnable() {
 
 			public void run() {
-				
+
 				Shell shell = CloudUiUtil.getShell();
 				if (shell != null) {
 					shouldContinue[0] = MessageDialog.openConfirm(shell, title, message);

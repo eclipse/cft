@@ -722,7 +722,6 @@ public class Messages extends NLS {
 
 	public static String CloudFoundryUiCallback_ERROR_CALLBACK_TITLE;
 
-	public static String CloudFoundryUiCallback_JOB_CF_ERROR;
 
 	public static String CloudFoundryURLNavigation_TEXT_OPEN_LABEL;
 
