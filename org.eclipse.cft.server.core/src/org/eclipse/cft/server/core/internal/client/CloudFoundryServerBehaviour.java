@@ -70,6 +70,7 @@ import org.eclipse.cft.server.core.internal.RefreshModulesHandler;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
+import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
 import org.eclipse.cft.server.core.internal.jrebel.CloudRebelAppHandler;
 import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
 import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
@@ -142,12 +143,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	private CloudBehaviourOperations cloudBehaviourOperations;
 
-	/*
-	 * FIXNS: Until V2 MCF is released, disable debugging support for V2, as
-	 * public clouds also indicate they support debug.
-	 */
-	private DebugSupportCheck isDebugModeSupported = DebugSupportCheck.UNSUPPORTED;
-
 	private IServerListener serverListener = new IServerListener() {
 
 		public void serverChanged(ServerEvent event) {
@@ -212,20 +207,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	/**
-	 * Determine if server supports debug mode, if necessary by sending a
-	 * request to the server. The information is cached for quicker, subsequent
-	 * checks.
-	 * 
-	 */
-	protected synchronized void requestAllowDebug(CloudFoundryOperations client) throws CoreException {
-		// Check the debug support of the server once per working copy of server
-		if (isDebugModeSupported == DebugSupportCheck.UNCHECKED) {
-			isDebugModeSupported = client.getCloudInfo().getAllowDebug() ? DebugSupportCheck.SUPPORTED
-					: DebugSupportCheck.UNSUPPORTED;
-		}
-	}
-
-	/**
 	 * 
 	 * @return Handles refresh of modules for this server behaviour. Never null.
 	 */
@@ -241,6 +222,20 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			refreshHandler = new RefreshModulesHandler(server);
 		}
 		return refreshHandler;
+	}
+
+	/**
+	 * 
+	 * @return non-null debug launcher
+	 */
+	public ApplicationDebugLauncher getDebugLauncher() {
+		try {
+			return CloudFoundryPlugin.getCallback().getDebugLauncher(getCloudFoundryServer());
+		}
+		catch (CoreException e) {
+			CloudFoundryPlugin.logError(e);
+		}
+		return ApplicationDebugLauncher.NO_DEBUG;
 	}
 
 	/**

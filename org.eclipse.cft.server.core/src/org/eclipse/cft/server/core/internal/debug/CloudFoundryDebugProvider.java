@@ -49,7 +49,18 @@ public abstract class CloudFoundryDebugProvider {
 
 	public String getLaunchLabel(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer,
 			int appInstance) {
-		return getApplicationDebugLaunchId(appModule, cloudServer, appInstance);
+		StringBuilder idBuffer = new StringBuilder();
+
+		idBuffer.append(cloudServer.getUrl());
+		idBuffer.append('-');
+		idBuffer.append(cloudServer.getCloudFoundrySpace().getOrgName());
+		idBuffer.append('-');
+		idBuffer.append(cloudServer.getCloudFoundrySpace().getSpaceName());
+		idBuffer.append('-');
+		idBuffer.append(appModule.getDeployedApplicationName());
+		idBuffer.append('-');
+		idBuffer.append(appInstance);
+		return idBuffer.toString();
 	}
 
 	public String getApplicationDebugLaunchId(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer,

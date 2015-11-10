@@ -30,10 +30,12 @@ import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.ModuleChangeEvent;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
+import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
 import org.eclipse.cft.server.core.internal.jrebel.CloudRebelAppHandler;
 import org.eclipse.cft.server.core.internal.log.CloudLog;
 import org.eclipse.cft.server.ui.internal.console.ConsoleManagerRegistry;
 import org.eclipse.cft.server.ui.internal.console.StandardLogContentType;
+import org.eclipse.cft.server.ui.internal.debug.ApplicationDebugUILauncher;
 import org.eclipse.cft.server.ui.internal.wizards.CloudFoundryCredentialsWizard;
 import org.eclipse.cft.server.ui.internal.wizards.DeleteServicesWizard;
 import org.eclipse.core.runtime.CoreException;
@@ -248,5 +250,9 @@ public class CloudFoundryUiCallback extends CloudFoundryCallback {
 	public CloudRebelAppHandler getJRebelHandler() {
 		CloudRebelAppHandler handler = new CloudRebelUIHandler();
 		return handler;
+	}
+
+	public ApplicationDebugLauncher getDebugLauncher(CloudFoundryServer cloudServer) {
+		return new ApplicationDebugUILauncher();
 	}
 }

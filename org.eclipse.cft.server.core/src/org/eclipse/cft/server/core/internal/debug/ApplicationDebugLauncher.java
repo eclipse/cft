@@ -20,6 +20,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.debug;
 
+import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
@@ -36,6 +37,15 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
 public abstract class ApplicationDebugLauncher {
+
+	public static final ApplicationDebugLauncher NO_DEBUG = new ApplicationDebugLauncher() {
+
+		@Override
+		public void launch(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer, int appInstance,
+				int remoteDebugPort) throws CoreException {
+			throw CloudErrorUtil.toCoreException("Debug not supported for " + cloudServer.getServer().getId()); //$NON-NLS-1$
+		}
+	};
 
 	abstract public void launch(final CloudFoundryApplicationModule appModule, final CloudFoundryServer cloudServer,
 			final int appInstance, final int remoteDebugPort) throws CoreException;

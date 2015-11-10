@@ -63,10 +63,11 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 		List<EnvironmentVariable> vars = info.getEnvVariables();
 		EnvironmentVariable javaOpts = getDebugEnvironment(info);
 
-		if (!containsDebugOption(javaOpts)
-		// && applicationHandler.shouldRestartApp(appModule, cloudServer,
-		// debugPort, appInstance)
-		) {
+		IModule[] mod = new IModule[] { appModule.getLocalModule() };
+
+		boolean restart = CloudFoundryProperties.isModuleStopped.testProperty(mod, cloudServer);
+
+		if (!containsDebugOption(javaOpts)) {
 
 			if (javaOpts == null) {
 				javaOpts = new EnvironmentVariable();
@@ -85,16 +86,18 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 			cloudServer.getBehaviour().operations().environmentVariablesUpdate(appModule.getLocalModule(),
 					appModule.getDeployedApplicationName(), vars).run(monitor);
 
+			restart = true;
+
 			printToConsole(appModule, cloudServer, "JAVA_OPTS with debug options successfully set", false); //$NON-NLS-1$
 			printToConsole(appModule, cloudServer, "JAVA_OPTS: " + javaOpts.getValue(), false); //$NON-NLS-1$
+		}
 
+		if (restart) {
 			printToConsole(appModule, cloudServer,
 					"Restarting application in debug mode - " + appModule.getDeployedApplicationName(), false); //$NON-NLS-1$
-			IModule[] mod = new IModule[] { appModule.getLocalModule() };
 
 			cloudServer.getBehaviour().operations().applicationDeployment(mod, ApplicationAction.START, false)
 					.run(monitor);
-
 		}
 	}
 

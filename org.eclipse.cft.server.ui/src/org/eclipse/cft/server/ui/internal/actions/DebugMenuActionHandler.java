@@ -31,7 +31,6 @@ import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
 import org.eclipse.cft.server.core.internal.debug.CloudFoundryDebugDelegate;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
-import org.eclipse.cft.server.ui.internal.debug.ApplicationDebugUILauncher;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -65,7 +64,7 @@ public class DebugMenuActionHandler extends MenuActionHandler<IServerModule> {
 		public DebugAction(CloudFoundryServer cloudServer, CloudFoundryApplicationModule appModule) {
 			this.cloudServer = cloudServer;
 			this.appModule = appModule;
-			this.launcher = new ApplicationDebugUILauncher();
+			this.launcher = cloudServer.getBehaviour().getDebugLauncher();
 			this.appInstance = 0;
 			this.remoteDebugPort = CloudFoundryDebugDelegate.DEFAULT_REMOTE_PORT;
 

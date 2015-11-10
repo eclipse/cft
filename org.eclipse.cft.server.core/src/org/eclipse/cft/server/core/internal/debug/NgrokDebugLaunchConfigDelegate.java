@@ -71,6 +71,10 @@ public class NgrokDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 		List<EnvironmentVariable> vars = info.getEnvVariables();
 		EnvironmentVariable javaOpts = getDebugEnvironment(info);
 
+		IModule[] mod = new IModule[] { appModule.getLocalModule() };
+
+		boolean restart = CloudFoundryProperties.isModuleStopped.testProperty(mod, cloudServer);
+
 		if (!NgrokDebugProvider.containsDebugOption(javaOpts)) {
 			if (javaOpts == null) {
 				javaOpts = new EnvironmentVariable();
@@ -92,8 +96,11 @@ public class NgrokDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 			cloudServer.getBehaviour().operations().environmentVariablesUpdate(appModule.getLocalModule(),
 					appModule.getDeployedApplicationName(), vars).run(monitor);
 
-			IModule[] mod = new IModule[] { appModule.getLocalModule() };
+			restart = true;
 
+		}
+
+		if (restart) {
 			cloudServer.getBehaviour().operations().applicationDeployment(mod, ApplicationAction.START, false)
 					.run(monitor);
 		}

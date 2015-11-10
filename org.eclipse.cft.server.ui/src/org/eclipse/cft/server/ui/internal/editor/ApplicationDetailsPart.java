@@ -215,7 +215,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		this.serverBehaviour = cloudServer.getBehaviour();
 		this.provideServices = CloudFoundryBrandingExtensionPoint
 				.getProvideServices(editorPage.getServer().getServerType().getId());
-		this.debugLauncher = new ApplicationDebugUILauncher();
+		this.debugLauncher = serverBehaviour.getDebugLauncher();
 	}
 
 	public void createContents(Composite parent) {
@@ -257,21 +257,29 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 
 		int appInstance = getSelectedAppInstance();
 
-		if (!debugLauncher.supportsDebug(appModule, cloudServer)) {
+		if (!debugLauncher.supportsDebug(appModule, cloudServer)
+				|| debugLauncher.isConnectedToDebugger(appModule, cloudServer, appInstance)) {
 			debugButton.setEnabled(false);
 			debugButton.setText(Messages.ApplicationDetailsPart_TEXT_DEBUG);
 		}
 		else {
 			debugButton.setEnabled(true);
 
-			if (!debugLauncher.isConnectedToDebugger(appModule, cloudServer, appInstance)) {
-				debugButton.setText(Messages.ApplicationDetailsPart_TEXT_DEBUG);
-				debugButton.setData(DebugOperationType.Debug);
-			}
-			else {
-				debugButton.setText(Messages.ApplicationDetailsPart_TEXT_DEBUG_DISCONNECT);
-				debugButton.setData(DebugOperationType.Terminate);
-			}
+			debugButton.setText(Messages.ApplicationDetailsPart_TEXT_DEBUG);
+			debugButton.setData(DebugOperationType.Debug);
+
+			// Enable when listener is registered in debug framework to switch
+			// to "DISCONNECT" when
+			// debugger is actually connected.
+			// if (!debugLauncher.isConnectedToDebugger(appModule, cloudServer,
+			// appInstance)) {
+			// debugButton.setText(Messages.ApplicationDetailsPart_TEXT_DEBUG);
+			// debugButton.setData(DebugOperationType.Debug);
+			// }
+			// else {
+			// debugButton.setText(Messages.ApplicationDetailsPart_TEXT_DEBUG_DISCONNECT);
+			// debugButton.setData(DebugOperationType.Terminate);
+			// }
 		}
 
 		debugButton.getParent().layout(true);

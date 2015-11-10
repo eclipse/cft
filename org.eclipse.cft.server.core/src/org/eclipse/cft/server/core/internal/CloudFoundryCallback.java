@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
+import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
 import org.eclipse.cft.server.core.internal.jrebel.CloudRebelAppHandler;
 import org.eclipse.cft.server.core.internal.log.CloudLog;
 import org.eclipse.core.runtime.CoreException;
@@ -120,12 +121,16 @@ public abstract class CloudFoundryCallback {
 	public void displayAndLogError(IStatus status) {
 
 	}
-	
+
 	public boolean prompt(final String title, final String message) {
 		return false;
 	}
 
 	public CloudRebelAppHandler getJRebelHandler() {
+		return null;
+	}
+
+	public ApplicationDebugLauncher getDebugLauncher(CloudFoundryServer cloudServer) {
 		return null;
 	}
 }
