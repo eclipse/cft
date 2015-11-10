@@ -20,39 +20,56 @@
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.actions;
 
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
-import org.eclipse.cft.server.ui.internal.DebugCommand;
+import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
+import org.eclipse.cft.server.core.internal.debug.CloudFoundryDebugDelegate;
 import org.eclipse.cft.server.ui.internal.editor.CloudFoundryApplicationsEditorPage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 public class DebugApplicationEditorAction extends EditorAction {
 
-	private final DebugCommand debugCommand;
+	protected final CloudFoundryApplicationModule appModule;
 
-	public DebugApplicationEditorAction(CloudFoundryApplicationsEditorPage editorPage, DebugCommand debugCommand) {
+	protected final CloudFoundryServer cloudServer;
+
+	protected final int appInstance;
+
+	protected final int remoteDebugPort;
+
+	protected final ApplicationDebugLauncher launcher;
+
+	public DebugApplicationEditorAction(CloudFoundryApplicationsEditorPage editorPage,
+			CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer, int appInstance,
+			int remoteDebugPort, ApplicationDebugLauncher launcher) {
 		super(editorPage, RefreshArea.DETAIL);
-		this.debugCommand = debugCommand;
+		this.appModule = appModule;
+		this.cloudServer = cloudServer;
+		this.appInstance = appInstance;
+		this.launcher = launcher;
+		this.remoteDebugPort = remoteDebugPort;
+	}
+
+	public DebugApplicationEditorAction(CloudFoundryApplicationsEditorPage editorPage,
+			CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer, int appInstance,
+			ApplicationDebugLauncher launcher) {
+		this(editorPage, appModule, cloudServer, appInstance, CloudFoundryDebugDelegate.DEFAULT_REMOTE_PORT, launcher);
 	}
 
 	public ICloudFoundryOperation getOperation(IProgressMonitor monitor) throws CoreException {
 		return new ICloudFoundryOperation() {
 
 			public void run(IProgressMonitor monitor) throws CoreException {
-				if (debugCommand != null) {
-					runDebugOperation(debugCommand, monitor);
-				}
+				launcher.launch(appModule, cloudServer, appInstance, remoteDebugPort);
 			}
 		};
 	}
 
-	protected void runDebugOperation(DebugCommand command, IProgressMonitor monitor) throws CoreException {
-		command.debug(monitor);
-	}
-
 	public String getJobName() {
-		return getOperationLabel()
-				+ " - " + debugCommand.getLaunch().getApplicationModule().getDeployedApplicationName(); //$NON-NLS-1$
+		return getOperationLabel() + " - " //$NON-NLS-1$
+				+ appModule.getDeployedApplicationName();
 	}
 
 	protected String getOperationLabel() {

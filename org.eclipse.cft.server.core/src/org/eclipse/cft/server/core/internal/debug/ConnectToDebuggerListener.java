@@ -68,7 +68,7 @@ public class ConnectToDebuggerListener implements IDebugEventSetListener {
 						if (eventSource.equals(debugTarget) && debugTarget.isDisconnected()) {
 
 							DebugPlugin.getDefault().removeDebugEventListener(this);
-							DebugOperations.terminateLaunch(launchId);
+							ApplicationDebugLauncher.terminateLaunch(launchId);
 							return;
 						}
 					}

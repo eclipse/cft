@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,40 +22,53 @@ package org.eclipse.cft.server.core.internal.debug;
 
 public class DebugConnectionDescriptor {
 
-	private final String ip;
+	private final String host;
 
 	private final int port;
 
-	public DebugConnectionDescriptor(String ip, int port) {
+	private final int timeout;
 
-		this.ip = ip;
-		this.port = port;
+	public static final int DEFAULT_TIMEOUT = 30 * 1000;
+
+	public DebugConnectionDescriptor(String host, int port) {
+		this(host, port, DEFAULT_TIMEOUT);
 	}
 
-	public String getIp() {
-		return ip;
+	public DebugConnectionDescriptor(String ip, int port, int timeout) {
+		this.host = ip;
+		this.port = port;
+		this.timeout = timeout;
+	}
+
+	public String getHost() {
+		return host;
 	}
 
 	public int getPort() {
 		return port;
 	}
 
-	public boolean areValidIPandPort() {
-		return ip != null && ip.length() > 0 && port > 0;
+	public int getTimeout() {
+		return timeout;
+	}
+
+	public boolean isValid() {
+		return host != null && host.length() > 0 && port > 0;
+	}
+
+	@Override
+	public String toString() {
+		return "DebugConnectionDescriptor [ip=" + host + ", port=" + port + "]";
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((ip == null) ? 0 : ip.hashCode());
+		result = prime * result + ((host == null) ? 0 : host.hashCode());
 		result = prime * result + port;
+		result = prime * result + timeout;
 		return result;
-	}
-
-	@Override
-	public String toString() {
-		return "DebugConnectionDescriptor [ip=" + ip + ", port=" + port + "]";
 	}
 
 	@Override
@@ -67,13 +80,15 @@ public class DebugConnectionDescriptor {
 		if (getClass() != obj.getClass())
 			return false;
 		DebugConnectionDescriptor other = (DebugConnectionDescriptor) obj;
-		if (ip == null) {
-			if (other.ip != null)
+		if (host == null) {
+			if (other.host != null)
 				return false;
 		}
-		else if (!ip.equals(other.ip))
+		else if (!host.equals(other.host))
 			return false;
 		if (port != other.port)
+			return false;
+		if (timeout != other.timeout)
 			return false;
 		return true;
 	}

@@ -20,20 +20,29 @@
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.actions;
 
-import org.eclipse.cft.server.ui.internal.DebugCommand;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
+import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
+import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
 import org.eclipse.cft.server.ui.internal.editor.CloudFoundryApplicationsEditorPage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 public class TerminateDebugEditorAction extends DebugApplicationEditorAction {
 
-	public TerminateDebugEditorAction(CloudFoundryApplicationsEditorPage editorPage, DebugCommand debugCommand) {
-		super(editorPage, debugCommand);
+	public TerminateDebugEditorAction(CloudFoundryApplicationsEditorPage editorPage,
+			CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer, int appInstance,
+			ApplicationDebugLauncher launcher) {
+		super(editorPage, appModule, cloudServer, appInstance, launcher);
 	}
 
-	@Override
-	protected void runDebugOperation(DebugCommand command, IProgressMonitor monitor) throws CoreException {
-		command.terminate();
+	public ICloudFoundryOperation getOperation(IProgressMonitor monitor) throws CoreException {
+		return new ICloudFoundryOperation() {
+
+			public void run(IProgressMonitor monitor) throws CoreException {
+				launcher.terminateLaunch(appModule, cloudServer, appInstance);
+			}
+		};
 	}
 
 	@Override

@@ -42,13 +42,13 @@ import org.eclipse.cft.server.core.internal.application.ModuleChangeEvent;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
+import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
 import org.eclipse.cft.server.core.internal.debug.CloudFoundryProperties;
 import org.eclipse.cft.server.core.internal.debug.DebugOperationType;
 import org.eclipse.cft.server.core.internal.jrebel.CloudRebelAppHandler;
 import org.eclipse.cft.server.rse.internal.ConfigureRemoteCloudFoundryAction;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.CloudUiUtil;
-import org.eclipse.cft.server.ui.internal.DebugCommand;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.actions.DebugApplicationEditorAction;
 import org.eclipse.cft.server.ui.internal.actions.EditorAction.RefreshArea;
@@ -58,6 +58,7 @@ import org.eclipse.cft.server.ui.internal.actions.StartStopApplicationAction;
 import org.eclipse.cft.server.ui.internal.actions.TerminateDebugEditorAction;
 import org.eclipse.cft.server.ui.internal.actions.UpdateApplicationMemoryAction;
 import org.eclipse.cft.server.ui.internal.actions.UpdateInstanceCountAction;
+import org.eclipse.cft.server.ui.internal.debug.ApplicationDebugUILauncher;
 import org.eclipse.cft.server.ui.internal.editor.AppStatsContentProvider.InstanceStatsAndInfo;
 import org.eclipse.cft.server.ui.internal.wizards.EnvVarsWizard;
 import org.eclipse.cft.server.ui.internal.wizards.MappedURLsWizard;
@@ -196,6 +197,8 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 
 	private final boolean provideServices;
 
+	private ApplicationDebugLauncher debugLauncher;
+
 	private boolean isPublished = false;
 
 	// Resize viewer tables on first refresh as to avoid extra space after the
@@ -212,6 +215,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		this.serverBehaviour = cloudServer.getBehaviour();
 		this.provideServices = CloudFoundryBrandingExtensionPoint
 				.getProvideServices(editorPage.getServer().getServerType().getId());
+		this.debugLauncher = new ApplicationDebugUILauncher();
 	}
 
 	public void createContents(Composite parent) {
@@ -240,42 +244,37 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		}
 	}
 
+	protected int getSelectedAppInstance() {
+		// For now, always select the first instance
+		return 0;
+	}
+
 	public void refreshDebugControls(CloudFoundryApplicationModule appModule) {
 
 		if (debugButton == null || debugButton.isDisposed()) {
 			return;
 		}
 
-		DebugCommand command = null;
-		try {
-			command = getDebugCommand();
-		}
-		catch (CoreException e) {
-			logError(e.getMessage());
-		}
+		int appInstance = getSelectedAppInstance();
 
-		if (command == null || !command.getLaunch().isDebugEnabled()) {
+		if (!debugLauncher.supportsDebug(appModule, cloudServer)) {
 			debugButton.setEnabled(false);
 			debugButton.setText(Messages.ApplicationDetailsPart_TEXT_DEBUG);
-			return;
-		}
-
-		debugButton.setEnabled(true);
-
-		if (!command.getLaunch().isConnectedToDebugger()) {
-			debugButton.setText(Messages.ApplicationDetailsPart_TEXT_DEBUG);
-			debugButton.setData(DebugOperationType.Debug);
 		}
 		else {
-			debugButton.setText(Messages.ApplicationDetailsPart_TEXT_DEBUG_DISCONNECT);
-			debugButton.setData(DebugOperationType.Terminate);
+			debugButton.setEnabled(true);
+
+			if (!debugLauncher.isConnectedToDebugger(appModule, cloudServer, appInstance)) {
+				debugButton.setText(Messages.ApplicationDetailsPart_TEXT_DEBUG);
+				debugButton.setData(DebugOperationType.Debug);
+			}
+			else {
+				debugButton.setText(Messages.ApplicationDetailsPart_TEXT_DEBUG_DISCONNECT);
+				debugButton.setData(DebugOperationType.Terminate);
+			}
 		}
+
 		debugButton.getParent().layout(true);
-
-	}
-
-	protected DebugCommand getDebugCommand() throws CoreException {
-		return DebugCommand.getCommand(cloudServer, getExistingApplication());
 	}
 
 	protected void refreshDeploymentButtons(CloudFoundryApplicationModule appModule) {
@@ -1319,20 +1318,20 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 	}
 
 	protected void debug() {
-		try {
-			new DebugApplicationEditorAction(editorPage, getDebugCommand()).run();
-		}
-		catch (CoreException e) {
-			logApplicationModuleFailureError(e.getMessage());
+		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
+
+		if (appModule != null) {
+			new DebugApplicationEditorAction(editorPage, appModule, cloudServer, getSelectedAppInstance(),
+					debugLauncher).run();
 		}
 	}
 
 	protected void terminateDebug() {
-		try {
-			new TerminateDebugEditorAction(editorPage, getDebugCommand()).run();
-		}
-		catch (CoreException e) {
-			logApplicationModuleFailureError(e.getMessage());
+		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
+
+		if (appModule != null) {
+			new TerminateDebugEditorAction(editorPage, appModule, cloudServer, getSelectedAppInstance(), debugLauncher)
+					.run();
 		}
 	}
 

@@ -24,11 +24,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
+import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
+import org.eclipse.cft.server.core.internal.debug.CloudFoundryDebugDelegate;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
-import org.eclipse.cft.server.ui.internal.DebugCommand;
 import org.eclipse.cft.server.ui.internal.Messages;
+import org.eclipse.cft.server.ui.internal.debug.ApplicationDebugUILauncher;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.wst.server.ui.IServerModule;
@@ -52,9 +56,19 @@ public class DebugMenuActionHandler extends MenuActionHandler<IServerModule> {
 
 		protected final CloudFoundryApplicationModule appModule;
 
+		protected ApplicationDebugLauncher launcher;
+
+		private int appInstance;
+
+		private int remoteDebugPort;
+
 		public DebugAction(CloudFoundryServer cloudServer, CloudFoundryApplicationModule appModule) {
 			this.cloudServer = cloudServer;
 			this.appModule = appModule;
+			this.launcher = new ApplicationDebugUILauncher();
+			this.appInstance = 0;
+			this.remoteDebugPort = CloudFoundryDebugDelegate.DEFAULT_REMOTE_PORT;
+
 			setActionValues();
 		}
 
@@ -66,15 +80,19 @@ public class DebugMenuActionHandler extends MenuActionHandler<IServerModule> {
 		}
 
 		public void run() {
-			DebugCommand.debug(cloudServer, appModule);
+			try {
+				launcher.launch(appModule, cloudServer, appInstance, remoteDebugPort);
+			}
+			catch (CoreException e) {
+				CloudFoundryPlugin.logError(e);
+			}
 		}
-
 	}
 
 	@Override
 	protected List<IAction> getActionsFromSelection(IServerModule serverModule) {
-		CloudFoundryServer cloudFoundryServer = (CloudFoundryServer) serverModule.getServer().loadAdapter(
-				CloudFoundryServer.class, null);
+		CloudFoundryServer cloudFoundryServer = (CloudFoundryServer) serverModule.getServer()
+				.loadAdapter(CloudFoundryServer.class, null);
 		if (cloudFoundryServer == null) {
 			return Collections.emptyList();
 		}
