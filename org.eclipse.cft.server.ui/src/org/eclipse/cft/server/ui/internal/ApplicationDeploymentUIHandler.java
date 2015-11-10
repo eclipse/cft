@@ -43,6 +43,7 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.wizard.WizardDialog;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 
@@ -75,8 +76,8 @@ public class ApplicationDeploymentUIHandler {
 	 * configuration.
 	 */
 	public DeploymentConfiguration prepareForDeployment(final CloudFoundryServer server,
-			final CloudFoundryApplicationModule appModule, final IProgressMonitor monitor) throws CoreException,
-			OperationCanceledException {
+			final CloudFoundryApplicationModule appModule, final IProgressMonitor monitor)
+					throws CoreException, OperationCanceledException {
 
 		// Validate the existing deployment info. Do NOT save or make changes to
 		// the deployment info prior to this stage
@@ -99,13 +100,12 @@ public class ApplicationDeploymentUIHandler {
 			// server. In that case, a delegate
 			// may be required to be registered for that application
 			// type.
-			final ApplicationWizardDelegate providerDelegate = ApplicationWizardRegistry.getWizardProvider(appModule
-					.getLocalModule());
+			final ApplicationWizardDelegate providerDelegate = ApplicationWizardRegistry
+					.getWizardProvider(appModule.getLocalModule());
 
 			if (providerDelegate == null) {
 				throw CloudErrorUtil.toCoreException("Failed to open application deployment wizard for: " //$NON-NLS-1$
-						+ appModule.getDeployedApplicationName()
-						+ " when attempting to push application to " //$NON-NLS-1$
+						+ appModule.getDeployedApplicationName() + " when attempting to push application to " //$NON-NLS-1$
 						+ server.getServer().getName()
 						+ ". No application provider found that corresponds to the application type: " //$NON-NLS-1$
 						+ appModule.getLocalModule().getModuleType().getId());
@@ -158,8 +158,8 @@ public class ApplicationDeploymentUIHandler {
 							finWorkingCopy, providerDelegate);
 
 					try {
-						WizardDialog dialog = new WizardDialog(PlatformUI.getWorkbench().getModalDialogShellProvider()
-								.getShell(), wizard);
+						WizardDialog dialog = new WizardDialog(
+								PlatformUI.getWorkbench().getModalDialogShellProvider().getShell(), wizard);
 						int dialogueStatus = dialog.open();
 
 						if (dialogueStatus == Dialog.OK) {
@@ -200,9 +200,15 @@ public class ApplicationDeploymentUIHandler {
 								.run(monitor);
 					}
 					catch (CoreException e) {
-						// Do not let service creation errors
-						// stop the application deployment
 						CloudFoundryPlugin.logError(e);
+						if (!CloudFoundryPlugin.getCallback().prompt(
+								Messages.ApplicationDeploymentUIHandler_CONTINUE_DEPLOYMENT_SERVICE_ERROR_TITLE,
+								NLS.bind(
+										Messages.ApplicationDeploymentUIHandler_CONTINUE_DEPLOYMENT_SERVICE_ERROR_MESSAGE,
+										new String[] { finWorkingCopy.getDeploymentName(), server.getServer().getId(),
+												e.getMessage() }))) {
+							throw new OperationCanceledException();
+						}
 					}
 				}
 

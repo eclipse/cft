@@ -113,6 +113,10 @@ public class Messages extends NLS {
 	public static String ApplicationMasterPart_TEXT_ROUTES;
 
 	public static String ApplicationMasterPart_TEXT_SERVICES_DESCRIP;
+	
+	public static String ApplicationDeploymentUIHandler_CONTINUE_DEPLOYMENT_SERVICE_ERROR_TITLE;
+	
+	public static String ApplicationDeploymentUIHandler_CONTINUE_DEPLOYMENT_SERVICE_ERROR_MESSAGE;
 
 	public static String ApplicationDetailsPart_ERROR_DETERMINE_BOUND_SERVICE;
 

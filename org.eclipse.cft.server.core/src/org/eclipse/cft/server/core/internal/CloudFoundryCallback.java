@@ -120,6 +120,10 @@ public abstract class CloudFoundryCallback {
 	public void displayAndLogError(IStatus status) {
 
 	}
+	
+	public boolean prompt(final String title, final String message) {
+		return false;
+	}
 
 	public CloudRebelAppHandler getJRebelHandler() {
 		return null;

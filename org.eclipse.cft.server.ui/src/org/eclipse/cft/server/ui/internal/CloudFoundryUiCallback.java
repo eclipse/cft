@@ -233,6 +233,21 @@ public class CloudFoundryUiCallback extends CloudFoundryCallback {
 
 		}
 	}
+	
+	public boolean prompt(final String title, final String message) {
+		final boolean[] shouldContinue = new boolean[] {false};
+		Display.getDefault().syncExec(new Runnable() {
+
+			public void run() {
+				
+				Shell shell = CloudUiUtil.getShell();
+				if (shell != null) {
+					shouldContinue[0] = MessageDialog.openConfirm(shell, title, message);
+				}
+			}
+		});
+		return shouldContinue[0];
+	}
 
 	public CloudRebelAppHandler getJRebelHandler() {
 		CloudRebelAppHandler handler = new CloudRebelUIHandler();
