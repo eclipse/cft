@@ -256,7 +256,8 @@ public class ModuleCache {
 		}
 
 		private String getServerId() {
-			return server.getAttribute(CloudFoundryServer.PROP_SERVER_ID, (String) null);
+			CloudFoundryServer cfs =  (CloudFoundryServer)server.loadAdapter(CloudFoundryServer.class, null);			
+			return cfs.getServerId();
 		}
 
 		private void setLocalModuleToCloudModuleMapping(Map<String, String> list) {
@@ -389,7 +390,10 @@ public class ModuleCache {
 	protected synchronized void remove(IServer server) {
 		dataByServer.remove(server);
 
-		String serverId = server.getAttribute(CloudFoundryServer.PROP_SERVER_ID, (String) null);
+		CloudFoundryServer cfs =  (CloudFoundryServer)server.loadAdapter(CloudFoundryServer.class, null);
+		
+		String serverId =  cfs.getServerId(); 
+		
 		if (serverId != null) {
 			IEclipsePreferences node = new InstanceScope().getNode(CloudFoundryPlugin.PLUGIN_ID);
 			node.remove(KEY_MODULE_MAPPING_LIST + ":" + serverId); //$NON-NLS-1$

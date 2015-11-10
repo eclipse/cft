@@ -48,10 +48,17 @@ public class ServerCredentialsStore {
 
 	private String username;
 
+	private final String nodeId; 
+	
 	public ServerCredentialsStore(String serverId) {
-		this.serverId = serverId;
+		this(serverId, CloudFoundryPlugin.PLUGIN_ID);
 	}
 
+	protected ServerCredentialsStore(String serverId, String nodeId) {
+		this.serverId = serverId;
+		this.nodeId = nodeId;
+	}
+	
 	public boolean flush(String newServerId) {
 		String oldServerId = getServerId();
 
@@ -116,8 +123,7 @@ public class ServerCredentialsStore {
 		if (!securePreferencesDisabled.get()) {
 			String serverId = getServerId();
 			if (serverId != null) {
-				ISecurePreferences securePreferences = SecurePreferencesFactory.getDefault().node(
-						CloudFoundryPlugin.PLUGIN_ID);
+				ISecurePreferences securePreferences = SecurePreferencesFactory.getDefault().node(nodeId);
 				securePreferences = securePreferences.node(EncodingUtils.encodeSlashes(serverId));
 				return securePreferences;
 			}

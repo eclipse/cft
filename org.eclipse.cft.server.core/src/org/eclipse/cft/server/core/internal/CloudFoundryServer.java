@@ -96,31 +96,39 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 			return Boolean.TRUE;
 		}
 	};
+	
 
+	/** Used to retrieve passwords from secure preferences */
+	private static final String OLD_PLUGIN_ID = "org.cloudfoundry.ide.eclipse.server.core";
+	
 	/**
 	 * Attribute key for the a unique server ID used to store credentials in the
 	 * secure store.
 	 */
-	static final String PROP_SERVER_ID = "org.eclipse.cft.serverId"; //$NON-NLS-1$
+	private static final String PROP_SERVER_ID = "org.eclipse.cft.serverId"; //$NON-NLS-1$
+	private static final String OLD_PROP_SERVER_ID = "org.cloudfoundry.ide.eclipse.serverId"; //$NON-NLS-1$
 
 	/**
 	 * Attribute key for the password.
 	 */
-	static final String PROP_PASSWORD_ID = "org.eclipse.cft.password"; //$NON-NLS-1$
-
+	private static final String OLD_PROP_PASSWORD_ID = "org.cloudfoundry.ide.eclipse.password";
 	/**
 	 * Attribute key for the API url.
 	 */
-	static final String PROP_URL = "org.eclipse.cft.url"; //$NON-NLS-1$
+	private static final String PROP_URL = "org.eclipse.cft.url"; //$NON-NLS-1$
+	private static final String OLD_PROP_URL = "org.cloudfoundry.ide.eclipse.url"; //$NON-NLS-1$
 
 	/**
 	 * Attribute key for the username.
 	 */
-	static final String PROP_USERNAME_ID = "org.eclipse.cft.username"; //$NON-NLS-1$
+	private static final String PROP_USERNAME_ID = "org.eclipse.cft.username"; //$NON-NLS-1$
+	private static final String OLD_PROP_USERNAME_ID = "org.cloudfoundry.ide.eclipse.username"; //$NON-NLS-1$
 
-	static final String PROP_ORG_ID = "org.eclipse.cft.org"; //$NON-NLS-1$
+	private static final String PROP_ORG_ID = "org.eclipse.cft.org"; //$NON-NLS-1$
+	private static final String OLD_PROP_ORG_ID = "org.cloudfoundry.ide.eclipse.org"; //$NON-NLS-1$
 
-	static final String PROP_SPACE_ID = "org.eclipse.cft.space"; //$NON-NLS-1$
+	private static final String PROP_SPACE_ID = "org.eclipse.cft.space"; //$NON-NLS-1$
+	private static final String OLD_PROP_SPACE_ID = "org.cloudfoundry.ide.eclipse.space"; //$NON-NLS-1$
 
 	static final String TUNNEL_SERVICE_COMMANDS_PROPERTY = "org.eclipse.cft.tunnel.service.commands"; //$NON-NLS-1$
 
@@ -428,7 +436,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		if (cachedPassword != null) {
 			return cachedPassword;
 		}
-		String legacyPassword = getAttribute(PROP_PASSWORD_ID, (String) null);
+		String legacyPassword = getAttribute(OLD_PROP_PASSWORD_ID, (String) null);
 		if (legacyPassword != null) {
 			return legacyPassword;
 		}
@@ -440,7 +448,12 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	 */
 	public synchronized ServerCredentialsStore getCredentialsStore() {
 		if (credentialsStore == null) {
-			credentialsStore = new ServerCredentialsStore(initialServerId);
+			if(isNewCFEclipseServer()) {
+				credentialsStore = new ServerCredentialsStore(initialServerId);
+			} else {
+				// If this server saved passwords to the old secure preferences location, then use that.
+				credentialsStore = new ServerCredentialsStore(initialServerId, OLD_PLUGIN_ID);
+			}
 		}
 		return credentialsStore;
 	}
@@ -466,16 +479,33 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	 * This method is API used by CloudFoundry Code.
 	 */
 	public String getUrl() {
-		return getAttribute(PROP_URL, (String) null);
+		
+		if(isNewCFEclipseServer()) {
+			return getAttribute(PROP_URL, (String) null);
+		} else {
+			return getAttribute(OLD_PROP_URL, (String) null);
+		}
 	}
 
 	public String getUsername() {
-		return getAttribute(PROP_USERNAME_ID, (String) null);
+		if(isNewCFEclipseServer()) {
+			return getAttribute(PROP_USERNAME_ID, (String) null);			
+		} else {
+			return getAttribute(OLD_PROP_USERNAME_ID, (String) null);
+		}
+		
 	}
 
 	public String getServerId() {
-		return getAttribute(PROP_SERVER_ID, (String) null);
+		if(isNewCFEclipseServer()) {
+			return getAttribute(PROP_SERVER_ID, (String) null);	
+		} else {
+			return getAttribute(OLD_PROP_SERVER_ID, (String) null);	
+		}
+		
 	}
+	
+
 
 	public boolean hasCloudSpace() {
 		return getCloudFoundrySpace() != null;
@@ -694,6 +724,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 			name = NLS.bind("{0} ({1})", new String[] { typeName, String.valueOf(i) }); //$NON-NLS-1$
 			i++;
 		}
+		
 		getServerWorkingCopy().setName(name);
 		getServerWorkingCopy().setHost("Cloud"); //$NON-NLS-1$
 
@@ -711,7 +742,10 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		// remove password in case an earlier version stored it in server
 		// properties
 		if (getServerWorkingCopy() != null) {
-			getServerWorkingCopy().setAttribute(PROP_PASSWORD_ID, (String) null);
+	
+			// We only null the old property here, as the new property is never set.
+			getServerWorkingCopy().setAttribute(OLD_PROP_PASSWORD_ID, (String) null);
+			
 		}
 		// in case setUrl() or setPassword() were never called, e.g. for legacy
 		// servers
@@ -742,29 +776,60 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	}
 
 	public void setUrl(String url) {
-		setAttribute(PROP_URL, url);
+
+		if(isNewCFEclipseServer()) {
+			setAttribute(PROP_URL, url);			
+		} else {
+			setAttribute(OLD_PROP_URL, url);
+		}
+
+		
 		updateServerId();
 	}
 
 	public void setUsername(String username) {
-		setAttribute(PROP_USERNAME_ID, username);
+		if(isNewCFEclipseServer()) {
+			setAttribute(PROP_USERNAME_ID, username);	
+		} else {
+			setAttribute(OLD_PROP_USERNAME_ID, username);
+		}
+		
 		updateServerId();
 	}
+	
 
 	protected void internalSetOrg(String org) {
-		setAttribute(PROP_ORG_ID, org);
+		if(isNewCFEclipseServer()) {
+			setAttribute(PROP_ORG_ID, org);	
+		} else {
+			setAttribute(OLD_PROP_ORG_ID, org);
+		}
+		
 	}
 
 	protected void internalSetSpace(String space) {
-		setAttribute(PROP_SPACE_ID, space);
+		if(isNewCFEclipseServer()) {
+			setAttribute(PROP_SPACE_ID, space);			
+		} else {
+			setAttribute(OLD_PROP_SPACE_ID, space);
+		}
+		
 	}
 
 	protected String getOrg() {
-		return getAttribute(PROP_ORG_ID, (String) null);
+		if(isNewCFEclipseServer()) {
+			return getAttribute(PROP_ORG_ID, (String) null);
+		} else {
+			return getAttribute(OLD_PROP_ORG_ID, (String) null);
+		}
 	}
 
 	protected String getSpace() {
-		return getAttribute(PROP_SPACE_ID, (String) null);
+		if(isNewCFEclipseServer()) {
+			return getAttribute(PROP_SPACE_ID, (String) null);
+		} else {
+			return getAttribute(OLD_PROP_SPACE_ID, (String) null);
+		}
 	}
 
 	/**
@@ -792,7 +857,12 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		writer.append('@');
 		writer.append(getUrl());
 
-		setAttribute(PROP_SERVER_ID, writer.toString());
+		if(isNewCFEclipseServer())  {
+			setAttribute(PROP_SERVER_ID, writer.toString());	
+		} else {
+			setAttribute(OLD_PROP_SERVER_ID, writer.toString());
+		}
+		
 	}
 
 	@Override
@@ -800,8 +870,9 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		super.initialize();
 		serverTypeId = getServer().getServerType().getId();
 		// legacy in case password was saved by an earlier version
-		this.password = getAttribute(PROP_PASSWORD_ID, (String) null);
-		this.initialServerId = getAttribute(PROP_SERVER_ID, (String) null);
+		this.password = getAttribute(OLD_PROP_PASSWORD_ID, (String) null);
+		
+		this.initialServerId = getServerId(); 
 	}
 
 	/**
@@ -1131,7 +1202,8 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		// remove password in case an earlier version stored it in server
 		// properties
 		if (getServerWorkingCopy() != null) {
-			getServerWorkingCopy().setAttribute(PROP_PASSWORD_ID, (String) null);
+			// We only null the old property here, as the new property is never set.
+			getServerWorkingCopy().setAttribute(OLD_PROP_PASSWORD_ID, (String) null);
 		}
 
 		if (getData() != null) {
@@ -1302,4 +1374,19 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		// application entry URL.
 		return null;
 	}
+	
+	/** Returns true if the server contains the org.eclipse.cf.* properties, thus indicating it was created after the refactor of Eclipse CF plug-in names. This value
+	 * may be used to determine which set of server properties to read/write from (eg. either org.eclipse.cf.*, or org.cloudfoundry.ide.eclipse.*) */
+	private boolean isNewCFEclipseServer() {
+		String oldPropServerIdVal = getAttribute(OLD_PROP_SERVER_ID, (String)null);
+		
+		if(oldPropServerIdVal != null) {
+			return false;
+		} else {		
+			// If the PROP_SERVER_ID value is not set, it is a new server; if the value is set, it is still a new server.
+			return true;
+			
+		}
+	}
+	
 }
