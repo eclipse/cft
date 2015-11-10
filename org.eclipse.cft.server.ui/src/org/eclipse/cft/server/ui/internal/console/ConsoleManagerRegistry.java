@@ -23,7 +23,6 @@ package org.eclipse.cft.server.ui.internal.console;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.log.CloudLog;
-import org.eclipse.cft.server.ui.internal.console.file.FileConsoleManager;
 import org.eclipse.ui.console.ConsolePlugin;
 import org.eclipse.ui.console.IConsole;
 import org.eclipse.ui.console.IConsoleListener;
@@ -42,9 +41,9 @@ import org.eclipse.ui.console.MessageConsole;
  */
 public class ConsoleManagerRegistry {
 
-	public static final String CLOUD_FOUNDRY_TRACE_CONSOLE_NAME = "Cloud Foundry Trace"; //$NON-NLS-1$ 
+	public static final String CLOUD_FOUNDRY_TRACE_CONSOLE_NAME = "Cloud Foundry Trace"; //$NON-NLS-1$
 
-	static final String TRACE_CONSOLE_ID = "org.eclipse.cft.server.trace"; //$NON-NLS-1$ 
+	static final String TRACE_CONSOLE_ID = "org.eclipse.cft.server.trace"; //$NON-NLS-1$
 
 	private static ConsoleManagerRegistry registry;
 
@@ -56,11 +55,6 @@ public class ConsoleManagerRegistry {
 	 * Loggregator-supporting console manager
 	 */
 	private CloudConsoleManager appConsoleManager = new ApplicationLogConsoleManager();
-
-	/**
-	 * Log file streaming console manager.
-	 */
-	private CloudConsoleManager fileConsoleManager = new FileConsoleManager();
 
 	private final IConsoleListener listener = new IConsoleListener() {
 
@@ -110,29 +104,7 @@ public class ConsoleManagerRegistry {
 	 * @return non-null console manager based on the server type.
 	 */
 	public CloudConsoleManager getCloudConsoleManager(CloudFoundryServer cloudServer) {
-		if (usesLogFileStreaming(cloudServer)) {
-			return getFileConsoleManager();
-		}
-		else {
-			return appConsoleManager;
-		}
-	}
-
-	/**
-	 * Convenience method for adopters to obtain a file console manager IFF the
-	 * adopters are sure their servers use log file streaming.
-	 * <p/>
-	 * Otherwise, callers should ONLY use
-	 * {@link #getCloudConsoleManager(CloudFoundryServer)} to obtain the
-	 * appropriate console manager for their server.
-	 * @return Log file console manager.
-	 */
-	public CloudConsoleManager getFileConsoleManager() {
-		return fileConsoleManager;
-	}
-
-	protected boolean usesLogFileStreaming(CloudFoundryServer cloudServer) {
-		return false;
+		return appConsoleManager;
 	}
 
 	/**
