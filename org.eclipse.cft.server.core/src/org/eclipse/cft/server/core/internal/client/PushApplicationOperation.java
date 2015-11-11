@@ -198,7 +198,7 @@ public class PushApplicationOperation extends StartOperation {
 
 				if (actualApp != null) {
 					SubMonitor updateMonitor = SubMonitor.convert(subMonitor, 100);
-					getBehaviour().getUpdateEnvVarRequest(appName, variables).run(updateMonitor.newChild(50));
+					getBehaviour().getRequestFactory().getUpdateEnvVarRequest(appName, variables).run(updateMonitor.newChild(50));
 
 					// Update instances if it is more than 1. By default, app
 					// starts

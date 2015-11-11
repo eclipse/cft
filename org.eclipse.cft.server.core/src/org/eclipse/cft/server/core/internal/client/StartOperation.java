@@ -179,7 +179,7 @@ public class StartOperation extends RestartOperation {
 				final CloudFoundryApplicationModule appModuleFin = appModule;
 				// Now push the application resources to the server
 
-				getBehaviour().new BehaviourRequest<Void>(getOperationName() + " - " + deploymentName) { //$NON-NLS-1$
+				new BehaviourRequest<Void>(getOperationName() + " - " + deploymentName, getBehaviour()) { //$NON-NLS-1$
 					@Override
 					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress)
 							throws CoreException, OperationCanceledException {

@@ -19,6 +19,7 @@ import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.util.CloudUtil;
 import org.cloudfoundry.client.lib.util.JsonUtil;
+import org.eclipse.cft.server.core.internal.client.RestUtils;
 import org.springframework.web.client.RestTemplate;
 
 /**

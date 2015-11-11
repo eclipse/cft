@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.eclipse.cft.server.core.internal.ssh;
+package org.eclipse.cft.server.core.internal.client;
 
 import static org.apache.http.conn.ssl.SSLSocketFactory.BROWSER_COMPATIBLE_HOSTNAME_VERIFIER;
 
@@ -55,8 +55,6 @@ public class RestUtils {
 		RestTemplate restTemplate = new LoggingRestTemplate();
 		restTemplate.setRequestFactory(createRequestFactory(httpProxyConfiguration, trustSelfSignedCerts, disableRedirectHandling));
 		restTemplate.setErrorHandler(new CloudControllerResponseErrorHandler());
-		//restTemplate.setMessageConverters(getHttpMessageConverters());
-		//TODO ^^^ But, we don't seem to need custom message convertors for what we do right now.
 		return restTemplate;
 	}
 	

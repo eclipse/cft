@@ -10,7 +10,7 @@
  * Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  *******************************************************************************/
-package org.eclipse.cft.server.core.internal.ssh;
+package org.eclipse.cft.server.core.internal.client;
 
 /**
  * @author Kris De Volder

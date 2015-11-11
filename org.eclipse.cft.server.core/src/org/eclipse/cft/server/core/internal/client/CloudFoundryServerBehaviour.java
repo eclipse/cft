@@ -21,13 +21,11 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,7 +36,6 @@ import org.cloudfoundry.client.lib.ApplicationLogListener;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
-import org.cloudfoundry.client.lib.NotFinishedStagingException;
 import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
@@ -47,8 +44,6 @@ import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudService;
-import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
-import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
@@ -69,7 +64,6 @@ import org.eclipse.cft.server.core.internal.ModuleResourceDeltaWrapper;
 import org.eclipse.cft.server.core.internal.RefreshModulesHandler;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
-import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
 import org.eclipse.cft.server.core.internal.jrebel.CloudRebelAppHandler;
 import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
@@ -143,6 +137,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	private CloudBehaviourOperations cloudBehaviourOperations;
 
+	private ClientRequestFactory requestFactory;
+
 	private IServerListener serverListener = new IServerListener() {
 
 		public void serverChanged(ServerEvent event) {
@@ -165,6 +161,13 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		// Server does not support debug mode
 		UNSUPPORTED,
 	}
+	
+	ClientRequestFactory getRequestFactory() {
+		if (requestFactory == null) {
+			requestFactory = new ClientRequestFactory(this);
+		}
+		return requestFactory;
+	}
 
 	@Override
 	public boolean canControlModule(IModule[] module) {
@@ -174,13 +177,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public void connect(IProgressMonitor monitor) throws CoreException {
 		final CloudFoundryServer cloudServer = getCloudFoundryServer();
 
-		new BehaviourRequest<Void>("Loggging in to " + cloudServer.getUrl()) { //$NON-NLS-1$
-			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				client.login();
-				return null;
-			}
-		}.run(monitor);
+		getRequestFactory().connect().run(monitor);
 
 		Server server = (Server) cloudServer.getServerOriginal();
 		server.setServerState(IServer.STATE_STARTED);
@@ -250,23 +247,11 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	public synchronized List<CloudDomain> getDomainsFromOrgs(IProgressMonitor monitor) throws CoreException {
-		return new BehaviourRequest<List<CloudDomain>>("Getting domains for orgs") { //$NON-NLS-1$
-			@Override
-			protected List<CloudDomain> doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				return client.getDomainsForOrg();
-			}
-		}.run(monitor);
-
+		return getRequestFactory().getDomainsFromOrgs().run(monitor);
 	}
 
 	public synchronized List<CloudDomain> getDomainsForSpace(IProgressMonitor monitor) throws CoreException {
-
-		return new BehaviourRequest<List<CloudDomain>>(Messages.CloudFoundryServerBehaviour_DOMAINS_FOR_SPACE) {
-			@Override
-			protected List<CloudDomain> doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				return client.getDomains();
-			}
-		}.run(monitor);
+		return getRequestFactory().getDomainsForSpace().run(monitor);
 	}
 
 	/**
@@ -292,16 +277,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @throws CoreException
 	 */
 	public void deleteApplication(String appName, IProgressMonitor monitor) throws CoreException {
-		final String applicationName = appName;
-		new BehaviourRequest<Void>("Deleting applications") { //$NON-NLS-1$
-			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				client.deleteApplication(applicationName);
-
-				return null;
-			}
-		}.run(monitor);
-
+		getRequestFactory().deleteApplication(appName).run(monitor);
 	}
 
 	/**
@@ -470,23 +446,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * application, or the application does not exist.
 	 */
 	public CloudApplication getCloudApplication(final String appName, IProgressMonitor monitor) throws CoreException {
-
-		final String serverId = getCloudFoundryServer().getServer().getId();
-		CloudApplication app = new ApplicationRequest<CloudApplication>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_GET_APPLICATION, appName)) {
-			@Override
-			protected CloudApplication doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				return client.getApplication(appName);
-			}
-
-			@Override
-			protected String get503Error(Throwable error) {
-				return NLS.bind(Messages.CloudFoundryServerBehaviour_ERROR_GET_APPLICATION_SERVER_503, appName,
-						serverId);
-			}
-		}.run(monitor);
-
-		return app;
+		return getRequestFactory().getCloudApplication(appName).run(monitor);
 	}
 
 	/**
@@ -653,73 +613,22 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @throws CoreException
 	 */
 	public List<CloudApplication> getApplications(IProgressMonitor monitor) throws CoreException {
-
-		final String serverId = getCloudFoundryServer().getServer().getId();
-
-		final String label = NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_APPS, serverId);
-
-		return new ApplicationRequest<List<CloudApplication>>(label) {
-			@Override
-			protected List<CloudApplication> doRun(CloudFoundryOperations client, SubMonitor progress)
-					throws CoreException {
-				return client.getApplications();
-			}
-
-			@Override
-			protected String get503Error(Throwable error) {
-				return NLS.bind(Messages.CloudFoundryServerBehaviour_ERROR_GET_APPLICATIONS_SERVER, serverId);
-			}
-
-		}.run(monitor);
+		return getRequestFactory().getApplications().run(monitor);
 	}
 
 	public ApplicationStats getApplicationStats(final String applicationId, IProgressMonitor monitor)
 			throws CoreException {
-		return new StagingAwareRequest<ApplicationStats>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_APP_STATS, applicationId)) {
-			@Override
-			protected ApplicationStats doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				try {
-					return client.getApplicationStats(applicationId);
-				}
-				catch (RestClientException ce) {
-					// Stats may not be available if app is still stopped or
-					// starting
-					if (CloudErrorUtil.isAppStoppedStateError(ce)
-							|| CloudErrorUtil.getBadRequestException(ce) != null) {
-						return null;
-					}
-					throw ce;
-				}
-			}
-		}.run(monitor);
+		return getRequestFactory().getApplicationStats(applicationId).run(monitor);
 	}
 
 	public InstancesInfo getInstancesInfo(final String applicationId, IProgressMonitor monitor) throws CoreException {
-		return new StagingAwareRequest<InstancesInfo>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_APP_INFO, applicationId)) {
-			@Override
-			protected InstancesInfo doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				try {
-					return client.getApplicationInstances(applicationId);
-				}
-				catch (RestClientException ce) {
-					// Info may not be available if app is still stopped or
-					// starting
-					if (CloudErrorUtil.isAppStoppedStateError(ce)
-							|| CloudErrorUtil.getBadRequestException(ce) != null) {
-						return null;
-					}
-					throw ce;
-				}
-			}
-		}.run(monitor);
+		return getRequestFactory().getInstancesInfo(applicationId).run(monitor);
 	}
 
 	public String getFile(final String applicationId, final int instanceIndex, final String path,
 			IProgressMonitor monitor) throws CoreException {
 		String label = NLS.bind(Messages.CloudFoundryServerBehaviour_FETCHING_FILE, path, applicationId);
-		return new FileRequest<String>(label) {
+		return new FileRequest<String>(label, this) {
 			@Override
 			protected String doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 				return client.getFile(applicationId, instanceIndex, path);
@@ -731,7 +640,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			final int startPosition, IProgressMonitor monitor) throws CoreException {
 		String label = NLS.bind(Messages.CloudFoundryServerBehaviour_FETCHING_FILE, filePath, applicationId);
 
-		return new FileRequest<String>(label) {
+		return new FileRequest<String>(label, this) {
 			@Override
 			protected String doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 				return client.getFile(applicationId, instanceIndex, filePath, startPosition);
@@ -740,39 +649,18 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	public List<CloudServiceOffering> getServiceOfferings(IProgressMonitor monitor) throws CoreException {
-		return new BehaviourRequest<List<CloudServiceOffering>>("Getting available service options") { //$NON-NLS-1$
-			@Override
-			protected List<CloudServiceOffering> doRun(CloudFoundryOperations client, SubMonitor progress)
-					throws CoreException {
-				return client.getServiceOfferings();
-			}
-		}.run(monitor);
+		return getRequestFactory().getServiceOfferings().run(monitor);
 	}
 
 	/**
 	 * For testing only.
 	 */
 	public void deleteAllApplications(IProgressMonitor monitor) throws CoreException {
-		new BehaviourRequest<Object>("Deleting all applications") { //$NON-NLS-1$
-			@Override
-			protected Object doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				client.deleteAllApplications();
-				return null;
-			}
-		}.run(monitor);
+		getRequestFactory().deleteAllApplications().run(monitor);
 	}
 
 	public List<CloudService> getServices(IProgressMonitor monitor) throws CoreException {
-
-		final String label = NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_SERVICES,
-				getCloudFoundryServer().getServer().getId());
-		return new BehaviourRequest<List<CloudService>>(label) {
-			@Override
-			protected List<CloudService> doRun(CloudFoundryOperations client, SubMonitor progress)
-					throws CoreException {
-				return client.getServices();
-			}
-		}.run(monitor);
+		return getRequestFactory().getServices().run(monitor);
 	}
 
 	/**
@@ -866,7 +754,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public StreamingLogToken addApplicationLogListener(final String appName, final ApplicationLogListener listener) {
 		if (appName != null && listener != null) {
 			try {
-				return new BehaviourRequest<StreamingLogToken>("Adding application log listener") //$NON-NLS-1$
+				return new BehaviourRequest<StreamingLogToken>("Adding application log listener", this) //$NON-NLS-1$
 				{
 					@Override
 					protected StreamingLogToken doRun(CloudFoundryOperations client, SubMonitor progress)
@@ -887,23 +775,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	public List<ApplicationLog> getRecentApplicationLogs(final String appName, IProgressMonitor monitor)
 			throws CoreException {
-		List<ApplicationLog> logs = null;
-		if (appName != null) {
-			logs = new BehaviourRequest<List<ApplicationLog>>("Getting existing application logs for: " + appName) //$NON-NLS-1$
-			{
-
-				@Override
-				protected List<ApplicationLog> doRun(CloudFoundryOperations client, SubMonitor progress)
-						throws CoreException {
-					return client.getRecentLogs(appName);
-				}
-
-			}.run(monitor);
-		}
-		if (logs == null) {
-			logs = Collections.emptyList();
-		}
-		return logs;
+		return getRequestFactory().getRecentApplicationLogs(appName).run(monitor);
 	}
 
 	/**
@@ -975,26 +847,11 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 */
 	void updateApplicationInstances(final String appName, final int instanceCount, IProgressMonitor monitor)
 			throws CoreException {
-		new AppInStoppedStateAwareRequest<Void>("Updating application instances") { //$NON-NLS-1$
-			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				client.updateApplicationInstances(appName, instanceCount);
-				return null;
-			}
-		}.run(monitor);
-
+		getRequestFactory().updateApplicationInstances(appName, instanceCount).run(monitor);
 	}
 
 	public void updatePassword(final String newPassword, IProgressMonitor monitor) throws CoreException {
-		new BehaviourRequest<Void>("Updating password") { //$NON-NLS-1$
-
-			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				client.updatePassword(newPassword);
-				return null;
-			}
-
-		}.run(monitor);
+		getRequestFactory().updatePassword(newPassword).run(monitor);
 	}
 
 	/**
@@ -1071,13 +928,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	public void register(final String email, final String password, IProgressMonitor monitor) throws CoreException {
-		new BehaviourRequest<Void>("Registering account") { //$NON-NLS-1$
-			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				client.register(email, password);
-				return null;
-			}
-		}.run(monitor);
+		getRequestFactory().register(email, password).run(monitor);
 	}
 
 	/**
@@ -1124,7 +975,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @return
 	 * @throws CoreException
 	 */
-	protected synchronized CloudFoundryOperations getClient(IProgressMonitor monitor) throws CoreException {
+	public synchronized CloudFoundryOperations getClient(IProgressMonitor monitor) throws CoreException {
 		return getClient((CloudCredentials) null, monitor);
 	}
 
@@ -1303,14 +1154,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 				final CloudFoundryServer cloudServer = getCloudFoundryServer();
 				final CloudFoundryApplicationModule cloudModule = cloudServer.getCloudModule(module[0]);
 				if (cloudModule.getApplication() != null) {
-					new BehaviourRequest<Void>(
-							NLS.bind(Messages.DELETING_MODULE, cloudModule.getDeployedApplicationName())) {
-						@Override
-						protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-							client.deleteApplication(cloudModule.getDeployedApplicationName());
-							return null;
-						}
-					}.run(monitor);
+					getRequestFactory().deleteApplication(cloudModule.getDeployedApplicationName()).run(monitor);
 				}
 
 			}
@@ -1389,7 +1233,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @throws CoreException if it failed to retrieve the orgs and spaces.
 	 */
 	public CloudOrgsAndSpaces getCloudSpaces(IProgressMonitor monitor) throws CoreException {
-		return new BehaviourRequest<CloudOrgsAndSpaces>("Getting orgs and spaces") { //$NON-NLS-1$
+		return new BehaviourRequest<CloudOrgsAndSpaces>("Getting orgs and spaces", this) { //$NON-NLS-1$
 
 			@Override
 			protected CloudOrgsAndSpaces doRun(CloudFoundryOperations client, SubMonitor progress)
@@ -1401,32 +1245,15 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	public List<CloudRoute> getRoutes(final String domainName, IProgressMonitor monitor) throws CoreException {
-
-		List<CloudRoute> routes = new BehaviourRequest<List<CloudRoute>>(NLS.bind(Messages.ROUTES, domainName)) {
-			@Override
-			protected List<CloudRoute> doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				return client.getRoutes(domainName);
-			}
-		}.run(monitor);
-
-		return routes;
+		return getRequestFactory().getRoutes(domainName).run(monitor);
 	}
 
 	public void deleteRoute(final List<CloudRoute> routes, IProgressMonitor monitor) throws CoreException {
 
-		if (routes == null || routes.isEmpty()) {
-			return;
+		BaseClientRequest<?> request = getRequestFactory().deleteRoute(routes);
+		if (request != null) {
+			request.run(monitor);
 		}
-		new BehaviourRequest<Void>("Deleting routes") { //$NON-NLS-1$
-			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				for (CloudRoute route : routes) {
-					client.deleteRoute(route.getHost(), route.getDomain().getName());
-				}
-				return null;
-
-			}
-		}.run(monitor);
 	}
 
 	/**
@@ -1670,82 +1497,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	//
 	// }
 
-	/**
-	 * 
-	 * Request that is aware of potential staging related errors and may attempt
-	 * the request again on certain types of staging errors like Staging Not
-	 * Finished errors.
-	 * <p/>
-	 * Because the set of client operations wrapped around this Request may be
-	 * attempted again on certain types of errors, it's best to keep the set of
-	 * client operations as minimal as possible, to avoid performing client
-	 * operations again that had no errors.
-	 * 
-	 * <p/>
-	 * Note that this should only be used around certain types of operations
-	 * performed on a app that is already started, like fetching the staging
-	 * logs, or app instances stats, as re-attempts on these operations due to
-	 * staging related errors (e.g. staging not finished yet) is permissable.
-	 * 
-	 * <p/>
-	 * However, operations not related an application being in a running state
-	 * (e.g. creating a service, getting list of all apps), should not use this
-	 * request.
-	 */
-	abstract class StagingAwareRequest<T> extends BehaviourRequest<T> {
-
-		public StagingAwareRequest(String label) {
-			super(label);
-		}
-
-		protected long waitOnErrorInterval(Throwable exception, SubMonitor monitor) throws CoreException {
-
-			if (exception instanceof CoreException) {
-				exception = ((CoreException) exception).getCause();
-			}
-
-			if (exception instanceof NotFinishedStagingException) {
-				return CloudOperationsConstants.ONE_SECOND_INTERVAL * 2;
-			}
-			else if (exception instanceof CloudFoundryException
-					&& CloudErrorUtil.isAppStoppedStateError((CloudFoundryException) exception)) {
-				return CloudOperationsConstants.ONE_SECOND_INTERVAL;
-			}
-			return -1;
-		}
-
-		protected abstract T doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException;
-
-	}
-
-	/**
-	 * 
-	 * Reattempts the operation if a app in stopped state error is encountered.
-	 * 
-	 */
-	abstract class AppInStoppedStateAwareRequest<T> extends BehaviourRequest<T> {
-
-		public AppInStoppedStateAwareRequest(String label) {
-			super(label);
-		}
-
-		protected long waitOnErrorInterval(Throwable exception, SubMonitor monitor) throws CoreException {
-
-			if (exception instanceof CoreException) {
-				exception = ((CoreException) exception).getCause();
-			}
-
-			if (exception instanceof CloudFoundryException
-					&& CloudErrorUtil.isAppStoppedStateError((CloudFoundryException) exception)) {
-				return CloudOperationsConstants.ONE_SECOND_INTERVAL;
-			}
-			return -1;
-		}
-
-		protected abstract T doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException;
-
-	}
-
 	protected boolean hasChildModules(IModule[] modules) {
 		IWebModule webModule = CloudUtil.getWebModule(modules);
 		return webModule != null && webModule.getModules() != null && webModule.getModules().length > 0;
@@ -1877,12 +1628,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		return moduleArchive;
 	}
 
-	abstract class FileRequest<T> extends StagingAwareRequest<T> {
-		FileRequest(String label) {
-			super(label);
-		}
-	}
-
 	/**
 	 * Keep track on all the publish operation to be completed
 	 * <p/>
@@ -1933,234 +1678,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 				}
 			}
 		}
-	}
-
-	abstract class BehaviourRequest<T> extends LocalServerRequest<T> {
-
-		public BehaviourRequest(String label) {
-			super(label);
-		}
-
-		@Override
-		protected CloudFoundryOperations getClient(IProgressMonitor monitor) throws CoreException {
-			return CloudFoundryServerBehaviour.this.getClient(monitor);
-		}
-
-		@Override
-		protected CloudFoundryServer getCloudServer() throws CoreException {
-			return CloudFoundryServerBehaviour.this.getCloudFoundryServer();
-		}
-
-	}
-
-	/**
-	 * [Bug 480364] - Fetching applications from Diego-enabled targets results
-	 * in 503 Server errors if application is starting. Retry the operation when
-	 * 503 is encountered.
-	 */
-	abstract class ApplicationRequest<T> extends BehaviourRequest<T> {
-
-		public ApplicationRequest(String label) {
-			super(label);
-		}
-
-		@Override
-		protected long waitOnErrorInterval(Throwable exception, SubMonitor monitor) throws CoreException {
-			if (CloudErrorUtil.is503Error(exception)) {
-				return 2000;
-			}
-			return super.waitOnErrorInterval(exception, monitor);
-		}
-
-		@Override
-		protected long getTotalTimeWait() {
-			return CloudOperationsConstants.DEFAULT_INTERVAL;
-		}
-
-		@Override
-		protected CoreException getErrorOnLastFailedAttempt(Throwable error) {
-
-			if (CloudErrorUtil.is503Error(error)) {
-				return CloudErrorUtil.asCoreException(get503Error(error), error, true);
-			}
-			return super.getErrorOnLastFailedAttempt(error);
-		}
-
-		protected abstract String get503Error(Throwable rce);
-	}
-
-	BaseClientRequest<?> getUpdateApplicationMemoryRequest(final CloudFoundryApplicationModule appModule,
-			final int memory) {
-		return new AppInStoppedStateAwareRequest<Void>(NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_APP_MEMORY,
-				appModule.getDeployedApplicationName())) {
-			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				client.updateApplicationMemory(appModule.getDeployedApplicationName(), memory);
-				return null;
-			}
-		};
-	}
-
-	BaseClientRequest<?> getUpdateAppUrlsRequest(final String appName, final List<String> urls) {
-		return new AppInStoppedStateAwareRequest<Void>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_APP_URLS, appName)) {
-			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-
-				// Look up the existing urls locally first to avoid a client
-				// call
-				CloudFoundryApplicationModule existingAppModule = getCloudFoundryServer()
-						.getExistingCloudModule(appName);
-
-				List<String> oldUrls = existingAppModule != null && existingAppModule.getDeploymentInfo() != null
-						? existingAppModule.getDeploymentInfo().getUris() : null;
-
-				if (oldUrls == null) {
-					oldUrls = getCloudApplication(appName, progress).getUris();
-				}
-
-				client.updateApplicationUris(appName, urls);
-
-				if (existingAppModule != null) {
-					ServerEventHandler.getDefault()
-							.fireServerEvent(new AppUrlChangeEvent(getCloudFoundryServer(),
-									CloudServerEvent.EVENT_APP_URL_CHANGED, existingAppModule.getLocalModule(),
-									Status.OK_STATUS, oldUrls, urls));
-
-				}
-				return null;
-			}
-		};
-	}
-
-	BaseClientRequest<?> getUpdateServicesRequest(final String appName, final List<String> services) {
-		return new StagingAwareRequest<Void>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_SERVICE_BINDING, appName)) {
-			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-
-				client.updateApplicationServices(appName, services);
-				return null;
-			}
-		};
-	}
-
-	protected BaseClientRequest<Void> getUpdateEnvVarRequest(final String appName,
-			final List<EnvironmentVariable> variables) {
-		final String label = NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_ENV_VARS, appName);
-		return new BehaviourRequest<Void>(label) {
-
-			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				// Update environment variables.
-				Map<String, String> varsMap = new HashMap<String, String>();
-
-				if (variables != null) {
-					for (EnvironmentVariable var : variables) {
-						varsMap.put(var.getVariable(), var.getValue());
-					}
-				}
-
-				client.updateApplicationEnv(appName, varsMap);
-
-				return null;
-			}
-
-		};
-	}
-
-	BaseClientRequest<List<CloudService>> getDeleteServicesRequest(final List<String> services) {
-		return new BehaviourRequest<List<CloudService>>(Messages.CloudFoundryServerBehaviour_DELETE_SERVICES) {
-			@Override
-			protected List<CloudService> doRun(CloudFoundryOperations client, SubMonitor progress)
-					throws CoreException {
-
-				SubMonitor serviceProgress = SubMonitor.convert(progress, services.size());
-
-				List<String> boundServices = new ArrayList<String>();
-				for (String service : services) {
-					serviceProgress.subTask(NLS.bind(Messages.CloudFoundryServerBehaviour_DELETING_SERVICE, service));
-
-					boolean shouldDelete = true;
-					try {
-						CloudServiceInstance instance = client.getServiceInstance(service);
-						List<CloudServiceBinding> bindings = (instance != null) ? instance.getBindings() : null;
-						shouldDelete = bindings == null || bindings.isEmpty();
-					}
-					catch (Throwable t) {
-						// If it is a server or network error, it will still be
-						// caught below
-						// when fetching the list of apps:
-						// [96494172] - If fetching service instances fails, try
-						// finding an app with the bound service through the
-						// list of
-						// apps. This is treated as an alternate way only if the
-						// primary form fails as fetching list of
-						// apps may be potentially slower
-						List<CloudApplication> apps = getApplications(progress);
-						if (apps != null) {
-							for (int i = 0; shouldDelete && i < apps.size(); i++) {
-								CloudApplication app = apps.get(i);
-								if (app != null) {
-									List<String> appServices = app.getServices();
-									if (appServices != null) {
-										for (String appServ : appServices) {
-											if (service.equals(appServ)) {
-												shouldDelete = false;
-												break;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-
-					if (shouldDelete) {
-						client.deleteService(service);
-					}
-					else {
-						boundServices.add(service);
-					}
-					serviceProgress.worked(1);
-				}
-				if (!boundServices.isEmpty()) {
-					StringWriter writer = new StringWriter();
-					int size = boundServices.size();
-					for (int i = 0; i < size; i++) {
-						writer.append(boundServices.get(i));
-						if (i < size - 1) {
-							writer.append(',');
-							writer.append(' ');
-						}
-					}
-					String boundServs = writer.toString();
-					CloudFoundryPlugin.getCallback().displayAndLogError(CloudFoundryPlugin.getErrorStatus(
-							NLS.bind(Messages.CloudFoundryServerBehaviour_ERROR_DELETE_SERVICES_BOUND, boundServs)));
-
-				}
-				return client.getServices();
-			}
-		};
-	}
-
-	BaseClientRequest<List<CloudService>> getCreateServicesRequest(final CloudService[] services) {
-		return new BehaviourRequest<List<CloudService>>(Messages.CloudFoundryServerBehaviour_CREATE_SERVICES) {
-			@Override
-			protected List<CloudService> doRun(CloudFoundryOperations client, SubMonitor progress)
-					throws CoreException {
-
-				SubMonitor serviceProgress = SubMonitor.convert(progress, services.length);
-
-				for (CloudService service : services) {
-					serviceProgress.subTask(
-							NLS.bind(Messages.CloudFoundryServerBehaviour_CREATING_SERVICE, service.getName()));
-					client.createService(service);
-					serviceProgress.worked(1);
-				}
-				return client.getServices();
-			}
-		};
 	}
 
 	@Override

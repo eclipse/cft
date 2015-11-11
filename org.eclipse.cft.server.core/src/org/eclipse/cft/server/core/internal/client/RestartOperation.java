@@ -107,17 +107,15 @@ public class RestartOperation extends ApplicationOperation {
 				CloudFoundryPlugin.getCallback().startApplicationConsole(getBehaviour().getCloudFoundryServer(),
 						cloudModule, 0, subMonitor.newChild(20));
 
-				getBehaviour().new BehaviourRequest<Void>(startLabel) {
+				getBehaviour().getRequestFactory().stopApplication("Stopping application" + deploymentName, //$NON-NLS-1$
+						cloudModule);
+
+				new BehaviourRequest<Void>(startLabel, getBehaviour()) {
 					@Override
 					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress)
 							throws CoreException, OperationCanceledException {
 						CloudFoundryPlugin.trace("Application " + deploymentName + " starting"); //$NON-NLS-1$ //$NON-NLS-2$
 
-						client.stopApplication(deploymentName);
-						// Can be more fine-grained. Could pass progress to
-						// client's stopApplication method.
-						// For now, we should check for cancel at this point,
-						// prior to starting the application
 						if (progress.isCanceled()) {
 							throw new OperationCanceledException(
 									Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
@@ -146,8 +144,9 @@ public class RestartOperation extends ApplicationOperation {
 				// This should be staging aware, in order to reattempt on
 				// staging related issues when checking if an app has
 				// started or not
-				getBehaviour().new StagingAwareRequest<Void>(
-						NLS.bind(Messages.CloudFoundryServerBehaviour_WAITING_APP_START, deploymentName)) {
+				new StagingAwareRequest<Void>(
+						NLS.bind(Messages.CloudFoundryServerBehaviour_WAITING_APP_START, deploymentName),
+						getBehaviour()) {
 					@Override
 					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress)
 							throws CoreException {

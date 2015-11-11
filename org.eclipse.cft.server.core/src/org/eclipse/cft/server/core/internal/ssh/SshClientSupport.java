@@ -25,6 +25,8 @@ import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
+import org.eclipse.cft.server.core.internal.client.AuthorizationHeaderProvider;
+import org.eclipse.cft.server.core.internal.client.RestUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

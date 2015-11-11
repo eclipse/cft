@@ -67,7 +67,7 @@ public class CloudBehaviourOperations {
 	 * @throws CoreException if operation was not created
 	 */
 	public ICloudFoundryOperation createServices(final CloudService[] services) throws CoreException {
-		return new UpdateServicesOperation(behaviour.getCreateServicesRequest(services), behaviour);
+		return new UpdateServicesOperation(behaviour.getRequestFactory().getCreateServicesRequest(services), behaviour);
 	}
 
 	/**
@@ -76,7 +76,7 @@ public class CloudBehaviourOperations {
 	 * @throws CoreException if operation was not created.
 	 */
 	public ICloudFoundryOperation deleteServices(final List<String> services) throws CoreException {
-		return new UpdateServicesOperation(behaviour.getDeleteServicesRequest(services), behaviour);
+		return new UpdateServicesOperation(behaviour.getRequestFactory().getDeleteServicesRequest(services), behaviour);
 	}
 
 	/**
@@ -130,7 +130,8 @@ public class CloudBehaviourOperations {
 	 */
 	public ICloudFoundryOperation memoryUpdate(final CloudFoundryApplicationModule appModule, final int memory)
 			throws CoreException {
-		return new ApplicationUpdateOperation(behaviour.getUpdateApplicationMemoryRequest(appModule, memory), behaviour,
+		return new ApplicationUpdateOperation(
+				behaviour.getRequestFactory().getUpdateApplicationMemoryRequest(appModule, memory), behaviour,
 				appModule);
 	}
 
@@ -144,8 +145,8 @@ public class CloudBehaviourOperations {
 				.getExistingCloudModule(appName);
 
 		if (appModule != null) {
-			return new ApplicationUpdateOperation(behaviour.getUpdateAppUrlsRequest(appName, urls), behaviour,
-					appModule.getLocalModule());
+			return new ApplicationUpdateOperation(behaviour.getRequestFactory().getUpdateAppUrlsRequest(appName, urls),
+					behaviour, appModule.getLocalModule());
 		}
 		else {
 			throw CloudErrorUtil.toCoreException(
@@ -159,9 +160,8 @@ public class CloudBehaviourOperations {
 	 */
 	public ICloudFoundryOperation bindServices(final CloudFoundryApplicationModule appModule,
 			final List<String> services) throws CoreException {
-		return new ApplicationUpdateOperation(
-				behaviour.getUpdateServicesRequest(appModule.getDeployedApplicationName(), services), behaviour,
-				appModule.getLocalModule());
+		return new ApplicationUpdateOperation(behaviour.getRequestFactory().getUpdateServicesRequest(
+				appModule.getDeployedApplicationName(), services), behaviour, appModule.getLocalModule());
 	}
 
 	/**
@@ -174,7 +174,7 @@ public class CloudBehaviourOperations {
 	 */
 	public ICloudFoundryOperation environmentVariablesUpdate(IModule module, String appName,
 			List<EnvironmentVariable> variables) throws CoreException {
-		BaseClientRequest<Void> request = behaviour.getUpdateEnvVarRequest(appName, variables);
+		BaseClientRequest<Void> request = behaviour.getRequestFactory().getUpdateEnvVarRequest(appName, variables);
 		return new ApplicationUpdateOperation(request, behaviour, module);
 	}
 

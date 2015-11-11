@@ -20,7 +20,6 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -79,20 +78,15 @@ class StopApplicationOperation extends AbstractPublishApplicationOperation {
 
 			subMonitor.worked(20);
 
-			getBehaviour().new BehaviourRequest<Void>(stoppingApplicationMessage) {
-				@Override
-				protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-					client.stopApplication(cloudModule.getDeployedApplicationName());
-					return null;
-				}
-			}.run(subMonitor.newChild(20));
+			getBehaviour().getRequestFactory().stopApplication(stoppingApplicationMessage, cloudModule)
+					.run(subMonitor.newChild(20));
 
 			server.setModuleState(getModules(), IServer.STATE_STOPPED);
 			succeeded = true;
 
-			ServerEventHandler.getDefault().fireServerEvent(
-					new ModuleChangeEvent(getBehaviour().getCloudFoundryServer(), CloudServerEvent.EVENT_APP_STOPPED,
-							cloudModule.getLocalModule(), Status.OK_STATUS));
+			ServerEventHandler.getDefault()
+					.fireServerEvent(new ModuleChangeEvent(getBehaviour().getCloudFoundryServer(),
+							CloudServerEvent.EVENT_APP_STOPPED, cloudModule.getLocalModule(), Status.OK_STATUS));
 
 			// Update the module
 			getBehaviour().updateCloudModuleWithInstances(cloudModule.getDeployedApplicationName(),
