@@ -23,7 +23,6 @@ package org.eclipse.cft.server.standalone.core.internal.application;
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
-import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.application.ModuleResourceApplicationDelegate;
@@ -51,11 +50,6 @@ public class StandaloneApplicationDelegate extends
 		return false;
 	}
 
-	@Override
-	public boolean shouldSetDefaultUrl(CloudFoundryApplicationModule appModule) {
-		return CloudFoundryProjectUtil.isSpringBoot(appModule);
-	}
-	
 	@Override
 	public IStatus validateDeploymentInfo(ApplicationDeploymentInfo deploymentInfo) {
 

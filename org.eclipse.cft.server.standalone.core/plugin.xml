@@ -82,6 +82,18 @@
        </applicationDelegate>
     </extension>
     
+     <extension
+          point="org.eclipse.cft.server.core.application">
+       <applicationDelegate
+             class="org.eclipse.cft.server.standalone.core.internal.pivotal.PivotalStandaloneApplicationDelegate"
+             priority="Medium"
+             providerID="org.eclipse.cft.server.application.standalone.pivotal">
+          <moduleID
+                id="cloudfoundry.standalone.app">
+          </moduleID>
+       </applicationDelegate>
+    </extension>
+    
     <extension
          point="org.eclipse.wst.server.core.moduleTypes">
       <moduleType

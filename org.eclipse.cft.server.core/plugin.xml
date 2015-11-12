@@ -78,5 +78,19 @@
         </moduleID>
      </applicationDelegate>
   </extension>
+  <extension
+        point="org.eclipse.cft.server.core.application">
+     <applicationDelegate
+           class="org.eclipse.cft.server.core.internal.pivotal.PivotalJavaWebApplicationDelegate"
+           priority="Low"
+           providerID="org.eclipse.cft.server.application.javaweb.pivotal">
+        <moduleID
+              id="grails.app">
+        </moduleID>
+        <moduleID
+              id="jst.web">
+        </moduleID>
+     </applicationDelegate>
+  </extension>
 
  </plugin>

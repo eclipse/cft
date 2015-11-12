@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.eclipse.cft.server.core.AbstractApplicationDelegate;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtension;
@@ -67,6 +68,28 @@ public class ApplicationRegistry {
 		return null;
 	}
 
+	public static AbstractApplicationDelegate getApplicationDelegate(IModule module, CloudFoundryServer cloudServer) {
+
+		AbstractApplicationDelegate delegate = null;
+
+		if (cloudServer != null) {
+			List<ApplicationProvider> providers = getApplicationProviders(module);
+			if (providers != null) {
+				for (ApplicationProvider prv : providers) {
+					AbstractApplicationDelegate appDel = prv.getDelegate();
+
+					if (appDel instanceof ICloudFoundryServerApplicationDelegate && cloudServer.getUrl()
+							.contains(((ICloudFoundryServerApplicationDelegate) appDel).getServerUri())) {
+						delegate = appDel;
+						break;
+					}
+				}
+			}
+		}
+
+		return (delegate != null) ? delegate : getApplicationDelegate(module);
+	}
+
 	public static ApplicationProvider getDefaultJavaWebApplicationProvider() {
 		ApplicationProvider provider = getApplicationProvider(DEFAULT_JAVA_WEB_PROVIDER_ID);
 
@@ -105,6 +128,34 @@ public class ApplicationRegistry {
 		}
 
 		return provider;
+	}
+
+	public static List<ApplicationProvider> getApplicationProviders(IModule module) {
+
+		if (delegates == null) {
+			delegates = load();
+		}
+
+		List<ApplicationProvider> providers = new ArrayList<ApplicationProvider>();
+		for (Priority priority : Priority.values()) {
+
+			List<ApplicationProvider> providerList = delegates.get(priority);
+			if (providerList != null) {
+				for (ApplicationProvider prv : providerList) {
+					// First do a check based on static extension point
+					// information about the
+					// provider based
+					// on the application ID that the provider supports.
+
+					if (supportsModule(module, prv)) {
+						providers.add(prv);
+					}
+
+				}
+			}
+		}
+
+		return providers;
 	}
 
 	/**

@@ -296,7 +296,7 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		if (delegate == null) {
 			return AbstractApplicationDelegate.basicValidateDeploymentInfo(deploymentInfo);
 		}
-		IStatus status =  delegate.validateDeploymentInfo(deploymentInfo);
+		IStatus status = delegate.validateDeploymentInfo(deploymentInfo);
 		setStatus(status);
 		return status;
 	}
@@ -352,11 +352,12 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 	public synchronized void setError(CoreException error) {
 		this.validationStatus = error != null ? error.getStatus() : null;
 	}
-	
+
 	public synchronized void setStatus(IStatus status) {
 		if (status == null || status.isOK()) {
 			this.validationStatus = null;
-		} else {
+		}
+		else {
 			this.validationStatus = status;
 		}
 	}
@@ -503,7 +504,8 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 	 */
 	protected ApplicationDeploymentInfo getDefaultDeploymentInfo(IProgressMonitor monitor) throws CoreException {
 
-		AbstractApplicationDelegate delegate = ApplicationRegistry.getApplicationDelegate(getLocalModule());
+		AbstractApplicationDelegate delegate = ApplicationRegistry.getApplicationDelegate(getLocalModule(),
+				getCloudFoundryServer());
 		ApplicationDeploymentInfo defaultInfo = null;
 
 		if (delegate != null) {
