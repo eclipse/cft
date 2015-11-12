@@ -166,6 +166,10 @@ public class ApplicationLogConsoleManager extends CloudConsoleManager {
 	@Override
 	public void writeToStandardConsole(String message, CloudFoundryServer server,
 			CloudFoundryApplicationModule appModule, int instanceIndex, boolean clear, boolean isError) {
+		// Sometimes framework may attempt to write to console when app is no longer available
+		if (appModule == null) {
+			return;
+		}
 		// IMPORTANT: Writing to local standard console does NOT require the
 		// application to be published, as it may
 		// be used to display pre-publish messages for the application when

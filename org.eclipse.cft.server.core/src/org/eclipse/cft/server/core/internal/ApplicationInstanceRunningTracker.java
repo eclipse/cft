@@ -22,6 +22,7 @@ package org.eclipse.cft.server.core.internal;
 
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.runtime.CoreException;
@@ -67,6 +68,32 @@ public class ApplicationInstanceRunningTracker {
 
 		while (runState != InstanceState.RUNNING && runState != InstanceState.FLAPPING
 				&& runState != InstanceState.CRASHED && currentTime < totalTime) {
+
+			// NOTE: app state is NOT the same as the INSTANCE state. Instance
+			// state indicates if all is actually running or not.
+			// App state indicates the desired state of the app. So an app in
+			// STOPPED state will not have instances running. If
+			// app is STARTED, instances may still not be running if the app
+			// instances are still starting, are flapping, or have crashed.
+			appModule = cloudServer.getBehaviour().updateCloudModuleWithInstances(appName, monitor);
+			if (appModule == null || appModule.getApplication() == null) {
+				// app may no longer exist
+				printlnToConsole(NLS.bind(Messages.ApplicationInstanceStartingTracker_APPLICATION_NOT_EXISTS, appName),
+						appModule);
+				return null;
+			}
+
+			if (appModule.getApplication().getState() == AppState.STOPPED) {
+				return null;
+			}
+
+			if (monitor != null && monitor.isCanceled()) {
+				printlnToConsole(
+						NLS.bind(Messages.ApplicationInstanceStartingTracker_APPLICATION_CHECK_CANCELED, appName),
+						appModule);
+
+				return null;
+			}
 
 			runState = getRunState(stats, appModule.getApplication());
 			try {

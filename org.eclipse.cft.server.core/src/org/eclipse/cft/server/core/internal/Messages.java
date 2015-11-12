@@ -30,11 +30,17 @@ public class Messages extends NLS {
 
 	public static String AbstractApplicationDelegate_ERROR_MISSING_MEM;
 	
+	public static String AbstractPublishApplicationOperation_OPERATION_CANCELED;
+	
 	public static String ApplicationInstanceStartingTracker_STARTING_TRACKING;
+	
+	public static String ApplicationInstanceStartingTracker_APPLICATION_CHECK_CANCELED;
 	
 	public static String ApplicationInstanceStartingTracker_APPLICATION_IS_RUNNING;
 	
 	public static String ApplicationInstanceStartingTracker_APPLICATION_IS_NOT_RUNNING;
+	
+	public static String ApplicationInstanceStartingTracker_APPLICATION_NOT_EXISTS;
 
 	public static String ApplicationLogConsoleManager_NO_RECENT_LOGS;
 
@@ -267,6 +273,8 @@ public class Messages extends NLS {
 	public static String RemapModuleProjectCommand_JOB_LABEL;
 
 	public static String RestartOperation_STARTING_APP;
+	
+	public static String RestartOperation_TERMINATING_APP_STOPPED_OR_NOT_EXISTS;
 
 	public static String PUBLISHING_MODULE;
 

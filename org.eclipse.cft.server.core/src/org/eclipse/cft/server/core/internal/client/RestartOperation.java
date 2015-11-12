@@ -22,6 +22,7 @@ package org.eclipse.cft.server.core.internal.client;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.StartingInfo;
+import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.eclipse.cft.server.core.AbstractAppStateTracker;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
@@ -156,8 +157,21 @@ public class RestartOperation extends ApplicationOperation {
 								.track(progress) != InstanceState.RUNNING) {
 							server.setModuleState(getModules(), IServer.STATE_STOPPED);
 
-							throw new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID,
-									"Starting of " + cloudModule.getDeployedApplicationName() + " timed out")); //$NON-NLS-1$ //$NON-NLS-2$
+							// If app is stopped , it may have been stopped
+							// externally therefore cancel the restart operation.
+							CloudFoundryApplicationModule updatedModule = getBehaviour()
+									.updateCloudModuleWithInstances(deploymentName, progress);
+							if (updatedModule == null || updatedModule.getApplication() == null
+									|| updatedModule.getApplication().getState() == AppState.STOPPED) {
+								throw new OperationCanceledException(
+										NLS.bind(Messages.RestartOperation_TERMINATING_APP_STOPPED_OR_NOT_EXISTS,
+												deploymentName));
+							}
+							else {
+								throw new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID,
+										"Starting of " + updatedModule.getDeployedApplicationName() + " timed out")); //$NON-NLS-1$ //$NON-NLS-2$
+							}
+
 						}
 
 						AbstractAppStateTracker curTracker = CloudFoundryPlugin.getAppStateTracker(

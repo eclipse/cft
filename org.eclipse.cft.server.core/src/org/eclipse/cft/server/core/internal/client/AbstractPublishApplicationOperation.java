@@ -24,6 +24,7 @@ import org.eclipse.cft.server.core.ICloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -52,9 +53,8 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 	protected IModule[] getModules() {
 		return modules;
 	}
-	
-	public abstract String getOperationName();
 
+	public abstract String getOperationName();
 
 	/**
 	 * Returns non-null Cloud application module mapped to the first module in
@@ -94,13 +94,26 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 			// ignore so webtools does not show an exception
 			((Server) getBehaviour().getServer()).setModuleState(getModules(), IServer.STATE_UNKNOWN);
 
-			// If application operations, like Restart, Start, or PushApplication are canceled, then the publish state is 'indeterminate'
-			// TODO: Don't reference internal Server class.  We need to revisit this change and revert back to the original state.
+			// If application operations, like Restart, Start, or
+			// PushApplication are canceled, then the publish state is
+			// 'indeterminate'
+			// TODO: Don't reference internal Server class. We need to revisit
+			// this change and revert back to the original state.
 			((Server) getBehaviour().getServer()).setServerPublishState(IServer.PUBLISH_STATE_INCREMENTAL);
 			((Server) getBehaviour().getServer()).setModulePublishState(modules, IServer.PUBLISH_STATE_INCREMENTAL);
-			
+
 			// Record the canceled operation 'description' to the log file.
 			CloudFoundryPlugin.logWarning(e.getMessage());
+
+			CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
+
+			CloudFoundryApplicationModule appModule = cloudServer.getCloudModule(getModule());
+			if (appModule != null && e.getMessage() != null) {
+				CloudFoundryPlugin.getCallback().printToConsole(cloudServer, appModule,
+						NLS.bind(Messages.AbstractPublishApplicationOperation_OPERATION_CANCELED, e.getMessage())
+								+ '\n',
+						false, false);
+			}
 		}
 
 	}

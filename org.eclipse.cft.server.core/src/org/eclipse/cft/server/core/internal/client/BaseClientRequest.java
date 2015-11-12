@@ -161,6 +161,9 @@ public abstract class BaseClientRequest<T> {
 			// check for cancel here, if specialized requests do not do it
 			throw new OperationCanceledException(Messages.bind(Messages.OPERATION_CANCELED, label));
 		}
+		if (error instanceof OperationCanceledException) {
+			throw (OperationCanceledException) error;
+		}
 
 		throw getErrorOnLastFailedAttempt(error);
 	}
