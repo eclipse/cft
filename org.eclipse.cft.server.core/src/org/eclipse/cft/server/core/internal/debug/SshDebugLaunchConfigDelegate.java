@@ -133,6 +133,8 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 
 			session.setPassword(oneTimeCode);
 			session.setUserInfo(getUserInfo(oneTimeCode));
+			session.setServerAliveInterval(15 * 1000); // Avoid timeouts during
+														// debugging
 			session.connect();
 
 			printToConsole(appModule, cloudServer, "Successfully connected SSH client using one-time SSH code" //$NON-NLS-1$
