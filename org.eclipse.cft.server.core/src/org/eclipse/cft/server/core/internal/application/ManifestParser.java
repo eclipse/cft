@@ -99,7 +99,8 @@ public class ManifestParser {
 		this(DEFAULT, appModule, cloudServer);
 	}
 
-	public ManifestParser(String relativePath, CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer) {
+	public ManifestParser(String relativePath, CloudFoundryApplicationModule appModule,
+			CloudFoundryServer cloudServer) {
 		Assert.isNotNull(relativePath);
 		this.relativePath = relativePath;
 		this.appModule = appModule;
@@ -120,7 +121,7 @@ public class ManifestParser {
 			return null;
 		}
 		IFile resource = project.getFile(relativePath);
-		
+
 		return resource;
 	}
 
@@ -131,7 +132,7 @@ public class ManifestParser {
 	 */
 	public boolean hasManifest() {
 		IFile file = getFile();
-		return file != null && file.exists(); 
+		return file != null && file.exists();
 	}
 
 	/**
@@ -222,10 +223,9 @@ public class ManifestParser {
 
 		Object applicationsObj = results.get(APPLICATIONS_PROP);
 		if (!(applicationsObj instanceof List<?>)) {
-			throw CloudErrorUtil
-					.toCoreException("Expected a top-level list of applications in: " //$NON-NLS-1$
-							+ relativePath
-							+ ". Unable to continue parsing manifest values. No manifest values will be loaded into the application deployment info."); //$NON-NLS-1$
+			throw CloudErrorUtil.toCoreException("Expected a top-level list of applications in: " //$NON-NLS-1$
+					+ relativePath
+					+ ". Unable to continue parsing manifest values. No manifest values will be loaded into the application deployment info."); //$NON-NLS-1$
 		}
 
 		List<?> applicationsList = (List<?>) applicationsObj;
@@ -545,10 +545,10 @@ public class ManifestParser {
 		InputStream inputStream = null;
 		IFile resource = getFile();
 
-		if(resource != null && resource.exists()) {
-			inputStream = resource.getContents(); 
-		} 
-		
+		if (resource != null && resource.exists()) {
+			inputStream = resource.getContents();
+		}
+
 		if (inputStream != null) {
 			Yaml yaml = new Yaml();
 
@@ -801,18 +801,21 @@ public class ManifestParser {
 
 			IFile file = getFile();
 
-			if(file != null) {
+			if (file != null) {
 				ByteArrayInputStream bais = new ByteArrayInputStream(manifestValue.getBytes());
+
+				if (file.exists()) {
+					file.delete(true, subProgress);
+				} 
 				
 				file.create(bais, true, subProgress);
-				
+
 				subProgress.worked(1);
 				refreshProject(monitor);
 				subProgress.worked(1);
 				return true;
-				
-				
-			} else {
+			}
+			else {
 				throw CloudErrorUtil.toCoreException("No changes could be written to: " + relativePath //$NON-NLS-1$
 						+ ". Unable to write changes to the application's manifest file for: " //$NON-NLS-1$
 						+ appModule.getDeployedApplicationName());
