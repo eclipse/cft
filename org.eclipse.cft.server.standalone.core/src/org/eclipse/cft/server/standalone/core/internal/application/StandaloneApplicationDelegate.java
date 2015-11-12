@@ -23,6 +23,7 @@ package org.eclipse.cft.server.standalone.core.internal.application;
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.application.ModuleResourceApplicationDelegate;
@@ -38,11 +39,15 @@ import org.eclipse.wst.server.core.model.IModuleResource;
  * an archiving mechanism that is specific to Java standalone applications.
  * 
  */
-public class StandaloneApplicationDelegate extends
-		ModuleResourceApplicationDelegate {
+public class StandaloneApplicationDelegate extends ModuleResourceApplicationDelegate {
 
 	public StandaloneApplicationDelegate() {
 
+	}
+
+	@Override
+	public boolean shouldSetDefaultUrl(CloudFoundryApplicationModule appModule) {
+		return CloudFoundryProjectUtil.isSpringBoot(appModule);
 	}
 
 	public boolean requiresURL() {
@@ -73,12 +78,10 @@ public class StandaloneApplicationDelegate extends
 	 * org.eclipse.cft.server.core.internal.CloudFoundryServer,
 	 * org.eclipse.wst.server.core.model.IModuleResource[])
 	 */
-	public ApplicationArchive getApplicationArchive(
-			CloudFoundryApplicationModule appModule,
-			CloudFoundryServer cloudServer, IModuleResource[] moduleResources,
-			IProgressMonitor monitor) throws CoreException {
-		ICloudFoundryArchiver archiver = CloudFoundryArchiverRegistry.INSTANCE
-				.createArchiver(appModule, cloudServer);
+	public ApplicationArchive getApplicationArchive(CloudFoundryApplicationModule appModule,
+			CloudFoundryServer cloudServer, IModuleResource[] moduleResources, IProgressMonitor monitor)
+					throws CoreException {
+		ICloudFoundryArchiver archiver = CloudFoundryArchiverRegistry.INSTANCE.createArchiver(appModule, cloudServer);
 		return archiver.getApplicationArchive(monitor);
 	}
 

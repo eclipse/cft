@@ -22,7 +22,6 @@ package org.eclipse.cft.server.standalone.core.internal.pivotal;
 
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
-import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.application.ICloudFoundryServerApplicationDelegate;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
@@ -42,11 +41,6 @@ public class PivotalStandaloneApplicationDelegate extends StandaloneApplicationD
 
 	public PivotalStandaloneApplicationDelegate() {
 
-	}
-
-	@Override
-	public boolean shouldSetDefaultUrl(CloudFoundryApplicationModule appModule) {
-		return CloudFoundryProjectUtil.isSpringBoot(appModule);
 	}
 
 	@Override
