@@ -189,8 +189,13 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 
 	private CloudFoundrySpace cloudSpace;
 
+	private CloudFoundryServerTarget serverTarget;
+
+	private CloudFoundryTargetManager targetManager;
+
 	public CloudFoundryServer() {
-		// constructor
+		// Set a default target manager
+		setTargetManager(CloudFoundryPlugin.getTargetManager());
 	}
 
 	public void updateApplicationModule(CloudFoundryApplicationModule module) {
@@ -1387,6 +1392,24 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 			return true;
 			
 		}
+	}
+	
+	public synchronized void setTargetManager(CloudFoundryTargetManager targetManager) {
+		// Target manager cannot be null.
+		if (targetManager != null) {
+			this.targetManager = targetManager;
+		}
+	}
+
+	/**
+	 * 
+	 * @return never null.
+	 */
+	public synchronized CloudFoundryServerTarget getTarget() {
+		if (serverTarget == null) {
+			serverTarget = targetManager.getTarget(getUrl());
+		}
+		return serverTarget;
 	}
 	
 }

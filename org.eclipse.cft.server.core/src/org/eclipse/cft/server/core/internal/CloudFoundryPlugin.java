@@ -29,6 +29,7 @@ import org.eclipse.cft.server.core.AbstractAppStateTracker;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryClientFactory;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
+import org.eclipse.cft.server.core.internal.pivotal.PivotalCloudFoundryTarget;
 import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -272,6 +273,8 @@ public class CloudFoundryPlugin extends Plugin {
 
 	private static CloudFoundryCallback callback;
 
+	private static CloudFoundryTargetManager targetManager;
+
 	// Cached copy of app state tracker
 	private static List<AppStateTrackerEntry> appStateTrackerEntries;
 
@@ -326,6 +329,15 @@ public class CloudFoundryPlugin extends Plugin {
 			}
 		}
 		return callback;
+	}
+
+	public static synchronized CloudFoundryTargetManager getTargetManager() {
+		if (targetManager == null) {
+			targetManager = new CloudFoundryTargetManager();
+			targetManager.addTarget(CloudFoundryServerTarget.DEFAULT);
+			targetManager.addTarget(new PivotalCloudFoundryTarget());
+		}
+		return targetManager;
 	}
 
 	public synchronized void setIncrementalPublish(boolean incrementalPublish) {

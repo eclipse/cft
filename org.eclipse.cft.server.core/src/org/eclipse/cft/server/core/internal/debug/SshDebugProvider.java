@@ -34,13 +34,7 @@ public class SshDebugProvider extends CloudFoundryDebugProvider {
 	@Override
 	public boolean isDebugSupported(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer) {
 		IJavaProject javaProject = CloudFoundryProjectUtil.getJavaProject(appModule);
-		return javaProject != null && javaProject.exists() && isSSHSupported(cloudServer, appModule);
-
-	}
-
-	protected boolean isSSHSupported(CloudFoundryServer cloudServer, CloudFoundryApplicationModule appModule) {
-		// For now enable for all PWS servers
-		return cloudServer.getUrl().contains("api.run.pivotal.io"); //$NON-NLS-1$
+		return javaProject != null && javaProject.exists() && cloudServer.getTarget().supportsSsh();
 	}
 
 	@Override

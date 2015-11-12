@@ -162,9 +162,9 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		UNSUPPORTED,
 	}
 	
-	ClientRequestFactory getRequestFactory() {
+	ClientRequestFactory getRequestFactory() throws CoreException {
 		if (requestFactory == null) {
-			requestFactory = new ClientRequestFactory(this);
+			requestFactory = getCloudFoundryServer().getTarget().getRequestFactory(this);
 		}
 		return requestFactory;
 	}
