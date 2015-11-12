@@ -27,12 +27,14 @@ import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.ssh.SshClientSupport;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
 
 import com.jcraft.jsch.JSch;
@@ -79,22 +81,15 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 					+ ",suspend=n"; //$NON-NLS-1$
 			javaOpts.setValue(debugOpts);
 
-			printToConsole(appModule, cloudServer,
-					"Setting JAVA_OPTS with debug options. Debug port: " + remoteDebugPort, //$NON-NLS-1$
-					false);
-
 			cloudServer.getBehaviour().operations().environmentVariablesUpdate(appModule.getLocalModule(),
 					appModule.getDeployedApplicationName(), vars).run(monitor);
 
 			restart = true;
-
-			printToConsole(appModule, cloudServer, "JAVA_OPTS with debug options successfully set", false); //$NON-NLS-1$
-			printToConsole(appModule, cloudServer, "JAVA_OPTS: " + javaOpts.getValue(), false); //$NON-NLS-1$
 		}
 
 		if (restart) {
-			printToConsole(appModule, cloudServer,
-					"Restarting application in debug mode - " + appModule.getDeployedApplicationName(), false); //$NON-NLS-1$
+			printToConsole(appModule, cloudServer, NLS.bind(Messages.SshDebugLaunchConfigDelegate_RESTARTING_APP,
+					appModule.getDeployedApplicationName()), false);
 
 			cloudServer.getBehaviour().operations().applicationDeployment(mod, ApplicationAction.START, false)
 					.run(monitor);
@@ -119,8 +114,8 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 		String user = "cf:" //$NON-NLS-1$
 				+ appModule.getApplication().getMeta().getGuid().toString() + "/" + appInstance; //$NON-NLS-1$
 
-		printToConsole(appModule, cloudServer, "Connecting SSH session for user  " //$NON-NLS-1$
-				+ user, false);
+		printToConsole(appModule, cloudServer,
+				NLS.bind(Messages.SshDebugLaunchConfigDelegate_CONNECTING_FOR_USER, user), false);
 
 		String oneTimeCode = null;
 		try {
@@ -128,8 +123,7 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 
 			oneTimeCode = ssh.getSshCode();
 
-			printToConsole(appModule, cloudServer, "Successfully obtained one-time SSH code" //$NON-NLS-1$
-					, false);
+			printToConsole(appModule, cloudServer, Messages.SshDebugLaunchConfigDelegate_OBTAINED_ONE_TIME_CODE, false);
 
 			session.setPassword(oneTimeCode);
 			session.setUserInfo(getUserInfo(oneTimeCode));
@@ -137,15 +131,13 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 														// debugging
 			session.connect();
 
-			printToConsole(appModule, cloudServer, "Successfully connected SSH client using one-time SSH code" //$NON-NLS-1$
-					, false);
+			printToConsole(appModule, cloudServer, Messages.SshDebugLaunchConfigDelegate_CONNECTION_SUCCESSFUL, false);
 
 			int localDebuggerPort = session.setPortForwardingL(0, "localhost", remoteDebugPort); //$NON-NLS-1$
 
 			printToConsole(appModule, cloudServer,
-					"Successfully completed port forwarding from remote port: " //$NON-NLS-1$
-							+ remoteDebugPort + " to local port: " //$NON-NLS-1$
-							+ localDebuggerPort,
+					NLS.bind(Messages.SshDebugLaunchConfigDelegate_PORT_FORWARDING_SUCCESSFUL, remoteDebugPort,
+							localDebuggerPort),
 					false);
 
 			return new DebugConnectionDescriptor("localhost", localDebuggerPort); //$NON-NLS-1$
@@ -208,6 +200,12 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 		setEnvironmentVariable(appModule, cloudServer, remoteDebugPort, monitor);
 
 		return getSshConnectionDescriptor(appModule, cloudServer, appInstance, remoteDebugPort, monitor);
+	}
+
+	@Override
+	protected void printToConsole(CloudFoundryApplicationModule appModule, CloudFoundryServer server, String message,
+			boolean error) {
+		super.printToConsole(appModule, server, NLS.bind(Messages.Ssh_CONSOLE_MESSAGE, message), error);
 	}
 
 }

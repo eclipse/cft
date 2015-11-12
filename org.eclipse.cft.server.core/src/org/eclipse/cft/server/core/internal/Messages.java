@@ -279,6 +279,18 @@ public class Messages extends NLS {
 	public static String PUBLISHING_MODULE;
 
 	public static String StopApplicationOperation_STOPPING_APP;
+	
+	public static String Ssh_CONSOLE_MESSAGE;
+	
+	public static String SshDebugLaunchConfigDelegate_RESTARTING_APP;
+	
+	public static String SshDebugLaunchConfigDelegate_CONNECTING_FOR_USER;
+	
+	public static String SshDebugLaunchConfigDelegate_OBTAINED_ONE_TIME_CODE;
+	
+	public static String SshDebugLaunchConfigDelegate_CONNECTION_SUCCESSFUL;
+	
+	public static String SshDebugLaunchConfigDelegate_PORT_FORWARDING_SUCCESSFUL;
 
 	public static String DELETING_MODULE;
 

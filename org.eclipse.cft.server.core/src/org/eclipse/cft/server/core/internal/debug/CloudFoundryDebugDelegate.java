@@ -135,9 +135,7 @@ public abstract class CloudFoundryDebugDelegate extends AbstractJavaLaunchConfig
 	protected void printToConsole(CloudFoundryApplicationModule appModule, CloudFoundryServer server, String message,
 			boolean error) {
 		if (appModule != null && server != null) {
-			message = "Cloud Foundry SSH Debugging" //$NON-NLS-1$
-					+ " - " + message + '\n'; //$NON-NLS-1$
-			CloudFoundryPlugin.getCallback().printToConsole(server, appModule, message, false, error);
+			CloudFoundryPlugin.getCallback().printToConsole(server, appModule, message + '\n', false, error);
 		}
 	}
 
