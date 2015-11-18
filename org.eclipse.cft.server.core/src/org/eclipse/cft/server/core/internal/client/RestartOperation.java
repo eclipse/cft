@@ -109,7 +109,7 @@ public class RestartOperation extends ApplicationOperation {
 						cloudModule, 0, subMonitor.newChild(20));
 
 				getBehaviour().getRequestFactory().stopApplication("Stopping application" + deploymentName, //$NON-NLS-1$
-						cloudModule);
+						cloudModule).run(subMonitor.newChild(20));
 
 				new BehaviourRequest<Void>(startLabel, getBehaviour()) {
 					@Override
