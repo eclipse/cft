@@ -138,8 +138,11 @@
       </activation>
       <properties>
         <test.vmargs>-Dhttp.proxyHost=proxy.eng.vmware.com -Dhttp.proxyPort=3128 -Dhttps.proxyHost=proxy.eng.vmware.com -Dhttps.proxyPort=3128 ${test.osvmargs}</test.vmargs>
+        <!--
         <p2.qualifier>CI-B${bamboo.buildNumber}</p2.qualifier>
         <p2.replaceQualifier>true</p2.replaceQualifier>
+        -->
+        
       </properties>
     </profile>
 
@@ -362,7 +365,7 @@
           <artifactId>tycho-packaging-plugin</artifactId>
           <version>${tycho-version}</version>
           <configuration>
-            <format>yyyyMMddHHmm-'${p2.qualifier}'</format>
+            <format>'v'yyyyMMddHHmm</format>
             <archiveSite>true</archiveSite>
             <archive>
               <manifestEntries>
