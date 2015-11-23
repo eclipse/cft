@@ -1,9 +1,9 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Cloud Foundry Tools
+Bundle-Name: %Bundle-Name
 Bundle-SymbolicName: org.eclipse.cft.server.branding.core;singleton:=true
 Bundle-Version: 1.0.0.qualifier
-Bundle-Vendor: Pivotal Software, Inc.
+Bundle-Vendor: %Bundle-Vendor
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Require-Bundle: org.eclipse.ui,
