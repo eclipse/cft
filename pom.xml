@@ -73,7 +73,7 @@
 	<signing.key.password>${KEY_PASSWORD}</signing.key.password>
 
     <dist.name>Cloud Foundry Tools</dist.name>
-    <dist.project>cloudfoundry</dist.project>
+    <dist.project>cft</dist.project>
     <dist.key>TOOLS</dist.key>
     <dist.target.classifier>cloudfoundry-${dist.target}</dist.target.classifier>
 
