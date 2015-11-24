@@ -37,11 +37,6 @@ public abstract class CloudFoundryServerTarget {
 	public static final CloudFoundryServerTarget DEFAULT = new CloudFoundryServerTarget() {
 
 		@Override
-		public boolean supportsSsh() {
-			return false;
-		}
-
-		@Override
 		public String getServerUri() {
 			return ALL_SERVERS;
 		}
@@ -49,6 +44,11 @@ public abstract class CloudFoundryServerTarget {
 		@Override
 		public ClientRequestFactory getRequestFactory(CloudFoundryServerBehaviour behaviour) {
 			return new ClientRequestFactory(behaviour);
+		}
+
+		@Override
+		public String getCCApiVersion() {
+			return null;
 		}
 	};
 
@@ -59,7 +59,7 @@ public abstract class CloudFoundryServerTarget {
 	 */
 	abstract public String getServerUri();
 
-	abstract public boolean supportsSsh();
+	abstract public String getCCApiVersion();
 
 	/**
 	 * 

@@ -43,14 +43,29 @@ public class CloudFoundryTargetManager {
 	 * @return non-null server target. If a specific one for the given server
 	 * vendor is not found, a default one is returned
 	 */
-	public synchronized CloudFoundryServerTarget getTarget(String serverUrl) {
+	public synchronized CloudFoundryServerTarget getTarget(CloudFoundryServer cloudServer) {
+		// Fetch by server URL first
 		CloudFoundryServerTarget serverTarget = null;
+		String serverUrl = cloudServer.getUrl();
 		for (CloudFoundryServerTarget target : targets) {
 			if (serverUrl.contains(target.getServerUri())) {
 				serverTarget = target;
 				break;
 			}
 		}
+
+		// Search by CC API version
+		String ccApiVersion = cloudServer.getCloudInfo().getCloudControllerApiVersion();
+		if (serverTarget == null && ccApiVersion != null) {
+			for (CloudFoundryServerTarget target : targets) {
+				if (target.getCCApiVersion() != null
+						&& ccApiVersion.compareTo(target.getCCApiVersion()) >= 0) {
+					serverTarget = target;
+					break;
+				}
+			}
+		}
+
 		if (serverTarget == null) {
 			serverTarget = CloudFoundryServerTarget.DEFAULT;
 		}

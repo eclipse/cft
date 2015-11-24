@@ -18,7 +18,7 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.core.internal.pivotal;
+package org.eclipse.cft.server.core.internal.client.v2;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -47,15 +47,22 @@ import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
-public class PivotalRequestFactory extends ClientRequestFactory {
+public class DiegoRequestFactory extends ClientRequestFactory {
 
-	public PivotalRequestFactory(CloudFoundryServerBehaviour behaviour) {
+	public DiegoRequestFactory(CloudFoundryServerBehaviour behaviour) {
 		super(behaviour);
 	}
 
 	@Override
 	public BaseClientRequest<String> getFile(final CloudApplication app, final int instanceIndex, final String path,
 			final boolean isDir) throws CoreException {
+		
+		final CloudFoundryServer cloudServer = behaviour.getCloudFoundryServer();
+		
+		// If ssh is not supported, try the default legacy file fetching
+		if (!cloudServer.supportsSsh()) {
+			return super.getFile(app, instanceIndex, path, isDir);
+		}
 
 		String label = NLS.bind(Messages.CloudFoundryServerBehaviour_FETCHING_FILE, path, app.getName());
 		return new BehaviourRequest<String>(label, behaviour) {
@@ -66,7 +73,7 @@ public class PivotalRequestFactory extends ClientRequestFactory {
 					return null;
 				}
 
-				CloudFoundryServer cloudServer = behaviour.getCloudFoundryServer();
+		
 				String url = cloudServer.getUrl();
 				String userName = cloudServer.getUsername();
 				String password = cloudServer.getPassword();

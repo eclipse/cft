@@ -18,15 +18,27 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.core.internal.pivotal;
+package org.eclipse.cft.server.core.internal.client.v2;
 
-import org.eclipse.cft.server.core.internal.client.v2.DiegoCloudFoundryTarget;
+import org.eclipse.cft.server.core.internal.CloudFoundryServerTarget;
+import org.eclipse.cft.server.core.internal.client.ClientRequestFactory;
+import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 
-public class PivotalCloudFoundryTarget extends DiegoCloudFoundryTarget {
+public class DiegoCloudFoundryTarget extends CloudFoundryServerTarget {
 
 	@Override
 	public String getServerUri() {
-		return PivotalConstants.PIVOTAL_WEB_SERVICES_URI;
+		return ALL_SERVERS;
+	}
+
+	@Override
+	public String getCCApiVersion() {
+		return "2.40"; //$NON-NLS-1$
+	}
+
+	@Override
+	public ClientRequestFactory getRequestFactory(CloudFoundryServerBehaviour behaviour) {
+		return new DiegoRequestFactory(behaviour);
 	}
 
 }

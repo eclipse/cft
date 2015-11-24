@@ -29,7 +29,8 @@ import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.AuthorizationHeaderProvider;
-import org.eclipse.cft.server.core.internal.client.RestUtils;
+import org.eclipse.cft.server.core.internal.client.v2.CloudInfoV2;
+import org.eclipse.cft.server.core.internal.client.v2.RestUtils;
 import org.eclipse.core.runtime.CoreException;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -132,13 +133,13 @@ public class SshClientSupport {
 			}
 		};
 
-		CloudInfoV2 cloudInfo = new CloudInfoV2(creds, client.getCloudControllerUrl(), proxyConf, selfSigned);
+		CloudInfoV2 cloudInfo = new CloudInfoV2(creds, client.getCloudControllerUrl().toString(), proxyConf,
+				selfSigned);
 
 		return new SshClientSupport(oauth, cloudInfo, selfSigned, proxyConf);
 	}
 
-	public Session connect(CloudApplication app, CloudFoundryServer cloudServer, int appInstance)
-			throws CoreException {
+	public Session connect(CloudApplication app, CloudFoundryServer cloudServer, int appInstance) throws CoreException {
 
 		JSch jsch = new JSch();
 
