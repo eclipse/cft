@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -38,14 +38,14 @@ public class FilesContentProvider {
 
 	private CloudApplication app;
 
-	private int id;
+	private int instance;
 
 	private CloudFoundryServer server;
 
-	public FilesContentProvider(CloudFoundryServer server, CloudApplication app, int id) {
+	public FilesContentProvider(CloudFoundryServer server, CloudApplication app, int instance) {
 		this.app = app;
 		this.server = server;
-		this.id = id;
+		this.instance = instance;
 	}
 
 	public List<FileResource> getElements(Object inputElement, IProgressMonitor monitor) {
@@ -55,7 +55,9 @@ public class FilesContentProvider {
 			try {
 				if (AppState.STARTED.equals(app.getState())) {
 					String path = parent.substring(1);
-					String blob = server.getBehaviour().getFile(app.getName(), id, path, monitor);
+					// assume everything is a directory for now. Files are handled separately via "download"
+					boolean isDir = true;
+					String blob = server.getBehaviour().getFile(app, instance, path, isDir, monitor);
 					if (blob != null) {
 						String[] files = blob.split("\n"); //$NON-NLS-1$
 						long timestamp = Calendar.getInstance().getTimeInMillis();
@@ -71,7 +73,7 @@ public class FilesContentProvider {
 								}
 								resource.setName(name);
 								resource.setModifiedDate(timestamp);
-								String parentPath = ApplicationResource.getAbsolutePath(app, id + parent);
+								String parentPath = ApplicationResource.getAbsolutePath(app, instance + parent);
 								resource.setParentPath(parentPath);
 								resource.setAbsolutePath(parentPath.concat(content[0]));
 								if (content.length > 1) {

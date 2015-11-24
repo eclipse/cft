@@ -83,8 +83,9 @@ public class NgrokDebugProvider extends CloudFoundryDebugProvider {
 					// Stop checking for the file if the application no longer
 					// exists or is not running
 					if (app != null && app.getState() == AppState.STARTED) {
-						return cloudServer.getBehaviour().getFile(appModule.getDeployedApplicationName(), 0,
-								outputFilePath, subMonitor.newChild(50));
+						boolean isDir = false;
+						return cloudServer.getBehaviour().getFile(appModule.getApplication(), 0,
+								outputFilePath, isDir, subMonitor.newChild(50));
 					}
 					else {
 						return null;

@@ -17,7 +17,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 
-abstract class BehaviourRequest<T> extends LocalServerRequest<T> {
+abstract public class BehaviourRequest<T> extends LocalServerRequest<T> {
 	
 	protected final CloudFoundryServerBehaviour behaviour;
 

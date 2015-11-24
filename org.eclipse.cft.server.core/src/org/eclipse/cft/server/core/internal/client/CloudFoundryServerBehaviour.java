@@ -625,27 +625,9 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		return getRequestFactory().getInstancesInfo(applicationId).run(monitor);
 	}
 
-	public String getFile(final String applicationId, final int instanceIndex, final String path,
+	public String getFile(CloudApplication app, int instanceIndex, String path, boolean isDir,
 			IProgressMonitor monitor) throws CoreException {
-		String label = NLS.bind(Messages.CloudFoundryServerBehaviour_FETCHING_FILE, path, applicationId);
-		return new FileRequest<String>(label, this) {
-			@Override
-			protected String doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				return client.getFile(applicationId, instanceIndex, path);
-			}
-		}.run(monitor);
-	}
-
-	public String getFile(final String applicationId, final int instanceIndex, final String filePath,
-			final int startPosition, IProgressMonitor monitor) throws CoreException {
-		String label = NLS.bind(Messages.CloudFoundryServerBehaviour_FETCHING_FILE, filePath, applicationId);
-
-		return new FileRequest<String>(label, this) {
-			@Override
-			protected String doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				return client.getFile(applicationId, instanceIndex, filePath, startPosition);
-			}
-		}.run(monitor);
+		return getRequestFactory().getFile(app, instanceIndex, path, isDir).run(monitor);
 	}
 
 	public List<CloudServiceOffering> getServiceOfferings(IProgressMonitor monitor) throws CoreException {
