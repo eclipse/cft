@@ -54,12 +54,10 @@ public class CloudFoundryTargetManager {
 			}
 		}
 
-		// Search by CC API version
-		String ccApiVersion = cloudServer.getCloudInfo().getCloudControllerApiVersion();
-		if (serverTarget == null && ccApiVersion != null) {
+		// Find a target definition that supports SSH
+		if (serverTarget == null && cloudServer.supportsSsh()) {
 			for (CloudFoundryServerTarget target : targets) {
-				if (target.getCCApiVersion() != null
-						&& ccApiVersion.compareTo(target.getCCApiVersion()) >= 0) {
+				if (target.supportsSsh()) {
 					serverTarget = target;
 					break;
 				}

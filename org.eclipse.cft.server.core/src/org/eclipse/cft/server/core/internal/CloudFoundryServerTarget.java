@@ -26,7 +26,7 @@ import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 /**
  * Internal use only
  * <p/>
- * Contains additional server information that is not defined in server
+ * Contains additional server behaviour that is not defined in server
  * extension points
  *
  */
@@ -47,8 +47,8 @@ public abstract class CloudFoundryServerTarget {
 		}
 
 		@Override
-		public String getCCApiVersion() {
-			return null;
+		public boolean supportsSsh() {
+			return false;
 		}
 	};
 
@@ -58,8 +58,8 @@ public abstract class CloudFoundryServerTarget {
 	 * be null.
 	 */
 	abstract public String getServerUri();
-
-	abstract public String getCCApiVersion();
+	
+	abstract public boolean supportsSsh();
 
 	/**
 	 * 

@@ -32,13 +32,13 @@ public class DiegoCloudFoundryTarget extends CloudFoundryServerTarget {
 	}
 
 	@Override
-	public String getCCApiVersion() {
-		return "2.40"; //$NON-NLS-1$
+	public ClientRequestFactory getRequestFactory(CloudFoundryServerBehaviour behaviour) {
+		return new DiegoRequestFactory(behaviour);
 	}
 
 	@Override
-	public ClientRequestFactory getRequestFactory(CloudFoundryServerBehaviour behaviour) {
-		return new DiegoRequestFactory(behaviour);
+	public boolean supportsSsh() {
+		return true;
 	}
 
 }
