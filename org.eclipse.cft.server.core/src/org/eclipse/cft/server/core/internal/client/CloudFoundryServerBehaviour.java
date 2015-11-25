@@ -951,7 +951,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	/**
-	 * In most cases, the progress monitor can be null, although if available
 	 * 
 	 * @param monitor
 	 * @return

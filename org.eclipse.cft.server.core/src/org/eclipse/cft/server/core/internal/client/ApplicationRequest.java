@@ -21,7 +21,7 @@ import org.eclipse.core.runtime.SubMonitor;
  * in 503 Server errors if application is starting. Retry the operation when
  * 503 is encountered.
  */
-abstract class ApplicationRequest<T> extends BehaviourRequest<T> {
+abstract public class ApplicationRequest<T> extends BehaviourRequest<T> {
 
 	public ApplicationRequest(String label, CloudFoundryServerBehaviour behaviour) {
 		super(label, behaviour);
