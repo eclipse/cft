@@ -20,24 +20,13 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.pivotal;
 
-import org.eclipse.cft.server.core.internal.CloudFoundryServerTarget;
-import org.eclipse.cft.server.core.internal.client.ClientRequestFactory;
-import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
+import org.eclipse.cft.server.core.internal.client.v2.DiegoCloudFoundryTarget;
 
-public class PivotalCloudFoundryTarget extends CloudFoundryServerTarget {
+public class PivotalCloudFoundryTarget extends DiegoCloudFoundryTarget {
 
 	@Override
 	public String getServerUri() {
 		return PivotalConstants.PIVOTAL_WEB_SERVICES_URI;
 	}
 
-	@Override
-	public boolean supportsSsh() {
-		return true;
-	}
-
-	@Override
-	public ClientRequestFactory getRequestFactory(CloudFoundryServerBehaviour behaviour) {
-		return new PivotalRequestFactory(behaviour);
-	}
 }

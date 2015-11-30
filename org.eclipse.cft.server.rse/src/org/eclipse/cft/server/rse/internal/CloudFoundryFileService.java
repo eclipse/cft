@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -84,6 +84,7 @@ public class CloudFoundryFileService extends AbstractFileService implements IClo
 
 	}
 
+	@Override
 	public void download(String remoteParent, String remoteFile, File localFile, boolean isBinary, String hostEncoding,
 			IProgressMonitor monitor) throws SystemMessageException {
 		Object[] array = parseNestedFiles(remoteParent);
@@ -94,20 +95,18 @@ public class CloudFoundryFileService extends AbstractFileService implements IClo
 			String appName = app.getCloudApplication().getName();
 			int instance = app.getInstanceId();
 			try {
-				String content = server.getBehaviour().getFile(appName, instance, path.concat(remoteFile).substring(1),
-						monitor);
+				String content = server.getBehaviour().getFile(app.getCloudApplication(), instance, path.concat(remoteFile).substring(1),
+						localFile.isDirectory(),monitor);
 				if (content != null) {
 					if (!localFile.exists()) {
 						localFile.getParentFile().mkdirs();
 					}
 					ByteArrayInputStream inStream = new ByteArrayInputStream(content.getBytes());
 					OutputStream outStream = new BufferedOutputStream(new FileOutputStream(localFile));
-					int byteCount = 0;
 					byte[] buffer = new byte[4096];
 					int bytesRead = -1;
 					while ((bytesRead = inStream.read(buffer)) != -1) {
 						outStream.write(buffer, 0, bytesRead);
-						byteCount += bytesRead;
 					}
 					outStream.flush();
 					inStream.close();

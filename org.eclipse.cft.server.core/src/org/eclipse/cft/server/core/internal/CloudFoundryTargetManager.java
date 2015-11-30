@@ -43,14 +43,27 @@ public class CloudFoundryTargetManager {
 	 * @return non-null server target. If a specific one for the given server
 	 * vendor is not found, a default one is returned
 	 */
-	public synchronized CloudFoundryServerTarget getTarget(String serverUrl) {
+	public synchronized CloudFoundryServerTarget getTarget(CloudFoundryServer cloudServer) {
+		// Fetch by server URL first
 		CloudFoundryServerTarget serverTarget = null;
+		String serverUrl = cloudServer.getUrl();
 		for (CloudFoundryServerTarget target : targets) {
 			if (serverUrl.contains(target.getServerUri())) {
 				serverTarget = target;
 				break;
 			}
 		}
+
+		// Find a target definition that supports SSH
+		if (serverTarget == null && cloudServer.supportsSsh()) {
+			for (CloudFoundryServerTarget target : targets) {
+				if (target.supportsSsh()) {
+					serverTarget = target;
+					break;
+				}
+			}
+		}
+
 		if (serverTarget == null) {
 			serverTarget = CloudFoundryServerTarget.DEFAULT;
 		}

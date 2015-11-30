@@ -10,16 +10,15 @@
  * Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  *******************************************************************************/
-package org.eclipse.cft.server.core.internal.ssh;
+package org.eclipse.cft.server.core.internal.client.v2;
 
-import java.net.URL;
 import java.util.Map;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.util.CloudUtil;
 import org.cloudfoundry.client.lib.util.JsonUtil;
-import org.eclipse.cft.server.core.internal.client.RestUtils;
+import org.eclipse.cft.server.core.internal.ssh.SshHost;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -28,10 +27,12 @@ import org.springframework.web.client.RestTemplate;
 public class CloudInfoV2 {
 
 	private RestTemplate restTemplate;
-	private URL ccUrl;
+
+	private String ccUrl;
+
 	private Map<String, Object> infoV2Map;
 
-	public CloudInfoV2(CloudCredentials creds, URL url, HttpProxyConfiguration proxyConf, boolean selfSigned) {
+	public CloudInfoV2(CloudCredentials creds, String url, HttpProxyConfiguration proxyConf, boolean selfSigned) {
 		restTemplate = RestUtils.createRestTemplate(proxyConf, selfSigned, false);
 		this.ccUrl = url;
 	}
@@ -39,21 +40,29 @@ public class CloudInfoV2 {
 	public String getSshClientId() {
 		return getProp("app_ssh_oauth_client"); //$NON-NLS-1$
 	}
-	
+
 	public String getAuthorizationUrl() {
 		return getProp("authorization_endpoint"); //$NON-NLS-1$
 	}
 
+	public String getCloudControllerUrl() {
+		return this.ccUrl;
+	}
+
+	public String getCloudControllerApiVersion() {
+		return getProp("api_version"); //$NON-NLS-1$
+	}
+
 	public String getProp(String name) {
 		Map<String, Object> map = getMap();
-		if (map!=null) {
+		if (map != null) {
 			return CloudUtil.parse(String.class, map.get(name));
 		}
 		return null;
 	}
 
 	private Map<String, Object> getMap() {
-		if (infoV2Map==null) {
+		if (infoV2Map == null) {
 			String infoV2Json = restTemplate.getForObject(getUrl("/v2/info"), String.class); //$NON-NLS-1$
 			infoV2Map = JsonUtil.convertJsonToMap(infoV2Json);
 		}
@@ -67,15 +76,15 @@ public class CloudInfoV2 {
 	public SshHost getSshHost() {
 		String fingerPrint = getProp("app_ssh_host_key_fingerprint"); //$NON-NLS-1$
 		String host = getProp("app_ssh_endpoint"); //$NON-NLS-1$
-		int port = 22; //Default ssh port
-		if (host!=null) {
-			if (host.contains(":")) {
-				String[] pieces = host.split(":");
+		int port = 22; // Default ssh port
+		if (host != null) {
+			if (host.contains(":")) { //$NON-NLS-1$
+				String[] pieces = host.split(":"); //$NON-NLS-1$
 				host = pieces[0];
 				port = Integer.parseInt(pieces[1]);
 			}
 		}
-		if (host!=null || fingerPrint!=null) {
+		if (host != null || fingerPrint != null) {
 			return new SshHost(host, port, fingerPrint);
 		}
 		return null;

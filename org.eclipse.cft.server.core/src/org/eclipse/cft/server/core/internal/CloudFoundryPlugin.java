@@ -29,6 +29,7 @@ import org.eclipse.cft.server.core.AbstractAppStateTracker;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryClientFactory;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
+import org.eclipse.cft.server.core.internal.client.v2.DiegoCloudFoundryTarget;
 import org.eclipse.cft.server.core.internal.pivotal.PivotalCloudFoundryTarget;
 import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.runtime.CoreException;
@@ -334,8 +335,8 @@ public class CloudFoundryPlugin extends Plugin {
 	public static synchronized CloudFoundryTargetManager getTargetManager() {
 		if (targetManager == null) {
 			targetManager = new CloudFoundryTargetManager();
-			targetManager.addTarget(CloudFoundryServerTarget.DEFAULT);
 			targetManager.addTarget(new PivotalCloudFoundryTarget());
+			targetManager.addTarget(new DiegoCloudFoundryTarget());
 		}
 		return targetManager;
 	}

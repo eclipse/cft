@@ -18,15 +18,27 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.core.internal.pivotal;
+package org.eclipse.cft.server.core.internal.client.v2;
 
+import org.eclipse.cft.server.core.internal.CloudFoundryServerTarget;
 import org.eclipse.cft.server.core.internal.client.ClientRequestFactory;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 
-public class PivotalRequestFactory extends ClientRequestFactory {
+public class DiegoCloudFoundryTarget extends CloudFoundryServerTarget {
 
-	public PivotalRequestFactory(CloudFoundryServerBehaviour behaviour) {
-		super(behaviour);
+	@Override
+	public String getServerUri() {
+		return ALL_SERVERS;
+	}
+
+	@Override
+	public ClientRequestFactory getRequestFactory(CloudFoundryServerBehaviour behaviour) {
+		return new DiegoRequestFactory(behaviour);
+	}
+
+	@Override
+	public boolean supportsSsh() {
+		return true;
 	}
 
 }

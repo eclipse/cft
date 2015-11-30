@@ -37,10 +37,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
 
-import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-import com.jcraft.jsch.UserInfo;
 
 public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 
@@ -109,29 +107,14 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 				CloudFoundryServerBehaviour.createExternalClientLogin(url, userName, password, selfSigned, monitor),
 				new CloudCredentials(userName, password), null, selfSigned);
 
-		JSch jsch = new JSch();
-
-		String user = "cf:" //$NON-NLS-1$
-				+ appModule.getApplication().getMeta().getGuid().toString() + "/" + appInstance; //$NON-NLS-1$
-
-		printToConsole(appModule, cloudServer,
-				NLS.bind(Messages.SshDebugLaunchConfigDelegate_CONNECTING_FOR_USER, user), false);
-
-		String oneTimeCode = null;
 		try {
-			Session session = jsch.getSession(user, ssh.getSshHost().getHost(), ssh.getSshHost().getPort());
+			printToConsole(appModule, cloudServer, NLS.bind(Messages.SshDebugLaunchConfigDelegate_CONNECTING_FOR_USER,
+					appModule.getDeployedApplicationName()), false);
+			
+			Session session = ssh.connect(appModule.getApplication(), cloudServer, appInstance);
 
-			oneTimeCode = ssh.getSshCode();
-
-			printToConsole(appModule, cloudServer, Messages.SshDebugLaunchConfigDelegate_OBTAINED_ONE_TIME_CODE, false);
-
-			session.setPassword(oneTimeCode);
-			session.setUserInfo(getUserInfo(oneTimeCode));
-			session.setServerAliveInterval(15 * 1000); // Avoid timeouts during
-														// debugging
-			session.connect();
-
-			printToConsole(appModule, cloudServer, Messages.SshDebugLaunchConfigDelegate_CONNECTION_SUCCESSFUL, false);
+			printToConsole(appModule, cloudServer, NLS.bind(Messages.SshDebugLaunchConfigDelegate_CONNECTION_SUCCESSFUL,
+					appModule.getDeployedApplicationName()), false);
 
 			int localDebuggerPort = session.setPortForwardingL(0, "localhost", remoteDebugPort); //$NON-NLS-1$
 
@@ -145,7 +128,7 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 		}
 		catch (JSchException e) {
 			throw CloudErrorUtil.asCoreException("SSH connection error " + e.getMessage() //$NON-NLS-1$
-					+ ". One time code: " + oneTimeCode, e, false); //$NON-NLS-1$
+			, e, false);
 		}
 	}
 
@@ -157,40 +140,6 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 			}
 		}
 		return null;
-	}
-
-	protected UserInfo getUserInfo(final String accessToken) {
-		return new UserInfo() {
-
-			@Override
-			public void showMessage(String arg0) {
-			}
-
-			@Override
-			public boolean promptYesNo(String arg0) {
-				return true;
-			}
-
-			@Override
-			public boolean promptPassword(String arg0) {
-				return true;
-			}
-
-			@Override
-			public boolean promptPassphrase(String arg0) {
-				return false;
-			}
-
-			@Override
-			public String getPassword() {
-				return accessToken;
-			}
-
-			@Override
-			public String getPassphrase() {
-				return null;
-			}
-		};
 	}
 
 	@Override

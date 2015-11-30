@@ -26,7 +26,7 @@ import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 /**
  * Internal use only
  * <p/>
- * Contains additional server information that is not defined in server
+ * Contains additional server behaviour that is not defined in server
  * extension points
  *
  */
@@ -37,11 +37,6 @@ public abstract class CloudFoundryServerTarget {
 	public static final CloudFoundryServerTarget DEFAULT = new CloudFoundryServerTarget() {
 
 		@Override
-		public boolean supportsSsh() {
-			return false;
-		}
-
-		@Override
 		public String getServerUri() {
 			return ALL_SERVERS;
 		}
@@ -49,6 +44,11 @@ public abstract class CloudFoundryServerTarget {
 		@Override
 		public ClientRequestFactory getRequestFactory(CloudFoundryServerBehaviour behaviour) {
 			return new ClientRequestFactory(behaviour);
+		}
+
+		@Override
+		public boolean supportsSsh() {
+			return false;
 		}
 	};
 
@@ -58,7 +58,7 @@ public abstract class CloudFoundryServerTarget {
 	 * be null.
 	 */
 	abstract public String getServerUri();
-
+	
 	abstract public boolean supportsSsh();
 
 	/**

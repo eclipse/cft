@@ -41,7 +41,7 @@ import org.eclipse.core.runtime.SubMonitor;
  * (e.g. creating a service, getting list of all apps), should not use this
  * request.
  */
-abstract class StagingAwareRequest<T> extends BehaviourRequest<T> {
+abstract public class StagingAwareRequest<T> extends BehaviourRequest<T> {
 
 	public StagingAwareRequest(String label, CloudFoundryServerBehaviour behaviour) {
 		super(label, behaviour);

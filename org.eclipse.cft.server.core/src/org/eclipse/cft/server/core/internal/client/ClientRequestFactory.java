@@ -46,7 +46,7 @@ import org.springframework.web.client.RestClientException;
 
 public class ClientRequestFactory {
 
-	private final CloudFoundryServerBehaviour behaviour;
+	protected final CloudFoundryServerBehaviour behaviour;
 
 	public ClientRequestFactory(CloudFoundryServerBehaviour behaviour) {
 		this.behaviour = behaviour;
@@ -496,6 +496,17 @@ public class ClientRequestFactory {
 			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 				client.stopApplication(cloudModule.getDeployedApplicationName());
 				return null;
+			}
+		};
+	}
+
+	public BaseClientRequest<String> getFile(final CloudApplication app, final int instanceIndex, final String path,
+			boolean isDir) throws CoreException {
+		String label = NLS.bind(Messages.CloudFoundryServerBehaviour_FETCHING_FILE, path, app.getName());
+		return new FileRequest<String>(label, behaviour) {
+			@Override
+			protected String doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+				return client.getFile(app.getName(), instanceIndex, path);
 			}
 		};
 	}

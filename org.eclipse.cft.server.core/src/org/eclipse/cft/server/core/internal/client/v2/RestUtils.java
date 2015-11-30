@@ -1,4 +1,4 @@
-/*
+/**
  * Copied from Spring Tool Suite and cf-java-client. Original license:
  * 
  * Copyright 2009-2015 the original author or authors.
@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.eclipse.cft.server.core.internal.client;
+package org.eclipse.cft.server.core.internal.client.v2;
 
 import static org.apache.http.conn.ssl.SSLSocketFactory.BROWSER_COMPATIBLE_HOSTNAME_VERIFIER;
 
