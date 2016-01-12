@@ -1,5 +1,7 @@
 To run the Cloud Foundry unit tests, a local properties text file should be passed as a VM argument in the unit test
 launch configuration. 
+The default value of this property is "CFcredentials.txt" which implies you create it at the root of this plug-in, 
+that is, the same location as this file.
 
 The plain text properties file should contain:
 
@@ -16,7 +18,7 @@ The full path location of the file should then be specified by the VM argument:
 
 Example:
 
-/User/myuser/testing/CFcredentials.txt contains:
+Create CFcredentials.txt in this location with the following entries:
 
 url: api.run.pivotal.io
 username: myusername@pivotal.io
@@ -24,10 +26,12 @@ password: mypassword
 org: PivotalOrg
 space: TestSpace
 
+The values of all entries above, except "url", should be modified as per your account information.
+
 
 The file location is then passed as a VM argument:
 
--Dtest.credentials=/User/myuser/testing/CFcredentials.txt
+-Dtest.credentials=CFcredentials.txt
 
 The URL in the properties file can also include "http://" or "https://", instead of just the host:
 
@@ -36,6 +40,6 @@ url: https://api.run.pivotal.io
 
 A "CF Base Tests.launch" configuration is provided with the VM args needed to run the Junits:
 
--Xmx1024M -XX:PermSize=256M -XX:MaxPermSize=256M -Dtest.credentials=/User/myuser/testing/CFcredentials.txt
+-Xmx1024M -XX:PermSize=256M -XX:MaxPermSize=256M -Dtest.credentials=CFcredentials.txt
 
-However, the test.credentials arg needs to be modified to point to your local credentials text file.
+However, if you do not wish to create CFcredentials.txt as suggested above, the test.credentials arg needs to be modified to point to your local credentials text file.
