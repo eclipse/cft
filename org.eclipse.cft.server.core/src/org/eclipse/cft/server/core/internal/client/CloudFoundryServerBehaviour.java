@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -463,10 +463,15 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public CloudFoundryApplicationModule updateCloudModuleWithInstances(IModule module, IProgressMonitor monitor)
 			throws CoreException {
 		CloudFoundryApplicationModule appModule = getCloudFoundryServer().getExistingCloudModule(module);
-		String name = appModule != null ? appModule.getDeployedApplicationName() : null;
-		if (name != null) {
-			return updateCloudModuleWithInstances(name, monitor);
+		
+		if(appModule != null && appModule.isDeployed()) {
+			String name = appModule.getDeployedApplicationName();
+			if (name != null) {
+				return updateCloudModuleWithInstances(name, monitor);
+			}
+			
 		}
+				
 		return null;
 	}
 
