@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,7 @@
  *  
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
+ *     IBM - Bug 485697 - Implement host name taken check in CF wizards
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal;
 
@@ -26,21 +27,29 @@ import java.util.List;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
+import org.eclipse.cft.server.core.internal.ValidationEvents;
 import org.eclipse.cft.server.ui.internal.wizards.CloudUIEvent;
+import org.eclipse.cft.server.ui.internal.wizards.IReservedURLTracker;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.wizard.IWizard;
+import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 /**
@@ -80,6 +89,11 @@ public class CloudApplicationUrlPart extends UIPart {
 	private Text fullURLText;
 
 	private Combo domainCombo;
+	
+	private Button validateButton;
+
+	// The Wizard Page that this part belongs to.  Need access to the IReservedURLTracker Wizard.
+	private IWizardPage page;
 
 	public CloudApplicationUrlPart(ApplicationUrlLookupService lookupService) {
 		this.lookupService = lookupService;
@@ -96,7 +110,7 @@ public class CloudApplicationUrlPart extends UIPart {
 	public Composite createPart(Composite parent) {
 
 		Composite subDomainComp = parent;
-		GridLayoutFactory.fillDefaults().numColumns(2).applyTo(subDomainComp);
+		GridLayoutFactory.fillDefaults().numColumns(3).applyTo(subDomainComp);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(subDomainComp);
 
 		Label label = new Label(subDomainComp, SWT.NONE);
@@ -105,11 +119,14 @@ public class CloudApplicationUrlPart extends UIPart {
 		GridDataFactory.fillDefaults().grab(false, false).align(SWT.FILL, SWT.CENTER).applyTo(label);
 
 		subDomainText = new Text(subDomainComp, SWT.BORDER);
-		GridDataFactory.fillDefaults().grab(true, false).applyTo(subDomainText);
+		GridDataFactory.fillDefaults().grab(true, false).span(2, 1).applyTo(subDomainText);
 
 		subDomainText.addModifyListener(new ModifyListener() {
 
 			public void modifyText(ModifyEvent arg0) {
+				// Since there is a Validate button, any changes to the sub-domain text must result in clearing of any existing hostname taken error.
+				// This is necessary because this existing error message could become stale/could no longer apply as the user modifies the subdomain.
+				notifyChange(new PartChangeEvent(subDomainText, Status.OK_STATUS, CloudUIEvent.VALIDATE_HOST_TAKEN_EVENT, ValidationEvents.VALIDATION_HOSTNAME_TAKEN));
 				resolveUrlFromSubdomain(subDomainText);
 			}
 		});
@@ -119,7 +136,7 @@ public class CloudApplicationUrlPart extends UIPart {
 		GridDataFactory.fillDefaults().grab(false, false).align(SWT.FILL, SWT.CENTER).applyTo(label);
 
 		domainCombo = new Combo(subDomainComp, SWT.BORDER | SWT.READ_ONLY);
-		GridDataFactory.fillDefaults().grab(true, false).applyTo(domainCombo);
+		GridDataFactory.fillDefaults().grab(true, false).span(2, 1).applyTo(domainCombo);
 		domainCombo.setEnabled(true);
 		domainCombo.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -144,6 +161,26 @@ public class CloudApplicationUrlPart extends UIPart {
 			}
 		});
 
+		validateButton = new Button(subDomainComp, SWT.PUSH); 
+		validateButton.setText(Messages.CloudApplicationUrlPart_BUTTON_VALIDATE_LABEL);
+		validateButton.setToolTipText(Messages.CloudApplicationUrlPart_BUTTON_VALIDATE_LABEL_HOVERHELP);
+		GridDataFactory.fillDefaults().grab(false, false).applyTo(validateButton);
+		validateButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent se) {
+					CloudApplicationURL appUrl = null;
+					try {
+						appUrl = lookupService.getCloudApplicationURL(fullURLText.getText());
+					}
+					catch (CoreException ce) {
+						// if already invalid, then don't do hostname taken check
+						return;
+					}
+					if (appUrl != null) {
+						validateHostNameChecker(appUrl);
+					}
+			}
+		});
 		return subDomainComp;
 
 	}
@@ -283,6 +320,8 @@ public class CloudApplicationUrlPart extends UIPart {
 			setTextValue(subDomainText, subDomain);
 		}
 
+		validateButton.setEnabled(status.isOK());
+
 		validationSource = null;
 
 		notifyChange(new PartChangeEvent(currentUrl, status, CloudUIEvent.APPLICATION_URL_CHANGED));
@@ -341,5 +380,36 @@ public class CloudApplicationUrlPart extends UIPart {
 			}
 		}
 		return selectionIndex;
+	}
+
+	public void setPage(IWizardPage page) {
+		this.page = page;
+	}
+
+	private void validateHostNameChecker(CloudApplicationURL appUrl) {
+		final CloudApplicationURL cloudAppURL = appUrl;
+		Shell activeShell = Display.getDefault().getActiveShell();
+		IWizard wizard = page.getWizard();
+		if (wizard instanceof IReservedURLTracker) {
+			IReservedURLTracker reservedURLTracker = (IReservedURLTracker)wizard;
+	
+			// If we've already reserved the hostname, then we don't have to call the client again.
+			if (!reservedURLTracker.isReserved(cloudAppURL)) {
+				IStatus validatorStatus = reservedURLTracker.validateURL(cloudAppURL);
+				if (validatorStatus.isOK()) {
+					// Reserve the URL
+					reservedURLTracker.addToReserved(cloudAppURL);
+					// Bring up a dialog to give feedback that the hostname is not taken and it will be reserved.
+					MessageDialog.openInformation(activeShell, Messages.CloudApplicationUrlPart_DIALOG_TITLE_HOSTNAME_VALIDATION, 
+						Messages.bind(Messages.CloudApplicationUrlPart_DIALOG_MESSAGE_HOSTNAME_AVAILABLE, cloudAppURL.getSubdomain()));
+				}
+				notifyChange(new WizardPartChangeEvent(appUrl, validatorStatus, CloudUIEvent.VALIDATE_HOST_TAKEN_EVENT, ValidationEvents.VALIDATION_HOSTNAME_TAKEN, true));
+			} else {
+				MessageDialog.openInformation(activeShell, Messages.CloudApplicationUrlPart_DIALOG_TITLE_HOSTNAME_VALIDATION, 
+						Messages.bind(Messages.CloudApplicationUrlPart_DIALOG_MESSAGE_HOSTNAME_AVAILABLE, cloudAppURL.getSubdomain()));
+				// Clear any existing hostname taken errors
+				notifyChange(new WizardPartChangeEvent(appUrl, Status.OK_STATUS, CloudUIEvent.VALIDATE_HOST_TAKEN_EVENT, ValidationEvents.VALIDATION_HOSTNAME_TAKEN, true));
+			}
+		}
 	}
 }

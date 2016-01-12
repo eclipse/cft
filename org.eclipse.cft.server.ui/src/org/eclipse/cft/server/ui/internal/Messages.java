@@ -17,6 +17,7 @@
  *  
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
+ *     IBM - Bug 485697 - Implement host name taken check in CF wizards
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal;
 
@@ -113,7 +114,9 @@ public class Messages extends NLS {
 	public static String ApplicationMasterPart_TEXT_ROUTES;
 
 	public static String ApplicationMasterPart_TEXT_SERVICES_DESCRIP;
-	
+
+	public static String CloudFoundryApplicationWizardPage_ERROR_INITIAL_HOSTNAME_TAKEN;	
+
 	public static String ApplicationDeploymentUIHandler_CONTINUE_DEPLOYMENT_SERVICE_ERROR_TITLE;
 	
 	public static String ApplicationDeploymentUIHandler_CONTINUE_DEPLOYMENT_SERVICE_ERROR_MESSAGE;
@@ -536,6 +539,20 @@ public class Messages extends NLS {
 
 	public static String CloudApplicationUrlPart_TEXT_SUBDOMAIN_LABEL;
 
+	public static String CloudApplicationUrlPart_BUTTON_VALIDATE_LABEL;
+
+	public static String CloudApplicationUrlPart_BUTTON_VALIDATE_LABEL_HOVERHELP;
+
+	public static String CloudApplicationUrlPart_ERROR_HOSTNAME_TAKEN;
+	
+	public static String CloudApplicationUrlPart_HOST_CHECK_JOB_DISPLAY_INFO;
+	
+	public static String CloudApplicationUrlPart_ERROR_UNABLE_TO_CHECK_HOSTNAME;
+	
+	public static String CloudApplicationUrlPart_DIALOG_TITLE_HOSTNAME_VALIDATION;
+	
+	public static String CloudApplicationUrlPart_DIALOG_MESSAGE_HOSTNAME_AVAILABLE;
+
 	public static String CloudFoundryAccountSection_LABEL_EMAIL;
 
 	public static String CloudFoundryAccountSection_LABEL_PASSWORD;
@@ -754,6 +771,8 @@ public class Messages extends NLS {
 	public static String CloudUIEvent_TEXT_APP_NAME_CHANGE;
 
 	public static String CloudUIEvent_TEXT_APP_URL_CHANGE;
+
+	public static String CloudUIEvent_TEXT_VALIDATE_HOST_TAKEN_EVENT;
 
 	public static String CloudUIEvent_TEXT_BUILDPACK;
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,20 +17,25 @@
  *  
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
+ *     IBM - Bug 485697 - Implement host name taken check in CF wizards
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.wizards;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
+import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
+import org.eclipse.cft.server.ui.internal.CloudUiUtil;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.core.runtime.Assert;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 
@@ -43,7 +48,7 @@ import org.eclipse.jface.wizard.Wizard;
  * application module has a deployment descriptor available to edit and 2. if
  * operation is cancelled, the values in the module are restored.
  */
-public class CloudFoundryApplicationWizard extends Wizard {
+public class CloudFoundryApplicationWizard extends Wizard implements IReservedURLTracker {
 
 	protected final CloudFoundryApplicationModule module;
 
@@ -54,6 +59,9 @@ public class CloudFoundryApplicationWizard extends Wizard {
 	protected final ApplicationWizardDescriptor applicationDescriptor;
 
 	protected DeploymentInfoWorkingCopy workingCopy;
+
+	// Keep track of reserved URLs in the wizard and not in individual wizard pages and parts
+	private List<CloudApplicationURL> reservedUrls;
 
 	/**
 	 * @param server must not be null
@@ -80,6 +88,8 @@ public class CloudFoundryApplicationWizard extends Wizard {
 		applicationDescriptor.setApplicationStartMode(ApplicationAction.START);
 		setNeedsProgressMonitor(true);
 		setWindowTitle(Messages.CloudFoundryApplicationWizard_TITLE_APP);
+
+		this.reservedUrls = new ArrayList<CloudApplicationURL>();
 	}
 
 	@Override
@@ -137,7 +147,33 @@ public class CloudFoundryApplicationWizard extends Wizard {
 	@Override
 	public boolean performFinish() {
 		workingCopy.save();
+		CloudUiUtil.cleanupReservedRoutes(workingCopy, this, server, reservedUrls);
 		return true;
 	}
 
+	@Override
+	public boolean performCancel() {
+		CloudUiUtil.cleanupReservedRoutes(this,  server, reservedUrls, null);
+		return super.performCancel();
+	}
+
+	// Implement IReservedURLTracker
+	
+	public void addToReserved(CloudApplicationURL appUrl) {
+		reservedUrls.add(appUrl);
+	}
+
+	public void removeFromReserved(CloudApplicationURL appUrl) {
+		if (reservedUrls.contains(appUrl)) {
+			reservedUrls.remove(appUrl);
+		}
+	}
+	
+	public boolean isReserved(CloudApplicationURL appUrl) {
+		return reservedUrls.contains(appUrl);
+	}
+
+	public IStatus validateURL(CloudApplicationURL appUrl) {
+		return CloudUiUtil.validateHostname(appUrl, server, getContainer());
+	}
 }

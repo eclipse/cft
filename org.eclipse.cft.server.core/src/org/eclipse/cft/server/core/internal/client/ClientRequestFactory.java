@@ -9,6 +9,7 @@
  *
  * Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
+ *     IBM - Bug 485697 - Implement host name taken check in CF wizards
  *******************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
@@ -507,6 +508,50 @@ public class ClientRequestFactory {
 			@Override
 			protected String doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 				return client.getFile(app.getName(), instanceIndex, path);
+			}
+		};
+	}
+	
+	/**
+	 * Check if the 'host' in the 'domainName' is already taken.  Optionally delete the route after the check or keep it to
+	 * reserve it.  Clients are expected to call {@link #deleteRoute(String, String)} after to remove any unused routes.
+	 * 
+	 * @see deleteRoute(String, String)
+	 * @param host - the Subdomain of the deployed URL
+	 * @param domainName - the domainName part of the deployed URL
+	 * @param deleteRoute - true to delete the route, false to reserve it and delete it later if necessary
+	 * @return
+	 */
+	public BaseClientRequest<Void> checkHostTaken(final String host, final String domainName, final boolean deleteRoute) {
+		return new BehaviourRequest<Void>(Messages.bind(Messages.CloudFoundryServerBehaviour_CHECKING_HOSTNAME_AVAILABLE, host), behaviour) {
+			@Override
+			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+				// check if the route can be added.  If successful, then it is not taken.
+				client.addRoute(host, domainName);
+				// if addRoute is successful (no CoreException), then delete it so it is available again
+				// Specify deleteRoute = false to 'reserve' the hostname
+				if (deleteRoute) {
+					client.deleteRoute(host, domainName);
+				}
+				return null;
+			}
+		};
+	}
+
+	/**
+	 * Delete the route.  Use also with {@link #checkHostTaken(String, String, boolean)
+	 * 
+	 * @see checkHostTaken(String, String, boolean) {
+	 * @param host - the Subdomain of the deployed URL
+	 * @param domainName - the domainName part of the deployed URL
+	 * @return
+	 */
+	public BaseClientRequest<Void> deleteRoute(final String host, final String domainName) {
+		return new BehaviourRequest<Void>(Messages.bind(Messages.CloudFoundryServerBehaviour_CLEANING_UP_RESERVED_HOSTNAME, host), behaviour) {
+			@Override
+			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+				client.deleteRoute(host, domainName);
+				return null;
 			}
 		};
 	}

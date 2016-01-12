@@ -19,6 +19,7 @@
  *     Pivotal Software, Inc. - initial API and implementation
  *     IBM - Switching to use the more generic AbstractCloudFoundryUrl
  *     		instead concrete CloudServerURL, deprecating non-recommended methods
+ *          Bug 485697 - Implement host name taken check in CF wizards
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal;
 
@@ -28,18 +29,25 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.eclipse.cft.server.core.AbstractCloudFoundryUrl;
+import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
+import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint.CloudServerURL;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
+import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
 import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.DialogPage;
@@ -50,6 +58,7 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.IWizard;
+import org.eclipse.jface.wizard.IWizardContainer;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
@@ -529,4 +538,155 @@ public class CloudUiUtil {
 		return PlatformUI.getWorkbench().getModalDialogShellProvider().getShell();
 	}
 
+	public static CloudApplicationURL getUniqueSubdomain(String url, CloudFoundryServer server) {
+			if (url == null) return null; // Incorrect usage. Provide a non-null string
+			ApplicationUrlLookupService lookup = ApplicationUrlLookupService.getCurrentLookup(server);
+			CloudApplicationURL cloudUrl = null;
+			boolean isUniqueURL = true;
+			int intSuffix = 1;
+			do {
+				try {
+					// It does NOT check if the URL is taken already, even if valid.
+					cloudUrl = lookup.getCloudApplicationURL(url);
+				} catch (CoreException e) {
+					// if error occurred, eg. url is null, then don't check for host taken and simply return
+					break;
+				}
+				
+				try {
+					// CheckHostTaken - reserve the route when we get a unused name
+					server.getBehaviour().checkHostTaken(cloudUrl.getSubdomain(), cloudUrl.getDomain(), false, new NullProgressMonitor());
+					// break or just set boolean to true
+					isUniqueURL = true;
+				} catch (CoreException ce) {
+					isUniqueURL = false;
+					StringBuilder sb = new StringBuilder(url);
+					String subdomain = cloudUrl.getSubdomain();
+					// Get the last integers in the subdomain
+					Pattern p = Pattern.compile("(\\d+)$");  //$NON-NLS-N$
+					Matcher m = p.matcher(subdomain);
+					// If it ends with a number, then simply increment it by one to get the new candidate subdomain name
+					if (m.find()) {
+						// Examples: subdomain could be MyApp1 or MyApp99 or MyApp2015
+						String intSuffixString = m.group(1); // The number can be any length
+						intSuffix = Integer.parseInt(intSuffixString);
+						int beginning = subdomain.indexOf(intSuffixString);
+						int length = intSuffixString.length();
+						// Examples: MyApp1 to MyApp2;  MyApp99 to MyApp100; MyApp2015 to MyApp2016
+						// Increment intSuffix first
+						url = sb.replace(beginning, beginning+length, Integer.toString(++intSuffix)).toString();
+					} else { // Otherwise, simply append 1 to the end of the subdomain
+						// Example: subdomain = MyApp --> MyApp1
+						url = sb.insert(sb.indexOf(subdomain) + subdomain.length(), "1").toString();  
+					}
+				}
+			} while (!isUniqueURL && intSuffix < Integer.MAX_VALUE - 1); // Support suffix up to the number 2^31 - 1
+			return cloudUrl;
+		}
+		
+		/**
+		 * Run the host name validator in the context of the wizard container
+		 * 
+		 * @param appUrl
+		 * @param server
+		 * @param monitor
+		 * @param message
+		 * @return
+		 */
+		public static IStatus validateHostname(CloudApplicationURL appUrl, CloudFoundryServer server, IWizardContainer container) {
+			return validateHostname(appUrl, server, container, null);
+		}
+
+		/**
+		 * Run the host name validator in the context of the wizard container and provide a custom error message
+		 * @param appUrl
+		 * @param server
+		 * @param container
+		 * @param message - override with custom error message
+		 * @return
+		 */
+		public static IStatus validateHostname(CloudApplicationURL appUrl, CloudFoundryServer server, IWizardContainer container, String message) {
+			HostnameValidator val = message == null ? new HostnameValidator(appUrl, server) : new HostnameValidator(appUrl, server, message);
+			try {
+				container.run(true,  true,  val);
+			}
+			catch (Exception e) {
+				CloudFoundryPlugin.logWarning("Hostname taken validation was not completed. " + e.getMessage()); //$NON-NLS-1$
+				return new Status(IStatus.ERROR, CloudFoundryServerUiPlugin.PLUGIN_ID, Messages.CloudApplicationUrlPart_ERROR_UNABLE_TO_CHECK_HOSTNAME);
+			}
+			return val.getStatus();
+		}
+		
+		/**
+		 * Clean up reserved URLs except the URL to keep (urlToKeep) from the context of a wizard.  If urlToKeep is null, then all
+		 * reserved URLs will be removed.
+		 * 
+		 * @param wizard - the wizard
+		 * @param server - the CloudFoundryServer
+		 * @param reservedUrls - list of CloudApplicationURL that have been reserved
+		 * @param urlToKeep - The URL to keep from the list of reservedUrls
+		 */
+		public static void cleanupReservedRoutes(IWizard wizard, final CloudFoundryServer server, List<CloudApplicationURL>reservedUrls, String urlToKeep) {
+			for (CloudApplicationURL cloudURL : reservedUrls) {
+				// Don't remove the one that is needed
+				if (urlToKeep != null && urlToKeep.equals(cloudURL.getUrl())) {
+					continue;
+				}
+				deleteRoute(wizard, server, cloudURL);
+			}
+			reservedUrls.clear();
+		}
+
+		/**
+		 * Clean up reserved URLs except those specified in the deployment info, from the context of a wizard
+		 * 
+		 * @param workingCopy
+		 * @param wizard - the wizard
+		 * @param server - the CloudFoundryServer
+		 * @param reservedUrls - the list of all reserved route URLS
+		 */
+		public static void cleanupReservedRoutes(DeploymentInfoWorkingCopy workingCopy, IWizard wizard, final CloudFoundryServer server, List<CloudApplicationURL>reservedUrls) {
+			List<String> urls = workingCopy.getUris();
+			if (urls == null) {
+				urls = new ArrayList<String>();
+			}
+			// Clean up unused routes that were reserved and no longer needed
+			for (CloudApplicationURL cloudURL : reservedUrls) {
+				boolean isNeeded = false;
+
+				for (String url : urls) {
+					if (url.equals(cloudURL.getUrl())) {
+						isNeeded = true;
+						break;
+					}
+				}
+				if (!isNeeded) {
+					deleteRoute(wizard, server, cloudURL);
+				}
+			}
+			reservedUrls.clear();
+		}
+		
+		private static void deleteRoute(final IWizard wizard, final CloudFoundryServer server, final CloudApplicationURL fCloudURL) {
+			try {
+				wizard.getContainer().run(true, true, new IRunnableWithProgress() {
+					@Override
+					public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
+						try {
+							server.getBehaviour().deleteRoute(fCloudURL.getSubdomain(), fCloudURL.getDomain(), monitor);
+						}
+						catch (CoreException e) {
+							CloudFoundryPlugin.logError(e);
+						}
+						finally {
+							monitor.done();
+						}
+					}
+				});
+			} catch (InterruptedException e) {
+				CloudFoundryPlugin.logWarning("The following route was not deleted: " + fCloudURL.getUrl());  //$NON-NLS-N$					
+			} catch (InvocationTargetException e) {
+				CloudFoundryPlugin.logWarning("The following route was not deleted: " + fCloudURL.getUrl());  //$NON-NLS-N$
+			}
+		}
 }

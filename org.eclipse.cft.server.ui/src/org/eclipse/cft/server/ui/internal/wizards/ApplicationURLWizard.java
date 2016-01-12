@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,15 +17,22 @@
  *  
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
+ *     IBM - Bug 485697 - Implement host name taken check in CF wizards
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.wizards;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
+import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.ui.internal.CloudApplicationUrlPart;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
+import org.eclipse.cft.server.ui.internal.CloudUiUtil;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.PartChangeEvent;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -39,7 +46,7 @@ import org.eclipse.swt.widgets.Composite;
  * list of Cloud domains.
  * 
  */
-public class ApplicationURLWizard extends Wizard {
+public class ApplicationURLWizard extends Wizard implements IReservedURLTracker {
 
 	private final CloudFoundryServer cloudServer;
 
@@ -51,16 +58,27 @@ public class ApplicationURLWizard extends Wizard {
 
 	private static final String title = Messages.ApplicationURLWizard_TITLE_MOD_APP_URL;
 
+	// Keep track of reserved URLs in the wizard and not in individual wizard pages
+	private List<CloudApplicationURL> reservedUrls;
+
 	public ApplicationURLWizard(CloudFoundryServer cloudServer, String initialUrl) {
 		this.cloudServer = cloudServer;
 		this.initialUrl = initialUrl;
 		setWindowTitle(title);
 		setNeedsProgressMonitor(true);
+		this.reservedUrls = new ArrayList<CloudApplicationURL>();
 	}
 
 	@Override
 	public boolean performFinish() {
+		CloudUiUtil.cleanupReservedRoutes(this, cloudServer, reservedUrls, editedUrl);
 		return true;
+	}
+
+	@Override
+	public boolean performCancel() {
+		CloudUiUtil.cleanupReservedRoutes(this, cloudServer, reservedUrls, null);
+		return super.performCancel();
 	}
 
 	@Override
@@ -81,7 +99,9 @@ public class ApplicationURLWizard extends Wizard {
 
 	protected ApplicationURLWizardPage createPage(ImageDescriptor imageDescriptor, ApplicationUrlLookupService urlLookup) {
 		CloudApplicationUrlPart urlPart = new CloudApplicationUrlPart(urlLookup);
-		return new ApplicationURLWizardPage(imageDescriptor, urlLookup, urlPart);
+		ApplicationURLWizardPage applicationURLWizardPage = new ApplicationURLWizardPage(imageDescriptor, urlLookup, urlPart);
+		urlPart.setPage(applicationURLWizardPage);
+		return applicationURLWizardPage;
 	}
 
 	class ApplicationURLWizardPage extends AbstractURLWizardPage {
@@ -135,4 +155,25 @@ public class ApplicationURLWizard extends Wizard {
 			super.handleChange(event);
 		}
 	}
+	
+	// Implement IReservedURLTracker
+	
+	public void addToReserved(CloudApplicationURL appUrl) {
+		reservedUrls.add(appUrl);
+	}
+
+	public void removeFromReserved(CloudApplicationURL appUrl) {
+		if (reservedUrls.contains(appUrl)) {
+			reservedUrls.remove(appUrl);
+		}
+	}
+	
+	public boolean isReserved(CloudApplicationURL appUrl) {
+		return reservedUrls.contains(appUrl);
+	}
+
+	public IStatus validateURL(CloudApplicationURL appUrl) {
+		return CloudUiUtil.validateHostname(appUrl, cloudServer, getContainer());
+	}
+
 }

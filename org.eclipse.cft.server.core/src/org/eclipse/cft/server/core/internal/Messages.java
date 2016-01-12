@@ -17,6 +17,7 @@
  *  
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
+ *     IBM - Bug 485697 - Implement host name taken check in CF wizards
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal;
 
@@ -173,6 +174,10 @@ public class Messages extends NLS {
 	public static String CloudFoundryServerBehaviour_APP_STATS;
 
 	public static String CloudFoundryServerBehaviour_APP_INFO;
+	
+	public static String CloudFoundryServerBehaviour_CHECKING_HOSTNAME_AVAILABLE;
+
+	public static String CloudFoundryServerBehaviour_CLEANING_UP_RESERVED_HOSTNAME;
 
 	public static String CloudFoundryServerBehaviour_CREATE_SERVICES;
 

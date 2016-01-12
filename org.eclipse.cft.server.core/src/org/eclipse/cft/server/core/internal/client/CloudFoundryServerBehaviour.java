@@ -18,6 +18,7 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  *     IBM - wait for all module publish complete before finish up publish operation.
+ *           Bug 485697 - Implement host name taken check in CF wizards
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
@@ -1232,6 +1233,22 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public void deleteRoute(final List<CloudRoute> routes, IProgressMonitor monitor) throws CoreException {
 
 		BaseClientRequest<?> request = getRequestFactory().deleteRoute(routes);
+		if (request != null) {
+			request.run(monitor);
+		}
+	}
+	
+	public void deleteRoute(final String host, final String domainName, IProgressMonitor monitor) throws CoreException {
+
+		BaseClientRequest<?> request = getRequestFactory().deleteRoute(host, domainName);
+		if (request != null) {
+			request.run(monitor);
+		}
+	}
+	
+	public void checkHostTaken(final String host, final String domainName, final boolean deleteRoute, IProgressMonitor monitor) throws CoreException {
+
+		BaseClientRequest<?> request = getRequestFactory().checkHostTaken(host, domainName, deleteRoute);
 		if (request != null) {
 			request.run(monitor);
 		}

@@ -17,21 +17,29 @@
  *  
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
+ *     IBM - Bug 485697 - Implement host name taken check in CF wizards
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.wizards;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
+import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
+import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.ModuleCache;
 import org.eclipse.cft.server.core.internal.ModuleCache.ServerData;
 import org.eclipse.cft.server.core.internal.ValueValidationUtil;
+import org.eclipse.cft.server.core.internal.application.ManifestParser;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
+import org.eclipse.cft.server.ui.internal.CloudUiUtil;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.PartChangeEvent;
 import org.eclipse.cft.server.ui.internal.UIPart;
@@ -139,6 +147,7 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 		// This must be called first as the values are then populate into the UI
 		// widgets
 		init();
+		IStatus hostnameStatus = validateHostname();
 
 		Composite composite = new Composite(parent, SWT.NONE);
 		composite.setLayout(new GridLayout(2, false));
@@ -171,6 +180,12 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 				validateBuildPack();
 			}
 		});
+
+		// Show hostname taken error message first over buildpack URL errors
+		if (hostnameStatus != null && !hostnameStatus.isOK()) {
+			setErrorMessage(hostnameStatus.getMessage());
+			handleChange(new PartChangeEvent(appName, hostnameStatus, CloudUIEvent.VALIDATE_HOST_TAKEN_EVENT));
+		}
 
 		return composite;
 	}
@@ -292,6 +307,8 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 					// If first time initialising, dont update the wizard
 					// buttons as the may not be available to update yet
 					boolean updateButtons = true;
+					// Any subsequent app name changes will clear the error
+					notifyChange(new PartChangeEvent(appName, Status.OK_STATUS, CloudUIEvent.VALIDATE_HOST_TAKEN_EVENT));
 					notifyChange(new WizardPartChangeEvent(appName, getUpdateNameStatus(),
 							CloudUIEvent.APP_NAME_CHANGE_EVENT, updateButtons));
 				}
@@ -304,5 +321,56 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 
 			return parent;
 		}
+	}
+	
+	private IStatus validateHostname() {
+		ApplicationDeploymentInfo workingCopy = descriptor.getDeploymentInfo();
+		IStatus status = Status.OK_STATUS;
+		boolean hasManifest = new ManifestParser(module, server).hasManifest();
+		if (workingCopy != null) {
+			CloudApplicationURL cloudUrl = null;
+			// if there is a valid manifest, we need to check if the saved host and domain is already used
+			if (hasManifest) {
+				List<String> urls = workingCopy.getUris();
+			    String url = urls != null && !urls.isEmpty() ? urls.get(0) : null;
+			    if (url != null) {
+			    	try {
+				    	ApplicationUrlLookupService urllookup = ApplicationUrlLookupService.getCurrentLookup(server);
+				    	CloudApplicationURL appUrl = urllookup.getCloudApplicationURL(url);
+					
+				    	// Message saying that the host name from the manifest is already taken. 
+				    	String customMessage = Messages.bind(Messages.CloudFoundryApplicationWizardPage_ERROR_INITIAL_HOSTNAME_TAKEN, appUrl.getSubdomain(), appUrl.getDomain());
+				    	// 	Validate it and get the status
+				    	status = CloudUiUtil.validateHostname(appUrl, server, getContainer(), customMessage);
+					
+				    	if (status != null && status.isOK()) {
+				    		cloudUrl = appUrl;
+				    	}
+			    	} catch (Throwable ce) {
+	
+						CloudFoundryPlugin.logError(ce);
+					}
+			    }
+			} else {
+				// IFF there is no manifest, then we will do the hostname validation AND suggest a new unique name
+				List<String> urls = workingCopy.getUris();
+				String url = urls != null && !urls.isEmpty() ? urls.get(0) : null;
+				if (url != null) {
+					cloudUrl = CloudUiUtil.getUniqueSubdomain(url, server);
+					if (cloudUrl != null) {
+						// Set the new deployment name and update the URIs only if it needs to be changed
+						if (!cloudUrl.getSubdomain().equals(workingCopy.getDeploymentName())) {
+						   workingCopy.setDeploymentName(cloudUrl.getSubdomain());
+						   appName = cloudUrl.getSubdomain();
+						   List<String>newList = new ArrayList<String>();
+						   newList.add(cloudUrl.getUrl());
+						   workingCopy.setUris(newList);
+						}
+					}
+				}
+				getApplicationWizard().addToReserved(cloudUrl);
+			}
+		}
+		return status;
 	}
 }

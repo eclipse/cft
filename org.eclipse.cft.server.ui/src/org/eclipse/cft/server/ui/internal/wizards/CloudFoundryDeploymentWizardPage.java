@@ -17,6 +17,7 @@
  *  
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
+ *     IBM - Bug 485697 - Implement host name taken check in CF wizards
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.wizards;
 
@@ -101,6 +102,7 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 		// Create the part before area is created as it be invoked by the page's
 		// event handler before the page is visible.
 		urlPart = createUrlPart(urlLookup);
+		urlPart.setPage(this);
 		urlPart.addPartChangeListener(this);
 		this.wizardDelegate = wizardDelegate;
 		
@@ -415,6 +417,9 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 
 			memory = new Text(parent, SWT.BORDER);
 			memory.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+			GridData gd = new GridData(SWT.FILL, SWT.FILL, true, false);
+			gd.horizontalSpan = 2;
+			memory.setLayoutData(gd);
 			memory.addModifyListener(new ModifyListener() {
 
 				public void modifyText(ModifyEvent e) {

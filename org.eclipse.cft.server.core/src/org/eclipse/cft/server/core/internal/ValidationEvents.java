@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2014, 2015 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,7 @@
  *  
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
+ *     IBM - Bug 485697 - Implement host name taken check in CF wizards
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal;
 
@@ -49,6 +50,11 @@ public class ValidationEvents {
 	 * as a completion is that
 	 */
 	public static final int VALIDATION = 1003;
+
+	/**
+	 * Indicates that the validation of the deployment URL has been requested or completed.
+	 */
+	public static final int VALIDATION_HOSTNAME_TAKEN = 1004;
 
 	public static final int EVENT_NONE = -1;
 }

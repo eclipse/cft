@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,7 @@
  *  
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
+ *     IBM - Bug 485697 - Implement host name taken check in CF wizards
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal;
 
@@ -34,6 +35,11 @@ public class WizardPartChangeEvent extends PartChangeEvent {
 
 	public WizardPartChangeEvent(Object data, IStatus status, IEventSource<?> source, boolean updateWizardButtons) {
 		super(data, status, source, ValidationEvents.EVENT_NONE);
+		this.updateWizardButtons = updateWizardButtons;
+	}
+
+	public WizardPartChangeEvent(Object data, IStatus status, IEventSource<?> source, int type, boolean updateWizardButtons) {
+		super(data, status, source, type);
 		this.updateWizardButtons = updateWizardButtons;
 	}
 
