@@ -44,6 +44,20 @@
 
   Java 7 is a minimum execution environment required to install and run CFT.
   Please make sure that your Eclipse is using Java 7 or higher.
+  
+## Offline Installation
+
+  Release and milestone versions of CFT can be installed offline using one of the release update 
+  site zip files listed below. Once the zip file is available in an offline environment, CFT can be 
+  installed following these steps in Eclipse or STS:
+  
+  Help -> Install New Software -> Add -> Archive
+  
+  Browse to the location of the zip file, and installation should complete in offline mode.
+  
+  Zips for the update sites can be found here:
+  
+  [Update Sites Zips](updatesites.md)
 
 ## Getting started
 
