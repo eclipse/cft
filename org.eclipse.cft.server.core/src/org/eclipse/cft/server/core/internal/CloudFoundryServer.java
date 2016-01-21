@@ -34,6 +34,7 @@ import java.util.Set;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
+import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.eclipse.cft.server.core.ICloudFoundryApplicationModule;
@@ -895,7 +896,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	 * @param deployedApplications
 	 * @throws CoreException
 	 */
-	public void updateModules(Map<String, CloudApplication> deployedApplications) throws CoreException {
+	public void updateModules(Map<String, CloudApplication> deployedApplications, Map<String, ApplicationStats> applicationStats) throws CoreException {
 		Server server = (Server) getServer();
 
 		final Set<CloudFoundryApplicationModule> allModules = new HashSet<CloudFoundryApplicationModule>();
@@ -980,6 +981,11 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 			for (IModule module : server.getModules()) {
 				CloudFoundryApplicationModule appModule = getExistingCloudModule(module);
 				if (appModule != null) {
+
+					// Set app stats before updating module state in server as
+					// state may be dependent on the application stats
+					ApplicationStats stats = applicationStats.get(appModule.getDeployedApplicationName());
+					appModule.setApplicationStats(stats);
 					updateState(server, appModule);
 				}
 			}

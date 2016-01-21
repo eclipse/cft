@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
@@ -286,12 +287,15 @@ public class CloudBehaviourOperations {
 
 				// update applications and deployments from server
 				Map<String, CloudApplication> deployedApplicationsByName = new LinkedHashMap<String, CloudApplication>();
-
+				Map<String, ApplicationStats> stats = new LinkedHashMap<String, ApplicationStats>();
+				
 				for (CloudApplication application : applications) {
+					ApplicationStats sts = getBehaviour().getApplicationStats(application.getName(), subMonitor);
+					stats.put(application.getName(), sts);
 					deployedApplicationsByName.put(application.getName(), application);
 				}
 
-				cloudServer.updateModules(deployedApplicationsByName);
+				cloudServer.updateModules(deployedApplicationsByName, stats);
 
 				// Clear publish error
 				Server server = (Server) cloudServer.getServer();

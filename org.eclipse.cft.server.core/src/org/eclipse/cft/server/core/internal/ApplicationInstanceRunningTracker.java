@@ -21,7 +21,6 @@
 package org.eclipse.cft.server.core.internal;
 
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
-import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
@@ -62,15 +61,13 @@ public class ApplicationInstanceRunningTracker {
 		CloudFoundryApplicationModule appModule = cloudServer.getBehaviour().updateCloudModuleWithInstances(appName,
 				monitor);
 
-		ApplicationStats stats = getStats(monitor);
-
 		printlnToConsole(NLS.bind(Messages.ApplicationInstanceStartingTracker_STARTING_TRACKING, appName), appModule);
 
 		while (runState != InstanceState.RUNNING && runState != InstanceState.FLAPPING
 				&& runState != InstanceState.CRASHED && currentTime < totalTime) {
 
 			// NOTE: app state is NOT the same as the INSTANCE state. Instance
-			// state indicates if all is actually running or not.
+			// state indicates if app is actually running or not.
 			// App state indicates the desired state of the app. So an app in
 			// STOPPED state will not have instances running. If
 			// app is STARTED, instances may still not be running if the app
@@ -83,6 +80,10 @@ public class ApplicationInstanceRunningTracker {
 				return null;
 			}
 
+			// Check the desired state of the app in CF. If desired state of app
+			// in CF is "stopped" (e.g. stop may have been
+			// requested externally), there is no need to check running
+			// instances anymore
 			if (appModule.getApplication().getState() == AppState.STOPPED) {
 				return null;
 			}
@@ -95,15 +96,13 @@ public class ApplicationInstanceRunningTracker {
 				return null;
 			}
 
-			runState = getRunState(stats, appModule.getApplication());
+			runState = appModule.getRunState();
 			try {
 				Thread.sleep(WAIT_TIME);
 			}
 			catch (InterruptedException e) {
 
 			}
-
-			stats = getStats(monitor);
 
 			currentTime = System.currentTimeMillis();
 		}
@@ -124,16 +123,4 @@ public class ApplicationInstanceRunningTracker {
 	protected ApplicationStats getStats(IProgressMonitor monitor) throws CoreException {
 		return cloudServer.getBehaviour().getApplicationStats(appName, monitor);
 	}
-
-	public static InstanceState getRunState(ApplicationStats stats, CloudApplication app) {
-
-		InstanceState runState = InstanceState.UNKNOWN;
-		if (stats != null && stats.getRecords() != null && !stats.getRecords().isEmpty()
-				&& app.getState() != CloudApplication.AppState.STOPPED) {
-			return stats.getRecords().get(0).getState();
-		}
-
-		return runState;
-	}
-
 }

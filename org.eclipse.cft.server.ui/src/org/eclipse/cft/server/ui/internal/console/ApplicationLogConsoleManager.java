@@ -108,7 +108,7 @@ public class ApplicationLogConsoleManager extends CloudConsoleManager {
 	protected CloudFoundryConsole doStartConsole(CloudFoundryServer server, LogContentType type,
 			CloudFoundryApplicationModule appModule, boolean show, boolean clear) throws CoreException {
 
-		if (!appModule.isDeployed()) {
+		if (!appModule.exists()) {
 			throw CloudErrorUtil
 					.toCoreException(NLS
 							.bind(org.eclipse.cft.server.ui.internal.Messages.ApplicationLogConsoleManager_APPLICATION_NOT_PUBLISHED,
