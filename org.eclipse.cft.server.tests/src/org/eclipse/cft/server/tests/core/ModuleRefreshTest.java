@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
+import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.Staging;
@@ -376,9 +377,12 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		externalClient.updateApplicationMemory(appName, 345);
 		updatedCloudApplicationFromClient = externalClient.getApplication(appName);
 		Map<String, CloudApplication> allApps = new HashMap<String, CloudApplication>();
+		Map<String, ApplicationStats> stats = new HashMap<String, ApplicationStats>();
 		allApps.put(updatedCloudApplicationFromClient.getName(), updatedCloudApplicationFromClient);
+		stats.put(updatedCloudApplicationFromClient.getName(), cloudServer.getBehaviour()
+				.getApplicationStats(updatedCloudApplicationFromClient.getName(), new NullProgressMonitor()));
 
-		cloudServer.updateModules(allApps);
+		cloudServer.updateModules(allApps, stats);
 
 		appModule = cloudServer.getExistingCloudModule(appName);
 
@@ -520,7 +524,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		// Update through all-modules update, and also verify existing modules
 		// matches results
 		Map<String, CloudApplication> allApps = new HashMap<String, CloudApplication>();
-		cloudServer.updateModules(allApps);
+		cloudServer.updateModules(allApps, new HashMap<String, ApplicationStats>());
 
 		appModule = cloudServer.getExistingCloudModule(appName);
 		assertNull(appModule);
@@ -586,9 +590,15 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		CloudApplication application = client.getApplication(appName);
 		Map<String, CloudApplication> allApps = new HashMap<String, CloudApplication>();
-		allApps.put(application.getName(), application);
-		cloudServer.updateModules(allApps);
+		Map<String, ApplicationStats> stats = new HashMap<String, ApplicationStats>();
 
+		allApps.put(application.getName(), application);
+		stats.put(application.getName(),
+				cloudServer.getBehaviour().getApplicationStats(application.getName(), new NullProgressMonitor()));
+
+		cloudServer.updateModules(allApps, stats);
+
+		cloudServer.updateModules(allApps, stats);
 		appModule = cloudServer.getExistingCloudModule(appName);
 
 		assertEquals(appModule.getDeployedApplicationName(), appModule.getApplication().getName());

@@ -465,7 +465,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			throws CoreException {
 		CloudFoundryApplicationModule appModule = getCloudFoundryServer().getExistingCloudModule(module);
 		
-		if(appModule != null && appModule.isDeployed()) {
+		if(appModule != null) {
 			String name = appModule.getDeployedApplicationName();
 			if (name != null) {
 				return updateCloudModuleWithInstances(name, monitor);

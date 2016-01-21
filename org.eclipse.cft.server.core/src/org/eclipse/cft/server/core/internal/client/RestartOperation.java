@@ -22,8 +22,6 @@ package org.eclipse.cft.server.core.internal.client;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.StartingInfo;
-import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
-import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.eclipse.cft.server.core.AbstractAppStateTracker;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
@@ -31,9 +29,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
@@ -74,21 +70,21 @@ public class RestartOperation extends ApplicationOperation {
 
 			final String deploymentName = appModule.getDeploymentInfo().getDeploymentName();
 
-			server.setModuleState(getModules(), IServer.STATE_STARTING);
-
 			if (deploymentName == null) {
-				server.setModuleState(getModules(), IServer.STATE_STOPPED);
+				server.setModuleState(getModules(), IServer.STATE_UNKNOWN);
 
 				throw CloudErrorUtil.toCoreException(
 						"Unable to start application. Missing application deployment name in application deployment information."); //$NON-NLS-1$
 			}
+			
+			server.setModuleState(getModules(), IServer.STATE_STARTING);
+
 
 			SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
 
 			// Update the module with the latest CloudApplication from the
 			// client before starting the application
-			appModule = getBehaviour().updateCloudModule(appModule.getDeployedApplicationName(),
-					subMonitor.newChild(20));
+			appModule = getBehaviour().updateCloudModuleWithInstances(appModule.getDeployedApplicationName(), subMonitor.newChild(20));
 
 			final CloudFoundryApplicationModule cloudModule = appModule;
 
@@ -108,9 +104,6 @@ public class RestartOperation extends ApplicationOperation {
 				CloudFoundryPlugin.getCallback().startApplicationConsole(getBehaviour().getCloudFoundryServer(),
 						cloudModule, 0, subMonitor.newChild(20));
 
-				getBehaviour().getRequestFactory().stopApplication("Stopping application" + deploymentName, //$NON-NLS-1$
-						cloudModule).run(subMonitor.newChild(20));
-
 				new BehaviourRequest<Void>(startLabel, getBehaviour()) {
 					@Override
 					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress)
@@ -122,7 +115,7 @@ public class RestartOperation extends ApplicationOperation {
 									Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
 						}
 
-						StartingInfo info = client.startApplication(deploymentName);
+						StartingInfo info = client.restartApplication(deploymentName);
 
 						// Similarly, check for cancel at this point
 						if (progress.isCanceled()) {
@@ -152,27 +145,25 @@ public class RestartOperation extends ApplicationOperation {
 					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress)
 							throws CoreException {
 
-						// Now verify that the application did start
-						if (RestartOperation.this.getBehaviour().getApplicationInstanceRunningTracker(cloudModule)
-								.track(progress) != InstanceState.RUNNING) {
+						// TODO: integrate with Application tracker used below.
+						// Get the running state of the application based on the instance state
+						RestartOperation.this.getBehaviour().getApplicationInstanceRunningTracker(cloudModule)
+								.track(progress);
+						
+						// Check if the app still exists as instance checks can be long running
+						// If app is stopped , it may have been stopped
+						// externally therefore cancel the restart operation.
+						CloudFoundryApplicationModule updatedModule = getBehaviour()
+								.updateCloudModuleWithInstances(deploymentName, progress);
+						if (updatedModule == null || updatedModule.getApplication() == null
+								|| updatedModule.getState() == IServer.STATE_STOPPED) {
 							server.setModuleState(getModules(), IServer.STATE_STOPPED);
 
-							// If app is stopped , it may have been stopped
-							// externally therefore cancel the restart operation.
-							CloudFoundryApplicationModule updatedModule = getBehaviour()
-									.updateCloudModuleWithInstances(deploymentName, progress);
-							if (updatedModule == null || updatedModule.getApplication() == null
-									|| updatedModule.getApplication().getState() == AppState.STOPPED) {
-								throw new OperationCanceledException(
-										NLS.bind(Messages.RestartOperation_TERMINATING_APP_STOPPED_OR_NOT_EXISTS,
-												deploymentName));
-							}
-							else {
-								throw new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID,
-										"Starting of " + updatedModule.getDeployedApplicationName() + " timed out")); //$NON-NLS-1$ //$NON-NLS-2$
-							}
-
+							throw new OperationCanceledException(
+									NLS.bind(Messages.RestartOperation_TERMINATING_APP_STOPPED_OR_NOT_EXISTS,
+											deploymentName));
 						}
+				
 
 						AbstractAppStateTracker curTracker = CloudFoundryPlugin.getAppStateTracker(
 								RestartOperation.this.getBehaviour().getServer().getServerType().getId(), cloudModule);
@@ -192,6 +183,7 @@ public class RestartOperation extends ApplicationOperation {
 								RestartOperation.this.getBehaviour().getCloudFoundryServer(), cloudModule);
 
 						if (curTracker != null) {
+							// Framework-based run state tracker. If tracker indicates that the app is no longer starting, it is considered started
 							// Wait for application to be ready or getting
 							// out of the starting state.
 							boolean isAppStarting = true;
@@ -209,9 +201,12 @@ public class RestartOperation extends ApplicationOperation {
 								}
 							}
 							curTracker.stopTracking(cloudModule, progress);
+							server.setModuleState(getModules(), IServer.STATE_STARTED);
+
+						} else {
+							server.setModuleState(getModules(), cloudModule.getState());
 						}
 
-						server.setModuleState(getModules(), IServer.STATE_STARTED);
 
 						return null;
 					}

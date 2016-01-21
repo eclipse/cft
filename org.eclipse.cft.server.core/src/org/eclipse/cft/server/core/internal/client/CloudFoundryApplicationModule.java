@@ -24,6 +24,7 @@ import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
+import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.eclipse.cft.server.core.AbstractApplicationDelegate;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
@@ -328,17 +329,23 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 
 	/**
 	 * 
-	 * @return {@link IServer} state
+	 * @return {@link IServer} state of the application based on the application
+	 * running state in the Cloud
 	 */
 	public synchronized int getState() {
-		if (application != null) {
-			AppState state = application.getState();
-			switch (state) {
-			case STARTED:
+
+		// Check desired app state first
+		if (this.application != null && this.application.getState() == AppState.STOPPED) {
+			return IServer.STATE_STOPPED;
+		}
+		InstanceState instanceState = getRunState();
+		if (instanceState != null) {
+			switch (instanceState) {
+			case RUNNING:
 				return IServer.STATE_STARTED;
-			case UPDATING:
+			case STARTING:
 				return IServer.STATE_STARTING;
-			case STOPPED:
+			case DOWN:
 				return IServer.STATE_STOPPED;
 			}
 		}
@@ -405,13 +412,26 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		}
 	}
 
-	/**
-	 * 
-	 * @return true if the application is published to the Cloud Foundry server.
-	 * False otherwise.
-	 */
+	public synchronized InstanceState getRunState() {
+
+		if (applicationStats != null && applicationStats.getRecords() != null
+				&& !applicationStats.getRecords().isEmpty()) {
+			return applicationStats.getRecords().get(0).getState();
+		}
+
+		return null;
+	}
+
 	public synchronized boolean isDeployed() {
-		return getApplication() != null && getState() != IServer.STATE_UNKNOWN;
+		return exists() && getState() != IServer.STATE_UNKNOWN;
+	}
+	
+	/**
+	 * @return true if the application exists in CF. False otherwise. No information is
+	 * provided if the application is synchronised (published).
+	 */
+	public synchronized boolean exists() {
+		return getApplication() != null;
 	}
 
 	/**
