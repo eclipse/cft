@@ -29,7 +29,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
-import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -40,11 +39,11 @@ import org.eclipse.cft.server.core.internal.application.ManifestParser;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CloudUiUtil.UniqueSubdomain;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.PartChangeEvent;
 import org.eclipse.cft.server.ui.internal.UIPart;
 import org.eclipse.cft.server.ui.internal.WizardPartChangeEvent;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil.UniqueSubdomain;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -332,30 +331,34 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 		
 		if (workingCopy != null) {
 			CloudApplicationURL cloudUrl = null;
-			// if there is a valid manifest, we need to check if the saved host and domain is already used
+
 			if (hasManifest) {
-				List<String> urls = workingCopy.getUris();
-			    String url = urls != null && !urls.isEmpty() ? urls.get(0) : null;
-			    if (url != null) {
-			    	try {
-				    	ApplicationUrlLookupService urllookup = ApplicationUrlLookupService.getCurrentLookup(server);
-				    	CloudApplicationURL appUrl = urllookup.getCloudApplicationURL(url);
-					
-				    	// Message saying that the host name from the manifest is already taken. 
-				    	String customMessage = Messages.bind(Messages.CloudFoundryApplicationWizardPage_ERROR_INITIAL_HOSTNAME_TAKEN, appUrl.getSubdomain(), appUrl.getDomain());
-				    	// 	Validate it and get the status
-				    	
-				    	HostnameValidationResult vr = CloudUiUtil.validateHostname(appUrl, server, getContainer(), customMessage);
-				    	status = vr.getStatus();
-					
-				    	if (status != null && status.isOK()) {
-				    		cloudUrl = appUrl;
-				    	}
-			    	} catch (Throwable ce) {
-	
-						CloudFoundryPlugin.logError(ce);
-					}
-			    }
+				
+				// If we have a manifest, the validation of the host name should be performed on the deploy wizard page rather than the application wizard page. 
+				// This is because the application deployment name may vary independently from the application host name. - Bug 486295
+				
+//				List<String> urls = workingCopy.getUris();
+//			    String url = urls != null && !urls.isEmpty() ? urls.get(0) : null;
+//			    if (url != null) {
+//			    	try {
+//				    	ApplicationUrlLookupService urllookup = ApplicationUrlLookupService.getCurrentLookup(server);
+//				    	CloudApplicationURL appUrl = urllookup.getCloudApplicationURL(url);
+//					
+//				    	// Message saying that the host name from the manifest is already taken. 
+//				    	String customMessage = Messages.bind(Messages.CloudFoundryApplicationWizardPage_ERROR_INITIAL_HOSTNAME_TAKEN, appUrl.getSubdomain(), appUrl.getDomain());
+//				    	// 	Validate it and get the status
+//				    	
+//				    	HostnameValidationResult vr = CloudUiUtil.validateHostname(appUrl, server, getContainer(), customMessage);
+//				    	status = vr.getStatus();
+//					
+//				    	if (status != null && status.isOK()) {
+//				    		cloudUrl = appUrl;
+//				    	}
+//			    	} catch (Throwable ce) {
+//	
+//						CloudFoundryPlugin.logError(ce);
+//					}
+//			    }
 			} else {
 				// IFF there is no manifest, then we will do the hostname validation AND suggest a new unique name
 				List<String> urls = workingCopy.getUris();
