@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -44,6 +44,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint.C
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
 import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
+import org.eclipse.cft.server.ui.internal.wizards.HostnameValidationResult;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -538,12 +539,17 @@ public class CloudUiUtil {
 		return PlatformUI.getWorkbench().getModalDialogShellProvider().getShell();
 	}
 
-	public static CloudApplicationURL getUniqueSubdomain(String url, CloudFoundryServer server) {
+	
+	public static UniqueSubdomain getUniqueSubdomain(String url, CloudFoundryServer server) {
 			if (url == null) return null; // Incorrect usage. Provide a non-null string
+			
 			ApplicationUrlLookupService lookup = ApplicationUrlLookupService.getCurrentLookup(server);
 			CloudApplicationURL cloudUrl = null;
 			boolean isUniqueURL = true;
 			int intSuffix = 1;
+			
+			UniqueSubdomain result = null;
+			
 			do {
 				try {
 					// It does NOT check if the URL is taken already, even if valid.
@@ -555,7 +561,13 @@ public class CloudUiUtil {
 				
 				try {
 					// CheckHostTaken - reserve the route when we get a unused name
-					server.getBehaviour().checkHostTaken(cloudUrl.getSubdomain(), cloudUrl.getDomain(), false, new NullProgressMonitor());
+					
+					boolean isRouteCreated = server.getBehaviour().checkHostTaken(cloudUrl.getSubdomain(), cloudUrl.getDomain(), false, new NullProgressMonitor());
+					
+					result = new UniqueSubdomain();
+					result.setRouteCreated(isRouteCreated);
+					result.setCloudUrl(cloudUrl);
+					
 					// break or just set boolean to true
 					isUniqueURL = true;
 				} catch (CoreException ce) {
@@ -581,7 +593,8 @@ public class CloudUiUtil {
 					}
 				}
 			} while (!isUniqueURL && intSuffix < Integer.MAX_VALUE - 1); // Support suffix up to the number 2^31 - 1
-			return cloudUrl;
+			
+			return result;
 		}
 		
 		/**
@@ -593,7 +606,7 @@ public class CloudUiUtil {
 		 * @param message
 		 * @return
 		 */
-		public static IStatus validateHostname(CloudApplicationURL appUrl, CloudFoundryServer server, IWizardContainer container) {
+		public static HostnameValidationResult validateHostname(CloudApplicationURL appUrl, CloudFoundryServer server, IWizardContainer container) {
 			return validateHostname(appUrl, server, container, null);
 		}
 
@@ -605,16 +618,19 @@ public class CloudUiUtil {
 		 * @param message - override with custom error message
 		 * @return
 		 */
-		public static IStatus validateHostname(CloudApplicationURL appUrl, CloudFoundryServer server, IWizardContainer container, String message) {
+		public static HostnameValidationResult validateHostname(CloudApplicationURL appUrl, CloudFoundryServer server, IWizardContainer container, String message) {
 			HostnameValidator val = message == null ? new HostnameValidator(appUrl, server) : new HostnameValidator(appUrl, server, message);
 			try {
 				container.run(true,  true,  val);
 			}
 			catch (Exception e) {
 				CloudFoundryPlugin.logWarning("Hostname taken validation was not completed. " + e.getMessage()); //$NON-NLS-1$
-				return new Status(IStatus.ERROR, CloudFoundryServerUiPlugin.PLUGIN_ID, Messages.CloudApplicationUrlPart_ERROR_UNABLE_TO_CHECK_HOSTNAME);
+
+				IStatus status = new Status(IStatus.ERROR, CloudFoundryServerUiPlugin.PLUGIN_ID, Messages.CloudApplicationUrlPart_ERROR_UNABLE_TO_CHECK_HOSTNAME);				
+				return new HostnameValidationResult(status, val.isRouteCreated());
 			}
-			return val.getStatus();
+			
+			return new HostnameValidationResult(val.getStatus(), val.isRouteCreated());
 		}
 		
 		/**
@@ -626,7 +642,7 @@ public class CloudUiUtil {
 		 * @param reservedUrls - list of CloudApplicationURL that have been reserved
 		 * @param urlToKeep - The URL to keep from the list of reservedUrls
 		 */
-		public static void cleanupReservedRoutes(IWizard wizard, final CloudFoundryServer server, List<CloudApplicationURL>reservedUrls, String urlToKeep) {
+		public static void cleanupReservedRoutes(IWizard wizard, final CloudFoundryServer server, List<CloudApplicationURL> reservedUrls, String urlToKeep) {
 			for (CloudApplicationURL cloudURL : reservedUrls) {
 				// Don't remove the one that is needed
 				if (urlToKeep != null && urlToKeep.equals(cloudURL.getUrl())) {
@@ -645,7 +661,7 @@ public class CloudUiUtil {
 		 * @param server - the CloudFoundryServer
 		 * @param reservedUrls - the list of all reserved route URLS
 		 */
-		public static void cleanupReservedRoutes(DeploymentInfoWorkingCopy workingCopy, IWizard wizard, final CloudFoundryServer server, List<CloudApplicationURL>reservedUrls) {
+		public static void cleanupReservedRoutesIfNotNeeded(DeploymentInfoWorkingCopy workingCopy, IWizard wizard, final CloudFoundryServer server, List<CloudApplicationURL> reservedUrls) {
 			List<String> urls = workingCopy.getUris();
 			if (urls == null) {
 				urls = new ArrayList<String>();
@@ -689,4 +705,31 @@ public class CloudUiUtil {
 				CloudFoundryPlugin.logWarning("The following route was not deleted: " + fCloudURL.getUrl());  //$NON-NLS-N$
 			}
 		}
+		
+
+	/** Returned by the getUniqueSubdomain(...) method; if successful it contains the unique cloud subdomain url,
+	 * and whether or not the route needed to be created (a route does not need to be created if it already exists) */
+	public static class UniqueSubdomain {
+		private CloudApplicationURL cloudUrl = null;
+		private boolean routeCreated = false;
+	
+		
+		public CloudApplicationURL getCloudUrl() {
+			return cloudUrl;
+		}
+		
+		public boolean isRouteCreated() {
+			return routeCreated;
+		}
+		
+		public void setCloudUrl(CloudApplicationURL cloudUrl) {
+			this.cloudUrl = cloudUrl;
+		}
+		
+		public void setRouteCreated(boolean routeCreated) {
+			this.routeCreated = routeCreated;
+		}
+		
+	}
+		
 }

@@ -1251,12 +1251,20 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		}
 	}
 	
-	public void checkHostTaken(final String host, final String domainName, final boolean deleteRoute, IProgressMonitor monitor) throws CoreException {
 
-		BaseClientRequest<?> request = getRequestFactory().checkHostTaken(host, domainName, deleteRoute);
+	/**
+	 * Determine if a given host is taken; if it is, an exception is thrown. Otherwise a boolean will be returned which indicates whether or not the host route was created: a route will not 
+	 * be created if it already exists, or if deleteRoute is true.
+	 */
+	public boolean checkHostTaken(final String host, final String domainName, final boolean deleteRoute, IProgressMonitor monitor) throws CoreException {
+
+		BaseClientRequest<Boolean> request = getRequestFactory().checkHostTaken(host, domainName, deleteRoute);
 		if (request != null) {
-			request.run(monitor);
+			boolean result = request.run(monitor);
+			return result;
 		}
+		
+		return false;
 	}
 
 	/**

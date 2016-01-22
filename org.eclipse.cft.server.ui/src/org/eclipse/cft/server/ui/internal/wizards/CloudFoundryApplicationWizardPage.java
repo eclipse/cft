@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -44,6 +44,7 @@ import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.PartChangeEvent;
 import org.eclipse.cft.server.ui.internal.UIPart;
 import org.eclipse.cft.server.ui.internal.WizardPartChangeEvent;
+import org.eclipse.cft.server.ui.internal.CloudUiUtil.UniqueSubdomain;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -326,7 +327,9 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 	private IStatus validateHostname() {
 		ApplicationDeploymentInfo workingCopy = descriptor.getDeploymentInfo();
 		IStatus status = Status.OK_STATUS;
+		
 		boolean hasManifest = new ManifestParser(module, server).hasManifest();
+		
 		if (workingCopy != null) {
 			CloudApplicationURL cloudUrl = null;
 			// if there is a valid manifest, we need to check if the saved host and domain is already used
@@ -341,7 +344,9 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 				    	// Message saying that the host name from the manifest is already taken. 
 				    	String customMessage = Messages.bind(Messages.CloudFoundryApplicationWizardPage_ERROR_INITIAL_HOSTNAME_TAKEN, appUrl.getSubdomain(), appUrl.getDomain());
 				    	// 	Validate it and get the status
-				    	status = CloudUiUtil.validateHostname(appUrl, server, getContainer(), customMessage);
+				    	
+				    	HostnameValidationResult vr = CloudUiUtil.validateHostname(appUrl, server, getContainer(), customMessage);
+				    	status = vr.getStatus();
 					
 				    	if (status != null && status.isOK()) {
 				    		cloudUrl = appUrl;
@@ -355,9 +360,12 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 				// IFF there is no manifest, then we will do the hostname validation AND suggest a new unique name
 				List<String> urls = workingCopy.getUris();
 				String url = urls != null && !urls.isEmpty() ? urls.get(0) : null;
+				
 				if (url != null) {
-					cloudUrl = CloudUiUtil.getUniqueSubdomain(url, server);
-					if (cloudUrl != null) {
+					UniqueSubdomain uniqueSubdomain = CloudUiUtil.getUniqueSubdomain(url, server);
+					
+					if (uniqueSubdomain != null && uniqueSubdomain.getCloudUrl() != null) {
+						cloudUrl = uniqueSubdomain.getCloudUrl();
 						// Set the new deployment name and update the URIs only if it needs to be changed
 						if (!cloudUrl.getSubdomain().equals(workingCopy.getDeploymentName())) {
 						   workingCopy.setDeploymentName(cloudUrl.getSubdomain());
@@ -366,9 +374,12 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 						   newList.add(cloudUrl.getUrl());
 						   workingCopy.setUris(newList);
 						}
+						
+						getApplicationWizard().addToReserved(cloudUrl, uniqueSubdomain.isRouteCreated());
 					}
+					
 				}
-				getApplicationWizard().addToReserved(cloudUrl);
+				
 			}
 		}
 		return status;

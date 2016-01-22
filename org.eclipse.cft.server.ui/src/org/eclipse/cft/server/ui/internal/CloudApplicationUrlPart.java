@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,6 +30,7 @@ import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.ValidationEvents;
 import org.eclipse.cft.server.ui.internal.wizards.CloudUIEvent;
 import org.eclipse.cft.server.ui.internal.wizards.IReservedURLTracker;
+import org.eclipse.cft.server.ui.internal.wizards.HostnameValidationResult;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -395,15 +396,19 @@ public class CloudApplicationUrlPart extends UIPart {
 	
 			// If we've already reserved the hostname, then we don't have to call the client again.
 			if (!reservedURLTracker.isReserved(cloudAppURL)) {
-				IStatus validatorStatus = reservedURLTracker.validateURL(cloudAppURL);
-				if (validatorStatus.isOK()) {
+				
+				HostnameValidationResult validationResult = reservedURLTracker.validateURL(cloudAppURL);
+				if (validationResult.getStatus().isOK()) {
+					
 					// Reserve the URL
-					reservedURLTracker.addToReserved(cloudAppURL);
+					reservedURLTracker.addToReserved(cloudAppURL, validationResult.isRouteCreated());
+					
 					// Bring up a dialog to give feedback that the hostname is not taken and it will be reserved.
 					MessageDialog.openInformation(activeShell, Messages.CloudApplicationUrlPart_DIALOG_TITLE_HOSTNAME_VALIDATION, 
 						Messages.bind(Messages.CloudApplicationUrlPart_DIALOG_MESSAGE_HOSTNAME_AVAILABLE, cloudAppURL.getSubdomain()));
 				}
-				notifyChange(new WizardPartChangeEvent(appUrl, validatorStatus, CloudUIEvent.VALIDATE_HOST_TAKEN_EVENT, ValidationEvents.VALIDATION_HOSTNAME_TAKEN, true));
+				notifyChange(new WizardPartChangeEvent(appUrl, validationResult.getStatus(), CloudUIEvent.VALIDATE_HOST_TAKEN_EVENT, ValidationEvents.VALIDATION_HOSTNAME_TAKEN, true));
+				
 			} else {
 				MessageDialog.openInformation(activeShell, Messages.CloudApplicationUrlPart_DIALOG_TITLE_HOSTNAME_VALIDATION, 
 						Messages.bind(Messages.CloudApplicationUrlPart_DIALOG_MESSAGE_HOSTNAME_AVAILABLE, cloudAppURL.getSubdomain()));

@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copied from Spring Tool Suite. Original license:
  * 
- * Copyright (c) 2015 Pivotal Software, Inc.
+ * Copyright (c) 2015, 2016 Pivotal Software Inc and IBM Corporation.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -516,24 +516,49 @@ public class ClientRequestFactory {
 	 * Check if the 'host' in the 'domainName' is already taken.  Optionally delete the route after the check or keep it to
 	 * reserve it.  Clients are expected to call {@link #deleteRoute(String, String)} after to remove any unused routes.
 	 * 
+	 * Throws a CoreException if the host is taken.
+	 * 
 	 * @see deleteRoute(String, String)
 	 * @param host - the Subdomain of the deployed URL
 	 * @param domainName - the domainName part of the deployed URL
-	 * @param deleteRoute - true to delete the route, false to reserve it and delete it later if necessary
-	 * @return
+	 * @param deleteRoute - true to delete the route (if it was created in this method), false to reserve it and leave deletion to the calling method if necessary
+	 * @return true if the route was created, false otherwise
 	 */
-	public BaseClientRequest<Void> checkHostTaken(final String host, final String domainName, final boolean deleteRoute) {
-		return new BehaviourRequest<Void>(Messages.bind(Messages.CloudFoundryServerBehaviour_CHECKING_HOSTNAME_AVAILABLE, host), behaviour) {
+	public BaseClientRequest<Boolean> checkHostTaken(final String host, final String domainName, final boolean deleteRoute) {
+		return new BehaviourRequest<Boolean>(Messages.bind(Messages.CloudFoundryServerBehaviour_CHECKING_HOSTNAME_AVAILABLE, host), behaviour) {
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Boolean doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+				
+				// First, check the existing list of routes, before attempting an add below
+				List<CloudRoute> cloudRoutes = client.getRoutes(domainName);
+				
+				if(cloudRoutes != null) {
+					for(CloudRoute cr : cloudRoutes) {
+						// If we own the route...
+						if(cr.getHost().equalsIgnoreCase(host)) {
+							if(cr.inUse()) {
+								// ... but it is in use, then throw an exception to indicate this.
+								throw new CoreException(Status.CANCEL_STATUS);
+								
+							} else {
+								// ... but route is not in use, then we may deploy with it.
+								return false;
+							}
+						}
+					}
+				}
+				
 				// check if the route can be added.  If successful, then it is not taken.
 				client.addRoute(host, domainName);
+				
 				// if addRoute is successful (no CoreException), then delete it so it is available again
 				// Specify deleteRoute = false to 'reserve' the hostname
 				if (deleteRoute) {
 					client.deleteRoute(host, domainName);
 				}
-				return null;
+				
+				// The URL is considered created if we didn't delete it above. 
+				return !deleteRoute;
 			}
 		};
 	}

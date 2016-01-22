@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software Inc. and IBM Corporation 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Apache License, 
@@ -42,6 +42,8 @@ public class HostnameValidator implements IRunnableWithProgress {
 	private CloudFoundryServer server;
 	// Allow override of the default message for the host name taken problem (for initialization of the wizard)
 	private String message = null;
+	
+	private boolean routeCreated = false;
 
 	public HostnameValidator(CloudApplicationURL appUrl, CloudFoundryServer server) {
 		this(appUrl, server, null);
@@ -61,9 +63,8 @@ public class HostnameValidator implements IRunnableWithProgress {
 	public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
 		monitor.beginTask(Messages.CloudApplicationUrlPart_HOST_CHECK_JOB_DISPLAY_INFO, IProgressMonitor.UNKNOWN);
 		try {
-			server.getBehaviour().checkHostTaken(appUrl.getSubdomain(), appUrl.getDomain(), false, monitor);
-		}
-		catch (CoreException ce) {
+			routeCreated = server.getBehaviour().checkHostTaken(appUrl.getSubdomain(), appUrl.getDomain(), false, monitor);
+		} catch (CoreException ce) {
 			status = ce.getStatus();
 			String errorMessage = ce.getMessage();
 			// host name taken is potentially one cause of the CoreException
@@ -85,5 +86,10 @@ public class HostnameValidator implements IRunnableWithProgress {
 		}			
 	}
 
-
+	/** Returns true if a route was created during validation; a route will not 
+	 * be created if it already exists. */
+	public boolean isRouteCreated() {
+		return routeCreated;
+	}
+	
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,7 +32,6 @@ import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.CloudUiUtil;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.PartChangeEvent;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -157,22 +156,26 @@ public class ApplicationURLWizard extends Wizard implements IReservedURLTracker 
 	}
 	
 	// Implement IReservedURLTracker
-	
-	public void addToReserved(CloudApplicationURL appUrl) {
+
+	@Override
+	public void addToReserved(CloudApplicationURL appUrl, boolean isUrlCreatedByWizard) {
 		reservedUrls.add(appUrl);
 	}
-
+	
+	@Override
 	public void removeFromReserved(CloudApplicationURL appUrl) {
 		if (reservedUrls.contains(appUrl)) {
 			reservedUrls.remove(appUrl);
 		}
 	}
 	
+	@Override
 	public boolean isReserved(CloudApplicationURL appUrl) {
 		return reservedUrls.contains(appUrl);
 	}
 
-	public IStatus validateURL(CloudApplicationURL appUrl) {
+	@Override
+	public HostnameValidationResult validateURL(CloudApplicationURL appUrl) {
 		return CloudUiUtil.validateHostname(appUrl, cloudServer, getContainer());
 	}
 

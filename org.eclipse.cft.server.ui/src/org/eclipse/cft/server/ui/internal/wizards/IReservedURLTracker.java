@@ -1,9 +1,9 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software Inc. and IBM Corporation. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Apache License, 
- * Version 2.0 (the "License�); you may not use this file except in compliance 
+ * Version 2.0 (the "License"); you may not use this file except in compliance 
  * with the License. You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
@@ -40,12 +40,10 @@ public interface IReservedURLTracker {
 	 * @return
 	 */
 	public boolean isReserved(CloudApplicationURL appUrl);
-	
-	/**
-	 * Add the URL to the reserved list
-	 * @param appUrl
-	 */
-	public void addToReserved(CloudApplicationURL appUrl);
+		
+	/** Add the URL to the reserved list; you may also specify whether or not the url was created by the wizard. 
+	 * If it was not created by the wizard (it is an existing reserved route) then it will not be deleted on wizard cancel. */
+	public void addToReserved(CloudApplicationURL appUrl, boolean isUrlCreatedByWizard);
 	
 	/**
 	 * Remove the URL from the reserved list
@@ -58,5 +56,5 @@ public interface IReservedURLTracker {
 	 * @param appUrl
 	 * @return
 	 */
-	public IStatus validateURL(CloudApplicationURL appUrl);
+	 public HostnameValidationResult validateURL(CloudApplicationURL appUrl);
 }

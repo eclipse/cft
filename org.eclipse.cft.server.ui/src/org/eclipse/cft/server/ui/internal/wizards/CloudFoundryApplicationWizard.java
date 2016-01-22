@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,6 @@ import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
 import org.eclipse.cft.server.ui.internal.CloudUiUtil;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.core.runtime.Assert;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 
@@ -61,7 +60,7 @@ public class CloudFoundryApplicationWizard extends Wizard implements IReservedUR
 	protected DeploymentInfoWorkingCopy workingCopy;
 
 	// Keep track of reserved URLs in the wizard and not in individual wizard pages and parts
-	private List<CloudApplicationURL> reservedUrls;
+	private List<ReservedURL> reservedUrls;
 
 	/**
 	 * @param server must not be null
@@ -89,7 +88,7 @@ public class CloudFoundryApplicationWizard extends Wizard implements IReservedUR
 		setNeedsProgressMonitor(true);
 		setWindowTitle(Messages.CloudFoundryApplicationWizard_TITLE_APP);
 
-		this.reservedUrls = new ArrayList<CloudApplicationURL>();
+		this.reservedUrls = new ArrayList<ReservedURL>();
 	}
 
 	@Override
@@ -144,25 +143,37 @@ public class CloudFoundryApplicationWizard extends Wizard implements IReservedUR
 		return null;
 	}
 
+	/** Return a list of URLs that were created by the wizard, so they may be deleted. */
+	private List<CloudApplicationURL> getCreatedUrls() {
+		List<CloudApplicationURL> urlsToDelete = new ArrayList<CloudApplicationURL>();
+		for(ReservedURL url : reservedUrls) {
+			if(url.isRouteCreated() && url.getUrl() != null) {
+				urlsToDelete.add(url.getUrl());
+			}
+		}
+		
+		return urlsToDelete;
+	}
+	
 	@Override
 	public boolean performFinish() {
 		workingCopy.save();
-		CloudUiUtil.cleanupReservedRoutes(workingCopy, this, server, reservedUrls);
+		CloudUiUtil.cleanupReservedRoutesIfNotNeeded(workingCopy, this, server, getCreatedUrls());
 		return true;
 	}
 
 	@Override
 	public boolean performCancel() {
-		CloudUiUtil.cleanupReservedRoutes(this,  server, reservedUrls, null);
+		CloudUiUtil.cleanupReservedRoutes(this,  server, getCreatedUrls(), null);
 		return super.performCancel();
 	}
 
 	// Implement IReservedURLTracker
-	
-	public void addToReserved(CloudApplicationURL appUrl) {
-		reservedUrls.add(appUrl);
-	}
 
+	public void addToReserved(CloudApplicationURL appUrl, boolean isUrlCreatedByWizard) {
+		reservedUrls.add(new ReservedURL(appUrl, isUrlCreatedByWizard));
+	}
+	
 	public void removeFromReserved(CloudApplicationURL appUrl) {
 		if (reservedUrls.contains(appUrl)) {
 			reservedUrls.remove(appUrl);
@@ -173,7 +184,29 @@ public class CloudFoundryApplicationWizard extends Wizard implements IReservedUR
 		return reservedUrls.contains(appUrl);
 	}
 
-	public IStatus validateURL(CloudApplicationURL appUrl) {
+	public HostnameValidationResult validateURL(CloudApplicationURL appUrl) {
 		return CloudUiUtil.validateHostname(appUrl, server, getContainer());
+	}
+	
+	
+	/** Private inner class */
+	private static class ReservedURL {
+		private final CloudApplicationURL url;
+		
+		/** Whether or not the route was created by this wizard; if so, it should be deleted on cancel. */
+		private final boolean isRouteCreated;
+		
+		public ReservedURL(CloudApplicationURL url, boolean isRouteCreated) {
+			this.url = url;
+			this.isRouteCreated = isRouteCreated;
+		}
+
+		public CloudApplicationURL getUrl() {
+			return url;
+		}
+		
+		public boolean isRouteCreated() {
+			return isRouteCreated;
+		}
 	}
 }
