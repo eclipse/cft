@@ -464,13 +464,14 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public CloudFoundryApplicationModule updateCloudModuleWithInstances(IModule module, IProgressMonitor monitor)
 			throws CoreException {
 		CloudFoundryApplicationModule appModule = getCloudFoundryServer().getExistingCloudModule(module);
-		
-		if(appModule != null) {
+		// Note: the isDeployed check is for:
+		// [485228] Attempting to publish (then cancelling) a Web project with the
+		// same name as a running Bluemix app. Take care NOT to modify this without thorough testing
+		if (appModule != null && appModule.isDeployed()) {
 			String name = appModule.getDeployedApplicationName();
 			if (name != null) {
 				return updateCloudModuleWithInstances(name, monitor);
 			}
-			
 		}
 				
 		return null;

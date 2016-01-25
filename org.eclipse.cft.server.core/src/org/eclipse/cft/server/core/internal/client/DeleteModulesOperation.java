@@ -73,6 +73,9 @@ public class DeleteModulesOperation extends BehaviourOperation {
 		for (IModule module : modules) {
 			final CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
 
+			// Note: the isDeployed check is for:
+			// [485228] Attempting to publish (then cancelling) a Web project with the
+			// same name as a running Bluemix app. Take care NOT to modify this without thorough testing
 			// Skip applications which are not deployed.
 			if (appModule == null || !appModule.isDeployed()) {
 				continue;

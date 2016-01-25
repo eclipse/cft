@@ -422,7 +422,17 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		return null;
 	}
 
+	/**
+	 * 
+	 * @return true if application exists in the Cloud server AND running state
+	 * is known (stopped, started, starting)
+	 */
 	public synchronized boolean isDeployed() {
+		// WARNING: if refactoring, beware to retain this behaviour as deployed
+		// means existing in CF AND having a KNOWN app state
+		// Many components rely on the application to be in KNOWN app state in
+		// addition to existing in CF therefore take care
+		// when modifying this implementation
 		return exists() && getState() != IServer.STATE_UNKNOWN;
 	}
 	
