@@ -537,8 +537,8 @@ public class ClientRequestFactory {
 						// If we own the route...
 						if(cr.getHost().equalsIgnoreCase(host)) {
 							if(cr.inUse()) {
-								// ... but it is in use, then throw an exception to indicate this.
-								throw new CoreException(Status.CANCEL_STATUS);
+								// ... but it is in use, then throw an exception to indicate this. 
+								throw new CoreException(new Status(Status.ERROR, CloudFoundryPlugin.PLUGIN_ID, "Client error - The host is taken: "+host));
 								
 							} else {
 								// ... but route is not in use, then we may deploy with it.
