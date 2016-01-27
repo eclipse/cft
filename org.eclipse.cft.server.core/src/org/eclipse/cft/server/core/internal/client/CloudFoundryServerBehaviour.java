@@ -162,7 +162,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		// Server does not support debug mode
 		UNSUPPORTED,
 	}
-	
+
 	ClientRequestFactory getRequestFactory() throws CoreException {
 		if (requestFactory == null) {
 			requestFactory = getCloudFoundryServer().getTarget().getRequestFactory(this);
@@ -438,7 +438,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * 
 	 * <p/>
 	 * To obtain the application's associated module with the additional API,
-	 * use {@link #updateCloudModule(String, IProgressMonitor)}
+	 * use {@link #updateModuleWithBasicCloudInfo(String, IProgressMonitor)}
 	 * @param appName
 	 * @param monitor
 	 * @return Cloud application. If null it may indicate that the application
@@ -461,43 +461,77 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * null if the app does not exist
 	 * @throws CoreException
 	 */
-	public CloudFoundryApplicationModule updateCloudModuleWithInstances(IModule module, IProgressMonitor monitor)
+	public CloudFoundryApplicationModule updateDeployedModule(IModule module, IProgressMonitor monitor)
 			throws CoreException {
 		CloudFoundryApplicationModule appModule = getCloudFoundryServer().getExistingCloudModule(module);
 		// Note: the isDeployed check is for:
-		// [485228] Attempting to publish (then cancelling) a Web project with the
-		// same name as a running Bluemix app. Take care NOT to modify this without thorough testing
+		// [485228] Attempting to publish (then cancelling) a Web project with
+		// the
+		// same name as a running Bluemix app. Take care NOT to modify this
+		// without thorough testing
 		if (appModule != null && appModule.isDeployed()) {
 			String name = appModule.getDeployedApplicationName();
 			if (name != null) {
-				return updateCloudModuleWithInstances(name, monitor);
+				return updateModuleWithAllCloudInfo(name, monitor);
 			}
 		}
-				
+
 		return null;
 	}
 
 	/**
-	 * Updates the given module with an application request to the Cloud space.
-	 * Returns null if the application no longer exists.
+	 * Updates the given module with complete Cloud information about the
+	 * application. This is different than
+	 * {@link #updateDeployedModule(IModule, IProgressMonitor)} in the sense
+	 * that deployment state is not a factor to determine if information about
+	 * the associated Cloud application needs to be fetched. This should be used
+	 * in case there is no known information about whether the application
+	 * exists or is running, and complete information about the application in
+	 * the Cloud is needed, including information on instances.
+	 * @param module
+	 * @param monitor
+	 * @return
+	 * @throws CoreException
+	 */
+	public CloudFoundryApplicationModule updateModuleWithAllCloudInfo(IModule module, IProgressMonitor monitor)
+			throws CoreException {
+		CloudFoundryApplicationModule appModule = getCloudFoundryServer().getExistingCloudModule(module);
+
+		if (appModule != null) {
+			String name = appModule.getDeployedApplicationName();
+			if (name != null) {
+				return updateModuleWithAllCloudInfo(name, monitor);
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Updates a module with enough Cloud information to determine basic Cloud
+	 * application stats (URL, bound services, env vars, etc..) including its
+	 * running state in the Cloud. Returns null if the application no longer
+	 * exists
 	 * @param module
 	 * @param monitor
 	 * @return Updated {@link CloudFoundryApplicationModule} or null if the
-	 * application no longer exists in the Cloud Space
+	 * application no longer exists in the Cloud
 	 * @throws CoreException
 	 */
-	public CloudFoundryApplicationModule updateCloudModule(IModule module, IProgressMonitor monitor)
+	public CloudFoundryApplicationModule updateModuleWithBasicCloudInfo(IModule module, IProgressMonitor monitor)
 			throws CoreException {
 
 		CloudFoundryApplicationModule appModule = getCloudFoundryServer().getExistingCloudModule(module);
 
 		String name = appModule != null ? appModule.getDeployedApplicationName() : module.getName();
-		return updateCloudModule(name, monitor);
+		return updateModuleWithBasicCloudInfo(name, monitor);
 	}
 
 	/**
-	 * Updates the given module with an application request to the Cloud space.
-	 * Returns null if the application no longer exists.
+	 * Updates a module with enough Cloud information to determine basic Cloud
+	 * application stats (URL, bound services, env vars, etc..) including its
+	 * running state in the Cloud. Returns null if the application no longer
+	 * exists.
 	 * @param module
 	 * @param monitor
 	 * @return Updated {@link CloudFoundryApplicationModule} or null if the
@@ -505,14 +539,17 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @throws CoreException if error occurs while resolving an updated
 	 * {@link CloudApplication} from the Cloud space
 	 */
-	public CloudFoundryApplicationModule updateCloudModule(String appName, IProgressMonitor monitor)
+	public CloudFoundryApplicationModule updateModuleWithBasicCloudInfo(String appName, IProgressMonitor monitor)
 			throws CoreException {
 		CloudApplication updatedApp = null;
 		SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
 		subMonitor.subTask(NLS.bind(Messages.CloudFoundryServer_UPDATING_MODULE, appName, getServer().getId()));
-
+		ApplicationStats stats = null;
 		try {
 			updatedApp = getCloudApplication(appName, subMonitor.newChild(50));
+			if (updatedApp != null) {
+				stats = getApplicationStats(appName, monitor);
+			}
 		}
 		catch (CoreException e) {
 			// Ignore if it is application not found error. If the application
@@ -522,26 +559,26 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 				throw e;
 			}
 		}
-		return getCloudFoundryServer().updateModule(updatedApp, appName, subMonitor.newChild(50));
+		return getCloudFoundryServer().updateModule(updatedApp, appName, stats, subMonitor.newChild(50));
 	}
 
 	/**
-	 * Update the given module with application stats and instance information
-	 * obtained from the Cloud space.
+	 * Update the given module with complete application information including
+	 * instances info
+	 *
 	 * @param appName
 	 * @param monitor
 	 * @return cloud module with updated instances for the give app name, or
 	 * null if the app does not exist
 	 * @throws CoreException
 	 */
-	public CloudFoundryApplicationModule updateCloudModuleWithInstances(String appName, IProgressMonitor monitor)
+	public CloudFoundryApplicationModule updateModuleWithAllCloudInfo(String appName, IProgressMonitor monitor)
 			throws CoreException {
 		SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
 
-		CloudFoundryApplicationModule appModule = updateCloudModule(appName, subMonitor.newChild(50));
+		CloudFoundryApplicationModule appModule = updateModuleWithBasicCloudInfo(appName, subMonitor.newChild(50));
 
-		updateInstancesAndStats(appModule, subMonitor.newChild(50));
-
+		updateInstancesInfo(appModule, subMonitor.newChild(50));
 		return appModule;
 	}
 
@@ -577,13 +614,13 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	/**
-	 * Updates the instances for the given Cloud module. If the module is null,
-	 * nothing will happen.
+	 * Updates additional instances information for the given Cloud module. If
+	 * the module is null, nothing will happen.
 	 * @param appModule
 	 * @param monitor
 	 * @throws CoreException
 	 */
-	private void updateInstancesAndStats(CloudFoundryApplicationModule appModule, IProgressMonitor monitor)
+	private void updateInstancesInfo(CloudFoundryApplicationModule appModule, IProgressMonitor monitor)
 			throws CoreException {
 		// Module may have been deleted and application no longer exists.
 		// Nothing to update
@@ -591,9 +628,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			return;
 		}
 		try {
-			ApplicationStats stats = getApplicationStats(appModule.getDeployedApplicationName(), monitor);
 			InstancesInfo info = getInstancesInfo(appModule.getDeployedApplicationName(), monitor);
-			appModule.setApplicationStats(stats);
 			appModule.setInstancesInfo(info);
 		}
 		catch (CoreException e) {
@@ -613,8 +648,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * modules. Note that this may be a long-running operation. If fetching a
 	 * known application , it is recommended to call
 	 * {@link #getCloudApplication(String, IProgressMonitor)} or
-	 * {@link #updateCloudModule(IModule, IProgressMonitor)} as it may be
-	 * potentially faster
+	 * {@link #updateModuleWithBasicCloudInfo(IModule, IProgressMonitor)} as it may
+	 * be potentially faster
 	 * @param monitor
 	 * @return List of all applications in the Cloud space.
 	 * @throws CoreException
@@ -632,8 +667,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		return getRequestFactory().getInstancesInfo(applicationId).run(monitor);
 	}
 
-	public String getFile(CloudApplication app, int instanceIndex, String path, boolean isDir,
-			IProgressMonitor monitor) throws CoreException {
+	public String getFile(CloudApplication app, int instanceIndex, String path, boolean isDir, IProgressMonitor monitor)
+			throws CoreException {
 		return getRequestFactory().getFile(app, instanceIndex, path, isDir).run(monitor);
 	}
 
@@ -1243,7 +1278,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			request.run(monitor);
 		}
 	}
-	
+
 	public void deleteRoute(final String host, final String domainName, IProgressMonitor monitor) throws CoreException {
 
 		BaseClientRequest<?> request = getRequestFactory().deleteRoute(host, domainName);
@@ -1251,20 +1286,22 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			request.run(monitor);
 		}
 	}
-	
 
 	/**
-	 * Determine if a given host is taken; if it is, an exception is thrown. Otherwise a boolean will be returned which indicates whether or not the host route was created: a route will not 
-	 * be created if it already exists, or if deleteRoute is true.
+	 * Determine if a given host is taken; if it is, an exception is thrown.
+	 * Otherwise a boolean will be returned which indicates whether or not the
+	 * host route was created: a route will not be created if it already exists,
+	 * or if deleteRoute is true.
 	 */
-	public boolean checkHostTaken(final String host, final String domainName, final boolean deleteRoute, IProgressMonitor monitor) throws CoreException {
+	public boolean checkHostTaken(final String host, final String domainName, final boolean deleteRoute,
+			IProgressMonitor monitor) throws CoreException {
 
 		BaseClientRequest<Boolean> request = getRequestFactory().checkHostTaken(host, domainName, deleteRoute);
 		if (request != null) {
 			boolean result = request.run(monitor);
 			return result;
 		}
-		
+
 		return false;
 	}
 

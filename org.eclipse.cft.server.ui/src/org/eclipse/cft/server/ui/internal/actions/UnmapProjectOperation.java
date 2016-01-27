@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -56,11 +56,14 @@ public class UnmapProjectOperation implements ICloudFoundryOperation {
 		ServerUtil.modifyModules(wc, new IModule[0], new IModule[] { appModule.getLocalModule() }, monitor);
 		wc.save(true, monitor);
 
-		CloudFoundryApplicationModule updatedModule = cloudServer.getExistingCloudModule(appModule
-				.getDeployedApplicationName());
+		CloudFoundryApplicationModule updatedModule = cloudServer
+				.getExistingCloudModule(appModule.getDeployedApplicationName());
 
 		if (updatedModule != null) {
-			cloudServer.getBehaviour().operations().refreshApplication(updatedModule.getLocalModule());
+			// Do a complete update of the module with Cloud information since
+			// the link/unlink project may re-create
+			// the module
+			cloudServer.getBehaviour().operations().updateModuleWithAllCloudInfo(updatedModule.getLocalModule()).run(monitor);
 		}
 
 		ServerEventHandler.getDefault().fireServerRefreshed(cloudServer);

@@ -997,7 +997,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 								// only up-to-date information is written to
 								// manifest
 								CloudFoundryApplicationModule updatedMod = cloudServer.getBehaviour()
-										.updateCloudModuleWithInstances(appModule.getDeployedApplicationName(),
+										.updateModuleWithAllCloudInfo(appModule.getDeployedApplicationName(),
 												monitor);
 
 								// Update the bound service mappings so they

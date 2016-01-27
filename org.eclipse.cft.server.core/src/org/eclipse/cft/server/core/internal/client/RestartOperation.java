@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -84,7 +84,7 @@ public class RestartOperation extends ApplicationOperation {
 
 			// Update the module with the latest CloudApplication from the
 			// client before starting the application
-			appModule = getBehaviour().updateCloudModuleWithInstances(appModule.getDeployedApplicationName(), subMonitor.newChild(20));
+			appModule = getBehaviour().updateModuleWithAllCloudInfo(appModule.getDeployedApplicationName(), subMonitor.newChild(20));
 
 			final CloudFoundryApplicationModule cloudModule = appModule;
 
@@ -154,7 +154,7 @@ public class RestartOperation extends ApplicationOperation {
 						// If app is stopped , it may have been stopped
 						// externally therefore cancel the restart operation.
 						CloudFoundryApplicationModule updatedModule = getBehaviour()
-								.updateCloudModuleWithInstances(deploymentName, progress);
+								.updateModuleWithAllCloudInfo(deploymentName, progress);
 						if (updatedModule == null || updatedModule.getApplication() == null
 								|| updatedModule.getState() == IServer.STATE_STOPPED) {
 							server.setModuleState(getModules(), IServer.STATE_STOPPED);

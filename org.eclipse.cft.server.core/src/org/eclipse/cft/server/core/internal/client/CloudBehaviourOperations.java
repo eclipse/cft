@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -102,7 +102,7 @@ public class CloudBehaviourOperations {
 				getBehaviour().updateApplicationInstances(appName, instanceCount, monitor);
 
 				// Refresh the module with the new instances information
-				getBehaviour().updateCloudModuleWithInstances(appModule.getLocalModule(), monitor);
+				getBehaviour().updateDeployedModule(appModule.getLocalModule(), monitor);
 
 				// Fire a separate instances update event to notify listener who
 				// are specifically listening
@@ -277,7 +277,7 @@ public class CloudBehaviourOperations {
 						cloudServer.getServer().getId()), 100);
 
 				if (getModule() != null) {
-					getBehaviour().updateCloudModuleWithInstances(getModule(), subMonitor.newChild(40));
+					getBehaviour().updateDeployedModule(getModule(), subMonitor.newChild(40));
 				}
 				else {
 					subMonitor.worked(40);
@@ -288,7 +288,7 @@ public class CloudBehaviourOperations {
 				// update applications and deployments from server
 				Map<String, CloudApplication> deployedApplicationsByName = new LinkedHashMap<String, CloudApplication>();
 				Map<String, ApplicationStats> stats = new LinkedHashMap<String, ApplicationStats>();
-				
+
 				for (CloudApplication application : applications) {
 					ApplicationStats sts = getBehaviour().getApplicationStats(application.getName(), subMonitor);
 					stats.put(application.getName(), sts);
@@ -330,18 +330,24 @@ public class CloudBehaviourOperations {
 							getBehaviour().getCloudFoundryServer().getServerId());
 				}
 
-				getBehaviour().updateCloudModuleWithInstances(module, monitor);
+				getBehaviour().updateDeployedModule(module, monitor);
 				ServerEventHandler.getDefault().fireAppDeploymentChanged(behaviour.getCloudFoundryServer(), module);
 			}
 		};
 	}
 
 	/**
-	 * Refreshes the instances of given module. The module must not be null.
+	 * Updates a deployed module (deployed means that the module is associated
+	 * with an existing Cloud application and deployment run state is known). If
+	 * the module is not deployed, no update is performed. This method is used
+	 * when the caller wants to guarantee that only Cloud information about the
+	 * application is updated in the module IFF the module is already known to
+	 * be deployed (e.g. Cloud application exists and the runstate of the
+	 * application is known: started, stopped, etc..)
 	 * @param module
 	 * @return Non-null operation.
 	 */
-	public BehaviourOperation refreshApplication(final IModule module) {
+	public BehaviourOperation updateDeployedModule(final IModule module) {
 
 		return new BehaviourOperation(behaviour, module) {
 
@@ -349,13 +355,42 @@ public class CloudBehaviourOperations {
 			public void run(IProgressMonitor monitor) throws CoreException {
 
 				if (module == null) {
-					throw CloudErrorUtil.toCoreException("Internal Error: No module to refresh in - " + //$NON-NLS-1$
+					throw CloudErrorUtil.toCoreException("Internal Error: No module to update in - " + //$NON-NLS-1$
 							getBehaviour().getCloudFoundryServer().getServerId());
 				}
 
-				CloudFoundryApplicationModule appModule = getBehaviour().updateCloudModuleWithInstances(module,
-						monitor);
+				CloudFoundryApplicationModule appModule = getBehaviour().updateDeployedModule(module, monitor);
 
+				// Clear the publish errors for now
+				if (appModule != null) {
+					appModule.setStatus(null);
+					appModule.validateDeploymentInfo();
+				}
+
+				ServerEventHandler.getDefault().fireApplicationRefreshed(behaviour.getCloudFoundryServer(), module);
+			}
+		};
+	}
+
+	/**
+	 * Updates the given module with complete Cloud information
+	 * about the application including application deployment state.
+	 * @param module
+	 * @return Non-null operation.
+	 */
+	public BehaviourOperation updateModuleWithAllCloudInfo(final IModule module) {
+
+		return new BehaviourOperation(behaviour, module) {
+
+			@Override
+			public void run(IProgressMonitor monitor) throws CoreException {
+
+				if (module == null) {
+					throw CloudErrorUtil.toCoreException("Internal Error: No module to update in - " + //$NON-NLS-1$
+							getBehaviour().getCloudFoundryServer().getServerId());
+				}
+
+				CloudFoundryApplicationModule appModule = getBehaviour().updateModuleWithAllCloudInfo(module, monitor);
 				// Clear the publish errors for now
 				if (appModule != null) {
 					appModule.setStatus(null);

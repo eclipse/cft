@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc.
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -91,7 +91,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		// This will tell the behaviour to fetch the Cloud application from the
 		// Cloud space and generate a module
-		CloudFoundryApplicationModule updateModule = serverBehavior.updateCloudModule(expectedAppName,
+		CloudFoundryApplicationModule updateModule = serverBehavior.updateModuleWithBasicCloudInfo(expectedAppName,
 				new NullProgressMonitor());
 		assertEquals(expectedAppName, updateModule.getDeployedApplicationName());
 		assertEquals(updateModule.getDeployedApplicationName(), updateModule.getApplication().getName());
@@ -130,7 +130,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		// This will tell the behaviour to fetch the Cloud application from the
 		// Cloud space and generate a module
-		CloudFoundryApplicationModule updateModule = serverBehavior.updateCloudModuleWithInstances(expectedAppName,
+		CloudFoundryApplicationModule updateModule = serverBehavior.updateModuleWithAllCloudInfo(expectedAppName,
 				new NullProgressMonitor());
 		assertEquals(expectedAppName, updateModule.getDeployedApplicationName());
 		assertEquals(updateModule.getDeployedApplicationName(), updateModule.getApplication().getName());
@@ -147,13 +147,13 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		assertEquals(0, updateModule.getApplicationStats().getRecords().size());
 		assertNull(updateModule.getInstancesInfo());
 
-		updateModule = serverBehavior.updateCloudModuleWithInstances((String) null, new NullProgressMonitor());
+		updateModule = serverBehavior.updateModuleWithAllCloudInfo((String) null, new NullProgressMonitor());
 		assertNull(updateModule);
 
-		updateModule = serverBehavior.updateCloudModuleWithInstances("wrongName", new NullProgressMonitor());
+		updateModule = serverBehavior.updateModuleWithAllCloudInfo("wrongName", new NullProgressMonitor());
 		assertNull(updateModule);
 
-		updateModule = serverBehavior.updateCloudModuleWithInstances((IModule) null, new NullProgressMonitor());
+		updateModule = serverBehavior.updateDeployedModule((IModule) null, new NullProgressMonitor());
 		assertNull(updateModule);
 
 	}
@@ -183,11 +183,11 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(expectedAppName);
 		assertNull(appModule);
 
-		CloudFoundryApplicationModule wrongModule = serverBehavior.updateCloudModule("wrongApp",
+		CloudFoundryApplicationModule wrongModule = serverBehavior.updateModuleWithBasicCloudInfo("wrongApp",
 				new NullProgressMonitor());
 		assertNull(wrongModule);
 
-		wrongModule = serverBehavior.updateCloudModuleWithInstances("wrongApp", new NullProgressMonitor());
+		wrongModule = serverBehavior.updateModuleWithAllCloudInfo("wrongApp", new NullProgressMonitor());
 		assertNull(wrongModule);
 	}
 
@@ -217,19 +217,20 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		// No actual cloud application passed to update therefore no associated
 		// CloudFoundryApplicationModule should be found
-		appModule = cloudServer.updateModule(null, expectedAppName, new NullProgressMonitor());
+		appModule = cloudServer.updateModule(null, expectedAppName, null, new NullProgressMonitor());
 		assertNull(appModule);
 
-		appModule = cloudServer.updateModule(null, null, new NullProgressMonitor());
+		appModule = cloudServer.updateModule(null, null, null, new NullProgressMonitor());
 		assertNull(appModule);
 
 		assertTrue(cloudServer.getExistingCloudModules().isEmpty());
 
 		// Get the actual cloud app directly from the Cloud space
 		CloudApplication actualApp = client.getApplications().get(0);
+		ApplicationStats stats = client.getApplicationStats(actualApp.getName());
 
 		// Now create the CloudFoundryApplicationModule
-		appModule = cloudServer.updateModule(actualApp, expectedAppName, new NullProgressMonitor());
+		appModule = cloudServer.updateModule(actualApp, expectedAppName, stats, new NullProgressMonitor());
 
 		assertEquals(expectedAppName, appModule.getDeployedApplicationName());
 		assertEquals(appModule.getDeployedApplicationName(), appModule.getApplication().getName());
@@ -351,7 +352,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		externalClient.updateApplicationMemory(appName, 737);
 		CloudApplication updatedCloudApplicationFromClient = externalClient.getApplication(appName);
 
-		appModule = serverBehavior.updateCloudModule(appName, new NullProgressMonitor());
+		appModule = serverBehavior.updateModuleWithBasicCloudInfo(appName, new NullProgressMonitor());
 
 		assertEquals(appName, appModule.getDeployedApplicationName());
 		assertEquals(appModule.getDeployedApplicationName(), updatedCloudApplicationFromClient.getName());
@@ -363,7 +364,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		externalClient.updateApplicationMemory(appName, 555);
 
 		updatedCloudApplicationFromClient = externalClient.getApplication(appName);
-		appModule = serverBehavior.updateCloudModuleWithInstances(appName, new NullProgressMonitor());
+		appModule = serverBehavior.updateModuleWithAllCloudInfo(appName, new NullProgressMonitor());
 
 		assertEquals(appName, appModule.getDeployedApplicationName());
 		assertEquals(appModule.getDeployedApplicationName(), updatedCloudApplicationFromClient.getName());
@@ -429,7 +430,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		client.deleteApplication(appName);
 
-		appModule = serverBehavior.updateCloudModule(appName, new NullProgressMonitor());
+		appModule = serverBehavior.updateModuleWithBasicCloudInfo(appName, new NullProgressMonitor());
 
 		assertNull(appModule);
 
@@ -438,7 +439,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		assertNull(appModule);
 
 		CloudApplication nonexistantApp = null;
-		appModule = cloudServer.updateModule(nonexistantApp, appName, new NullProgressMonitor());
+		appModule = cloudServer.updateModule(nonexistantApp, appName, null, new NullProgressMonitor());
 		assertNull(appModule);
 
 	}
@@ -475,15 +476,15 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		assertNull(appModule);
 
-		appModule = serverBehavior.updateCloudModule(appName, new NullProgressMonitor());
+		appModule = serverBehavior.updateModuleWithBasicCloudInfo(appName, new NullProgressMonitor());
 
 		assertNull(appModule);
 
 		CloudApplication nonexistantApp = null;
-		appModule = cloudServer.updateModule(nonexistantApp, appName, new NullProgressMonitor());
+		appModule = cloudServer.updateModule(nonexistantApp, appName, null, new NullProgressMonitor());
 		assertNull(appModule);
 
-		appModule = cloudServer.updateModule(null, null, new NullProgressMonitor());
+		appModule = cloudServer.updateModule(null, null, null, new NullProgressMonitor());
 		assertNull(appModule);
 
 	}
@@ -531,7 +532,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		// Update through single-module update, and also verify that existing
 		// modules matches the results
-		appModule = serverBehavior.updateCloudModule(appName, new NullProgressMonitor());
+		appModule = serverBehavior.updateModuleWithBasicCloudInfo(appName, new NullProgressMonitor());
 		assertNull(appModule);
 
 		appModule = cloudServer.getExistingCloudModule(appName);
@@ -548,7 +549,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(appName);
 		assertNull(appModule);
 
-		appModule = serverBehavior.updateCloudModule(appName, new NullProgressMonitor());
+		appModule = serverBehavior.updateModuleWithBasicCloudInfo(appName, new NullProgressMonitor());
 		assertNull(appModule);
 
 		// Create separate external client
@@ -559,7 +560,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		urls.add(harness.getExpectedDefaultURL(prefix));
 		client.createApplication(appName, new Staging(), CloudUtil.DEFAULT_MEMORY, urls, new ArrayList<String>());
 
-		appModule = serverBehavior.updateCloudModule(appName, new NullProgressMonitor());
+		appModule = serverBehavior.updateModuleWithBasicCloudInfo(appName, new NullProgressMonitor());
 
 		assertEquals(appName, appModule.getDeployedApplicationName());
 		assertEquals(appModule.getDeployedApplicationName(), appModule.getApplication().getName());
@@ -577,7 +578,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(appName);
 		assertNull(appModule);
 
-		appModule = serverBehavior.updateCloudModule(appName, new NullProgressMonitor());
+		appModule = serverBehavior.updateModuleWithBasicCloudInfo(appName, new NullProgressMonitor());
 		assertNull(appModule);
 
 		// Create separate external client
@@ -607,7 +608,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		assertEquals(appModule.getDeploymentInfo().getMemory(), appModule.getApplication().getMemory());
 
 		// It should match what is obtained through update cloud module
-		appModule = serverBehavior.updateCloudModule(appName, new NullProgressMonitor());
+		appModule = serverBehavior.updateModuleWithBasicCloudInfo(appName, new NullProgressMonitor());
 		assertNotNull(appModule);
 		assertNotNull(appModule.getApplication());
 		assertEquals(appName, appModule.getDeployedApplicationName());
@@ -739,8 +740,8 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		final IModule module = cloudServer.getExistingCloudModule(expectedAppName).getLocalModule();
 
-		asynchExecuteOperationWaitForRefresh(cloudServer.getBehaviour().operations().refreshApplication(module), prefix,
-				CloudServerEvent.EVENT_APPLICATION_REFRESHED);
+		asynchExecuteOperationWaitForRefresh(cloudServer.getBehaviour().operations().updateDeployedModule(module),
+				prefix, CloudServerEvent.EVENT_APPLICATION_REFRESHED);
 
 	}
 

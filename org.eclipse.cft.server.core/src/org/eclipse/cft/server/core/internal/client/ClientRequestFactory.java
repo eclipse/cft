@@ -408,7 +408,7 @@ public class ClientRequestFactory {
 	 * modules. Note that this may be a long-running operation. If fetching a
 	 * known application , it is recommended to call
 	 * {@link #getCloudApplication(String, IProgressMonitor)} or
-	 * {@link #updateCloudModule(IModule, IProgressMonitor)} as it may be
+	 * {@link #updateModuleWithBasicCloudInfo(IModule, IProgressMonitor)} as it may be
 	 * potentially faster
 	 * @param monitor
 	 * @return List of all applications in the Cloud space.

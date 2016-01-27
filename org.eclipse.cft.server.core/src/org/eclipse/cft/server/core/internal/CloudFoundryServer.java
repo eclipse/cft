@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -636,6 +636,9 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 					Messages.CloudFoundryServer_ERROR_UNABLE_REPLACE_MODULE_NO_CLOUD_APP,
 					existing.getDeployedApplicationName()));
 		}
+		
+		// Since Cloud application exists, also fetch the stats as they are needed to correctly compute the module state
+		final ApplicationStats stats = getBehaviour().getApplicationStats(existing.getDeployedApplicationName(), monitor);
 
 		CloudFoundryPlugin.getCallback().stopApplicationConsole(existing, this);
 
@@ -718,7 +721,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 			// deleted
 			server.setExternalModules(externalModules.toArray(new IModule[0]));
 
-			updateModule(updatedCloudApplication, existing.getDeployedApplicationName(), monitor);
+			updateModule(updatedCloudApplication, existing.getDeployedApplicationName(), stats, monitor);
 		}
 	}
 
@@ -1041,6 +1044,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	 * 
 	 * @param existingCloudApplication a Cloud application the Cloud space
 	 * @param appName name of the application
+	 * @param stats instance information about the application. Null if not available
 	 * @param monitor
 	 * @return updated Cloud module, if it exists, or null, if it no longer
 	 * exists and has been deleted both locally in the server instance as well
@@ -1048,7 +1052,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	 * @throws CoreException if failure occurs while attempting to update the
 	 * {@link CloudFoundryApplicationModule}
 	 */
-	public CloudFoundryApplicationModule updateModule(CloudApplication existingCloudApplication, String appName,
+	public CloudFoundryApplicationModule updateModule(CloudApplication existingCloudApplication, String appName, ApplicationStats stats,
 			IProgressMonitor monitor) throws CoreException {
 
 		if (appName == null && existingCloudApplication != null) {
@@ -1122,6 +1126,13 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 							externalModules.add(correspondingCloudModule);
 						}
 						correspondingCloudModule.setCloudApplication(existingCloudApplication);
+					}
+					
+					
+					// Update stats BEFORE updating module state in server as this provides
+					// information to correctly determine module run state
+					if (correspondingCloudModule != null) {
+						correspondingCloudModule.setApplicationStats(stats);
 					}
 				}
 				// if cloud application does not exist, first check that it

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2014, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -142,7 +142,10 @@ public class MapToProjectOperation implements ICloudFoundryOperation {
 				.getDeployedApplicationName());
 
 		if (updatedModule != null) {
-			cloudServer.getBehaviour().operations().refreshApplication(updatedModule.getLocalModule()).run(monitor);
+			// Do a complete update of the module with Cloud information since
+			// the link/unlink project may re-create
+			// the module
+			cloudServer.getBehaviour().operations().updateModuleWithAllCloudInfo(updatedModule.getLocalModule()).run(monitor);
 		}
 
 		

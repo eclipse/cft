@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -82,7 +82,7 @@ public abstract class CloudRebelAppHandler implements CloudServerListener {
 
 			// Otherwise request for an updated module
 			if (appModule == null) {
-				appModule = server.getBehaviour().updateCloudModule(module, subMonitor.newChild(100));
+				appModule = server.getBehaviour().updateModuleWithBasicCloudInfo(module, subMonitor.newChild(100));
 			}
 
 			CloudApplication cloudApp = appModule != null ? appModule.getApplication() : null;
@@ -104,7 +104,7 @@ public abstract class CloudRebelAppHandler implements CloudServerListener {
 				catch (InterruptedException e) {
 					// Ignore. Proceed to get updated module anyway
 				}
-				appModule = server.getBehaviour().updateCloudModule(module, subMonitor.newChild(100));
+				appModule = server.getBehaviour().updateModuleWithBasicCloudInfo(module, subMonitor.newChild(100));
 
 				attempts--;
 			}
