@@ -123,13 +123,13 @@
       </properties>
     </profile>
 		
-		<profile>
-			<id>bamboo-signing</id>
-			<properties>
-				<signing.store.password>${env.bamboo_signing_store_password}</signing.store.password>
-				<signing.key.password>${env.bamboo_signing_key_password}</signing.key.password>
-			</properties>
-		</profile>
+	<profile>
+		<id>bamboo-signing</id>
+		<properties>
+			<signing.store.password>${env.bamboo_signing_store_password}</signing.store.password>
+			<signing.key.password>${env.bamboo_signing_key_password}</signing.key.password>
+		</properties>
+	</profile>
 
     <profile>
       <id>build.springsource.com</id>
@@ -173,19 +173,6 @@
               </configuration>
             </plugin>
             <plugin>
-              <groupId>org.eclipse.tycho.extras</groupId>
-              <artifactId>tycho-pack200a-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>pack200-normalize</id>
-                  <goals>
-                    <goal>normalize</goal>
-                  </goals>
-                  <phase>verify</phase>
-                </execution>
-              </executions>
-            </plugin>
-            <plugin>
               <groupId>org.eclipse.cbi.maven.plugins</groupId>
               <artifactId>eclipse-jarsigner-plugin</artifactId>
               <executions>
@@ -193,19 +180,6 @@
                   <id>sign</id>
                   <goals>
                     <goal>sign</goal>
-                  </goals>
-                  <phase>verify</phase>
-                </execution>
-              </executions>
-            </plugin>
-            <plugin>
-              <groupId>org.eclipse.tycho.extras</groupId>
-              <artifactId>tycho-pack200b-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>pack200-pack</id>
-                  <goals>
-                    <goal>pack</goal>
                   </goals>
                   <phase>verify</phase>
                 </execution>
@@ -575,16 +549,6 @@
 	          <groupId>org.eclipse.tycho</groupId>
 	          <artifactId>tycho-p2-plugin</artifactId>
 	          <version>${tycho-version}</version>
-	     </plugin>
-	     <plugin>
-	          <groupId>org.eclipse.tycho.extras</groupId>
-	          <artifactId>tycho-pack200a-plugin</artifactId>
-	          <version>${tycho-extras-version}</version>
-	     </plugin>
-	     <plugin>
-	          <groupId>org.eclipse.tycho.extras</groupId>
-	          <artifactId>tycho-pack200b-plugin</artifactId>
-	          <version>${tycho-extras-version}</version>
 	     </plugin>
       </plugins>
     </pluginManagement>
