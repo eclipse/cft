@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copied from Spring Tool Suite. Original license:
  * 
- * Copyright (c) 2015, 2016 Pivotal Software Inc and IBM Corporation.
+ * Copyright (c) 2015, 2016 Pivotal Software Inc. and IBM Corporation
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
@@ -513,10 +514,8 @@ public class ClientRequestFactory {
 	}
 	
 	/**
-	 * Check if the 'host' in the 'domainName' is already taken.  Optionally delete the route after the check or keep it to
-	 * reserve it.  Clients are expected to call {@link #deleteRoute(String, String)} after to remove any unused routes.
-	 * 
-	 * Throws a CoreException if the host is taken.
+	 * Check if the 'host' in the 'domainName' is reserved (route owned by us or someone else), and if not reserve it.  
+	 * Clients are expected to call {@link #deleteRoute(String, String)} after to remove any unused routes.
 	 * 
 	 * @see deleteRoute(String, String)
 	 * @param host - the Subdomain of the deployed URL
@@ -524,47 +523,27 @@ public class ClientRequestFactory {
 	 * @param deleteRoute - true to delete the route (if it was created in this method), false to reserve it and leave deletion to the calling method if necessary
 	 * @return true if the route was created, false otherwise
 	 */
-	public BaseClientRequest<Boolean> checkHostTaken(final String host, final String domainName, final boolean deleteRoute) {
+	public BaseClientRequest<Boolean> reserveRouteIfAvailable(final String host, final String domainName) {
 		return new BehaviourRequest<Boolean>(Messages.bind(Messages.CloudFoundryServerBehaviour_CHECKING_HOSTNAME_AVAILABLE, host), behaviour) {
 			@Override
-			protected Boolean doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Boolean doRun(CloudFoundryOperations client, SubMonitor progress) {
 				
-				// First, check the existing list of routes, before attempting an add below
-				List<CloudRoute> cloudRoutes = client.getRoutes(domainName);
-				
-				if(cloudRoutes != null) {
-					for(CloudRoute cr : cloudRoutes) {
-						// If we own the route...
-						if(cr.getHost().equalsIgnoreCase(host)) {
-							if(cr.inUse()) {
-								// ... but it is in use, then throw an exception to indicate this. 
-								throw new CoreException(new Status(Status.ERROR, CloudFoundryPlugin.PLUGIN_ID, "Client error - The host is taken: "+host));
-								
-							} else {
-								// ... but route is not in use, then we may deploy with it.
-								return false;
-							}
-						}
-					}
+				// Check if the route can be added.  If successful, then it is not taken.
+				try {
+					client.addRoute(host, domainName);
+				} catch(CloudFoundryException t) {
+					// addRoute will throw a CloudFoundryException indicating the route is taken; but we should also return false for any other
+					// exceptions that might be thrown here.
+					return false;
 				}
-				
-				// check if the route can be added.  If successful, then it is not taken.
-				client.addRoute(host, domainName);
-				
-				// if addRoute is successful (no CoreException), then delete it so it is available again
-				// Specify deleteRoute = false to 'reserve' the hostname
-				if (deleteRoute) {
-					client.deleteRoute(host, domainName);
-				}
-				
-				// The URL is considered created if we didn't delete it above. 
-				return !deleteRoute;
+
+				return true;
 			}
 		};
 	}
 
 	/**
-	 * Delete the route.  Use also with {@link #checkHostTaken(String, String, boolean)
+	 * Delete the route.  
 	 * 
 	 * @see checkHostTaken(String, String, boolean) {
 	 * @param host - the Subdomain of the deployed URL

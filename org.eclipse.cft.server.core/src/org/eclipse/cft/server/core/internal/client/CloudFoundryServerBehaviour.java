@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and IBM Corporation 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -74,6 +74,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
@@ -1267,8 +1268,15 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		}.run(monitor);
 	}
 
+	/** Retrieves the routes for the given domain name; will return early if cancelled, with 
+	 * an OperationCanceledException. */
 	public List<CloudRoute> getRoutes(final String domainName, IProgressMonitor monitor) throws CoreException {
-		return getRequestFactory().getRoutes(domainName).run(monitor);
+		
+		BaseClientRequest<List<CloudRoute>> request = getRequestFactory().getRoutes(domainName);
+		
+		CancellableRequestThread<List<CloudRoute>> t = new CancellableRequestThread<List<CloudRoute>>(request, monitor);
+		return t.runAndWaitForCompleteOrCancelled();
+		
 	}
 
 	public void deleteRoute(final List<CloudRoute> routes, IProgressMonitor monitor) throws CoreException {
@@ -1288,20 +1296,21 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	/**
-	 * Determine if a given host is taken; if it is, an exception is thrown.
-	 * Otherwise a boolean will be returned which indicates whether or not the
-	 * host route was created: a route will not be created if it already exists,
-	 * or if deleteRoute is true.
+	 * Attempt to reserve a route; returns true if the route could be reserved, or false otherwise.
+	 * Note: This will return false if user already owns the route, or if the route is owned by another user. 
+	 * Will return early if cancelled, with an OperationCanceledException. 
 	 */
-	public boolean checkHostTaken(final String host, final String domainName, final boolean deleteRoute,
-			IProgressMonitor monitor) throws CoreException {
+	public boolean reserveRouteIfAvailable(final String host, final String domainName, IProgressMonitor monitor) throws CoreException {
 
-		BaseClientRequest<Boolean> request = getRequestFactory().checkHostTaken(host, domainName, deleteRoute);
-		if (request != null) {
-			boolean result = request.run(monitor);
+		BaseClientRequest<Boolean> request = getRequestFactory().reserveRouteIfAvailable(host, domainName);
+		
+		CancellableRequestThread<Boolean> t = new CancellableRequestThread<Boolean>(request, monitor);
+		Boolean result = t.runAndWaitForCompleteOrCancelled();
+		
+		if(result != null) {
 			return result;
 		}
-
+		
 		return false;
 	}
 
@@ -1761,5 +1770,126 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public ApplicationInstanceRunningTracker getApplicationInstanceRunningTracker(
 			CloudFoundryApplicationModule appModule) throws CoreException {
 		return new ApplicationInstanceRunningTracker(appModule, getCloudFoundryServer());
+	}
+}
+
+
+/** Requests may be wrapped using this class, such that if the user cancels the monitor, the thread will automatically return.
+ *  
+ * Note: Since the BaseClientRequest itself does not check the monitor, the BaseClientRequest may still be running even though 
+ * the calling thread has return. Care should be taken to consider this logic. */
+class CancellableRequestThread<T> {
+	
+	private T result = null;
+	private Throwable exceptionThrown = null;
+	
+	private boolean threadComplete = false; 
+	
+	private final Object lock = new Object();
+	
+	private final IProgressMonitor monitor;
+	private final BaseClientRequest<T> request;
+	
+	public CancellableRequestThread(BaseClientRequest<T> request, IProgressMonitor monitor) {
+		this.request = request;
+		this.monitor = monitor;
+	}
+
+	/** This is called by ThreadWrapper.run(...) */
+	private void runInThread() {
+		
+		try {
+			result = request.run(monitor);
+		} catch (Exception e) {
+			exceptionThrown = e;
+		} finally {
+			synchronized(lock) {
+				threadComplete = true;
+				lock.notify();
+			}
+		}
+		
+	}
+	
+	/** Starts the thread to invoke the request, and begins waiting for the thread to complete or be cancelled. */
+	public T runAndWaitForCompleteOrCancelled() {
+		try {
+			
+			// Start the thread that runs the requst
+			ThreadWrapper tw = new ThreadWrapper();
+			tw.start();
+			
+
+			while(!monitor.isCanceled()) {
+				
+				synchronized(lock) {
+					// Check for cancelled every 0.25 seconds.
+					lock.wait(250); 
+					
+					if(threadComplete) {
+						break;
+					}
+				}
+			}
+
+
+			Throwable thr = getExceptionThrown();
+			// Throw any caught exceptions
+			if(thr != null ) {
+				if(thr instanceof RuntimeException) {
+					// Throw unchecked exception
+					throw (RuntimeException)thr;
+					
+				} else {
+					// Convert checked to unchecked exception
+					throw new RuntimeException(thr);
+				}
+				
+			}
+			
+			// Check for cancelled
+			if(!isThreadComplete() && getResult() == null) {
+				throw new OperationCanceledException();				
+			}
+			
+			T result = getResult();
+			
+			return result;
+			
+		} catch (InterruptedException e) {
+			throw new OperationCanceledException();
+		}		
+	}
+		
+	public Throwable getExceptionThrown() {
+		synchronized(lock) {
+			return exceptionThrown;
+		}
+	}
+	
+	public boolean isThreadComplete() {
+		synchronized(lock) {
+			return threadComplete;
+		}
+	}
+	
+	public T getResult() {
+		synchronized(lock) {
+			return result;
+		}
+	}
+	
+	/** Simple thread that calls runInThread(...), to ensure that the BaseClientRequest may only be started by calling the runAndWaitForCompleteOrCancelled(...) method. */
+	private class ThreadWrapper extends Thread {
+		
+		private ThreadWrapper() {
+			setDaemon(true);
+			setName(CancellableRequestThread.class.getName());
+		}
+		
+		@Override
+		public void run() {
+			runInThread();
+		}
 	}
 }

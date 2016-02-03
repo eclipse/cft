@@ -33,6 +33,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
+import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.eclipse.cft.server.core.AbstractCloudFoundryUrl;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
@@ -540,7 +541,7 @@ public class CloudUiUtil {
 	}
 
 	
-	public static UniqueSubdomain getUniqueSubdomain(String url, CloudFoundryServer server) {
+	public static UniqueSubdomain getUniqueSubdomain(String url, CloudFoundryServer server, IProgressMonitor monitor) throws CoreException {
 			if (url == null) return null; // Incorrect usage. Provide a non-null string
 			
 			ApplicationUrlLookupService lookup = ApplicationUrlLookupService.getCurrentLookup(server);
@@ -550,27 +551,71 @@ public class CloudUiUtil {
 			
 			UniqueSubdomain result = null;
 			
+			if(monitor == null) {
+				// Monitor is optional, so use a NullProgressMonitor.
+				monitor = new NullProgressMonitor();
+			}
+			
+			List<CloudRoute> routes = null;
+				
 			do {
+
 				try {
-					// It does NOT check if the URL is taken already, even if valid.
+					// It does NOT check if the URL is taken already, even if valid.					
 					cloudUrl = lookup.getCloudApplicationURL(url);
-				} catch (CoreException e) {
+				} catch(CoreException e) {
 					// if error occurred, eg. url is null, then don't check for host taken and simply return
 					break;
 				}
 				
-				try {
-					// CheckHostTaken - reserve the route when we get a unused name
+				if(cloudUrl == null) {
+					// if error occurred, eg. url is null, then don't check for host taken and simply return
+					break;
+				}
+													
+				if(routes == null) {
+					routes = server.getBehaviour().getRoutes(cloudUrl.getDomain(), monitor);
+				}
+				
+				boolean isFound = false; // is in route list?
+				boolean isRouteReservedAndUnused = false; // is route reserve and unused?
+				boolean isRouteCreated = false; // did we create the route in reserveRoute?
+				
+				// First check the existing cloud routes
+				for(CloudRoute cr : routes) {
+					// If we own the route...
+					if(cr.getHost().equalsIgnoreCase(cloudUrl.getSubdomain())) {
+						isFound = true;
+						isRouteCreated = false;
+						
+						if(!cr.inUse()) {
+							isRouteReservedAndUnused = true;
+						} else {
+							isRouteReservedAndUnused = false;								
+						}
+						
+						break;
+					}
+				}
+				
+				if(!isFound) {
+					// If the route was not found in the getRoutes(...) list, then attempt to reserve it
 					
-					boolean isRouteCreated = server.getBehaviour().checkHostTaken(cloudUrl.getSubdomain(), cloudUrl.getDomain(), false, new NullProgressMonitor());
-					
+					isRouteReservedAndUnused = server.getBehaviour().reserveRouteIfAvailable(cloudUrl.getSubdomain(), cloudUrl.getDomain(), monitor);
+					isRouteCreated = isRouteReservedAndUnused;
+				}
+
+				if(isRouteReservedAndUnused) {
 					result = new UniqueSubdomain();
 					result.setRouteCreated(isRouteCreated);
 					result.setCloudUrl(cloudUrl);
 					
 					// break or just set boolean to true
 					isUniqueURL = true;
-				} catch (CoreException ce) {
+					
+				} else {
+					// The route is taken (as determined either by checking the route list, or by attempting to reserve)
+					
 					isUniqueURL = false;
 					StringBuilder sb = new StringBuilder(url);
 					String subdomain = cloudUrl.getSubdomain();
@@ -590,9 +635,10 @@ public class CloudUiUtil {
 					} else { // Otherwise, simply append 1 to the end of the subdomain
 						// Example: subdomain = MyApp --> MyApp1
 						url = sb.insert(sb.indexOf(subdomain) + subdomain.length(), "1").toString();  
-					}
+					}						
 				}
-			} while (!isUniqueURL && intSuffix < Integer.MAX_VALUE - 1); // Support suffix up to the number 2^31 - 1
+					
+			} while (!isUniqueURL && intSuffix < Integer.MAX_VALUE - 1 && !monitor.isCanceled()); // Support suffix up to the number 2^31 - 1
 			
 			return result;
 		}

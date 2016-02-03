@@ -21,7 +21,9 @@
 package org.eclipse.cft.server.ui.internal;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
+import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -37,12 +39,15 @@ import org.eclipse.jface.operation.IRunnableWithProgress;
  */
 public class HostnameValidator implements IRunnableWithProgress {
 
-	private CloudApplicationURL appUrl;
+	private final CloudApplicationURL appUrl;
+	private final CloudFoundryServer server;
+	
 	private IStatus status;
-	private CloudFoundryServer server;
+
 	// Allow override of the default message for the host name taken problem (for initialization of the wizard)
 	private String message = null;
 	
+	/** True if a route was created during validation; a route will not be created if it already exists. */
 	private boolean routeCreated = false;
 
 	public HostnameValidator(CloudApplicationURL appUrl, CloudFoundryServer server) {
@@ -62,26 +67,59 @@ public class HostnameValidator implements IRunnableWithProgress {
 
 	public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
 		monitor.beginTask(Messages.CloudApplicationUrlPart_HOST_CHECK_JOB_DISPLAY_INFO, IProgressMonitor.UNKNOWN);
+		
+		boolean isRouteOurs = false; // Whether we (space/org) own the route (true if either in use or not in use)
+		boolean isInUse = false; // In use by another application or user
+		
 		try {
-			routeCreated = server.getBehaviour().checkHostTaken(appUrl.getSubdomain(), appUrl.getDomain(), false, monitor);
-		} catch (CoreException ce) {
-			status = ce.getStatus();
-			String errorMessage = ce.getMessage();
-			// host name taken is potentially one cause of the CoreException
-			// Look for it specifically, and change the error message so it's more user-friendly.
-			// Message from java client is: "Client error - The host is taken".
-			// Replace it with ours that is more meaningful.
-			if (errorMessage != null && errorMessage.contains("Client error - The host is taken")) { // $NON-NLS-N$
-				status = new Status(IStatus.ERROR, status.getPlugin(), message != null ? message : Messages.bind(
-						Messages.CloudApplicationUrlPart_ERROR_HOSTNAME_TAKEN, appUrl.getUrl()));
-			} else {
-				// For other errors (like connection time out), give a more user-friendly message than the one provided
-				status = new Status(IStatus.ERROR, status.getPlugin(), Messages.CloudApplicationUrlPart_ERROR_UNABLE_TO_CHECK_HOSTNAME);
-				// Log the error at least.
-				CloudFoundryPlugin.logError(Messages.CloudApplicationUrlPart_ERROR_UNABLE_TO_CHECK_HOSTNAME, ce);
+			
+			List<CloudRoute> routes = server.getBehaviour().getRoutes(appUrl.getDomain(), monitor);
+			
+			for(CloudRoute cr : routes) {
+				// If we own the route...
+				if(cr.getHost().equalsIgnoreCase(appUrl.getSubdomain())) {
+					isRouteOurs = true;
+					isInUse = cr.inUse();
+					
+					if(!isInUse)  {
+						// We own it, but it's not in use by us, so we are ok.
+						status = Status.OK_STATUS;
+						this.routeCreated = false;
+						return;
+					}
+
+					
+					break;
+				}
 			}
-		}
-		finally {
+						
+			if(!isRouteOurs) {
+				// If we couldn't find the route in the route list, so attempt to reserve it
+				boolean routeReserved = server.getBehaviour().reserveRouteIfAvailable(appUrl.getSubdomain(), appUrl.getDomain(), monitor);
+				
+				if(routeReserved) {
+					// We successfully reserved a route that we did not previously own
+					this.routeCreated = true;
+					isInUse = false;
+				} else {
+					// We could not reserve the route as some other user owns it
+					isInUse = true;
+					this.routeCreated = false;
+				}				
+			}
+			
+			if(isInUse) {
+				// We found it in the route list (and it was in use), or we couldn't reserve it, so it is taken.
+				status = new Status(IStatus.ERROR, status.getPlugin(), message != null ? message : Messages.bind(
+						Messages.CloudApplicationUrlPart_ERROR_HOSTNAME_TAKEN, appUrl.getUrl()));				
+			}
+			
+		} catch (CoreException ce) {
+			// For other errors (like connection time out), give a more user-friendly message than the one provided
+			status = new Status(IStatus.ERROR, status.getPlugin(), Messages.CloudApplicationUrlPart_ERROR_UNABLE_TO_CHECK_HOSTNAME);
+			// Log the error at least.
+			CloudFoundryPlugin.logError(Messages.CloudApplicationUrlPart_ERROR_UNABLE_TO_CHECK_HOSTNAME, ce);
+		} finally {
 			monitor.done();
 		}			
 	}

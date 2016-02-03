@@ -308,7 +308,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 				}
 			}
 		};
-		runAsynchWithWizardProgress(runnable, Messages.CloudFoundryApplicationServicesWizardPage_TEXT_VERIFY_SERVICE_PROGRESS);
+		runAsync(runnable, Messages.CloudFoundryApplicationServicesWizardPage_TEXT_VERIFY_SERVICE_PROGRESS);
 
 	}
 

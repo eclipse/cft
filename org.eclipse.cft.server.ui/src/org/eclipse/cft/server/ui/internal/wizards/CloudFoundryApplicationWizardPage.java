@@ -40,10 +40,13 @@ import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.CloudUiUtil;
 import org.eclipse.cft.server.ui.internal.CloudUiUtil.UniqueSubdomain;
+import org.eclipse.cft.server.ui.internal.ICoreRunnable;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.PartChangeEvent;
 import org.eclipse.cft.server.ui.internal.UIPart;
 import org.eclipse.cft.server.ui.internal.WizardPartChangeEvent;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -57,6 +60,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
@@ -76,6 +80,8 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 
 	private String buildpack;
 
+	private AppNamePart appNamePart;
+
 	private Text buildpackText;
 
 	private String serverTypeId;
@@ -88,6 +94,38 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 
 	protected final ApplicationWizardDescriptor descriptor;
 
+	/** The current state of the page, as determined by setVisible(...) */
+	private boolean isPageVisible = false;
+	
+	/** Whether or not we have started the wizard progress thread to validate the application name */
+	private boolean isAppnameValidated = false;
+	
+	@Override
+	public void setVisible(boolean newVisibleState) {
+		
+		super.setVisible(newVisibleState);
+		
+		// If we are on this page, and the name has not been previously checked if it is valid, then check it
+		if(!this.isPageVisible && newVisibleState && !this.isAppnameValidated) {
+			
+			this.isAppnameValidated = true;
+			this.isPageVisible = newVisibleState;
+			
+			runAsynchWithWizardProgress(new ICoreRunnable() {
+
+				@Override
+				public void run(IProgressMonitor monitor) throws CoreException {
+					IStatus hostnameStatus = validateHostname(monitor);
+					if (hostnameStatus != null && !hostnameStatus.isOK()) {
+						setErrorMessage(hostnameStatus.getMessage());
+						handleChange(new PartChangeEvent(appName, hostnameStatus, CloudUIEvent.VALIDATE_HOST_TAKEN_EVENT));
+					}
+					
+			}} , null);
+		}
+		
+	}
+	
 	// Preserving the old constructor to avoid API breakage
 	public CloudFoundryApplicationWizardPage(CloudFoundryServer server, CloudFoundryDeploymentWizardPage deploymentPage,
 			CloudFoundryApplicationModule module, ApplicationWizardDescriptor descriptor) {
@@ -147,18 +185,17 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 		// This must be called first as the values are then populate into the UI
 		// widgets
 		init();
-		IStatus hostnameStatus = validateHostname();
 
 		Composite composite = new Composite(parent, SWT.NONE);
 		composite.setLayout(new GridLayout(2, false));
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 
-		final UIPart appPart = new AppNamePart();
+		appNamePart = new AppNamePart();
 		// Add the listener first so that it can be notified of changes during
 		// the part creation.
-		appPart.addPartChangeListener(this);
+		appNamePart.addPartChangeListener(this);
 
-		appPart.createPart(composite);
+		appNamePart.createPart(composite);
 
 		Label nameLabel = new Label(composite, SWT.NONE);
 		nameLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
@@ -180,12 +217,6 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 				validateBuildPack();
 			}
 		});
-
-		// Show hostname taken error message first over buildpack URL errors
-		if (hostnameStatus != null && !hostnameStatus.isOK()) {
-			setErrorMessage(hostnameStatus.getMessage());
-			handleChange(new PartChangeEvent(appName, hostnameStatus, CloudUIEvent.VALIDATE_HOST_TAKEN_EVENT));
-		}
 
 		return composite;
 	}
@@ -321,9 +352,13 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 
 			return parent;
 		}
+		
+		protected Text getNameText() {
+			return nameText;
+		}
 	}
 	
-	private IStatus validateHostname() {
+	private IStatus validateHostname(IProgressMonitor monitor) {
 		ApplicationDeploymentInfo workingCopy = descriptor.getDeploymentInfo();
 		IStatus status = Status.OK_STATUS;
 		
@@ -360,29 +395,47 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 //					}
 //			    }
 			} else {
-				// IFF there is no manifest, then we will do the hostname validation AND suggest a new unique name
+				// IFF there is no manifest, then we will do the hostname
+				// validation AND suggest a new unique name
 				List<String> urls = workingCopy.getUris();
 				String url = urls != null && !urls.isEmpty() ? urls.get(0) : null;
-				
+
 				if (url != null) {
-					UniqueSubdomain uniqueSubdomain = CloudUiUtil.getUniqueSubdomain(url, server);
-					
+					UniqueSubdomain uniqueSubdomain;
+					try {
+						uniqueSubdomain = CloudUiUtil.getUniqueSubdomain(url, server, monitor);
+					} catch (CoreException e) {
+						// Return the exception to calling class
+						return e.getStatus();
+					}
+
 					if (uniqueSubdomain != null && uniqueSubdomain.getCloudUrl() != null) {
 						cloudUrl = uniqueSubdomain.getCloudUrl();
-						// Set the new deployment name and update the URIs only if it needs to be changed
+						// Set the new deployment name and update the URIs only
+						// if it needs to be changed
 						if (!cloudUrl.getSubdomain().equals(workingCopy.getDeploymentName())) {
-						   workingCopy.setDeploymentName(cloudUrl.getSubdomain());
-						   appName = cloudUrl.getSubdomain();
-						   List<String>newList = new ArrayList<String>();
-						   newList.add(cloudUrl.getUrl());
-						   workingCopy.setUris(newList);
+							workingCopy.setDeploymentName(cloudUrl.getSubdomain());
+							appName = cloudUrl.getSubdomain();
+
+							// Update the app name Text widget w/ the new name.
+							Display.getDefault().syncExec(new Runnable() {
+
+								@Override
+								public void run() {
+									appNamePart.getNameText().setText(appName);
+								}
+							});
+
+							List<String> newList = new ArrayList<String>();
+							newList.add(cloudUrl.getUrl());
+							workingCopy.setUris(newList);
 						}
-						
+
 						getApplicationWizard().addToReserved(cloudUrl, uniqueSubdomain.isRouteCreated());
 					}
-					
+
 				}
-				
+
 			}
 		}
 		return status;
