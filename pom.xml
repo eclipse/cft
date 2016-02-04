@@ -62,33 +62,13 @@
   <properties>
     <!-- CloudFloundry Properties -->
     <p2.qualifier>SNAPSHOT</p2.qualifier>
-    <p2.sign>false</p2.sign>
     <p2.repository.name>Cloud Foundry Tools</p2.repository.name>
-
-	<!-- Signing -->
-	<signing.skip>true</signing.skip>
-	<signing.alias>vmware</signing.alias>
-	<signing.keystore>~/.keytool/springsource.jks</signing.keystore>
-	<signing.store.password>${STORE_PASSWORD}</signing.store.password>
-	<signing.key.password>${KEY_PASSWORD}</signing.key.password>
 
     <dist.name>Cloud Foundry Tools</dist.name>
     <dist.project>cft</dist.project>
-    <dist.key>TOOLS</dist.key>
     <dist.target.classifier>cloudfoundry-${dist.target}</dist.target.classifier>
 
     <!-- Common Properties -->
-    <dist.type>snapshot</dist.type>
-    <dist.bucket>dist.springsource.com</dist.bucket>
-    <dist.platform.name></dist.platform.name>
-    <dist.platform.version></dist.platform.version>		
-    <dist.platform.id></dist.platform.id>		
-    <dist.target></dist.target>
-    <dist.properties>dist.properties</dist.properties>
-
-	<dist.pathpostfix>nightly</dist.pathpostfix>
-	<dist.path>${dist.type}/${dist.key}/${dist.project}/${dist.pathpostfix}</dist.path>
-
     <skip.source.check>true</skip.source.check>
 
     <test.vmargs>${test.osvmargs}</test.vmargs>
@@ -123,31 +103,6 @@
       </properties>
     </profile>
 		
-	<profile>
-		<id>bamboo-signing</id>
-		<properties>
-			<signing.store.password>${env.bamboo_signing_store_password}</signing.store.password>
-			<signing.key.password>${env.bamboo_signing_key_password}</signing.key.password>
-		</properties>
-	</profile>
-
-    <profile>
-      <id>build.springsource.com</id>
-      <activation>
-        <property>
-          <name>bamboo.buildNumber</name>
-        </property>
-      </activation>
-      <properties>
-        <test.vmargs>-Dhttp.proxyHost=proxy.eng.vmware.com -Dhttp.proxyPort=3128 -Dhttps.proxyHost=proxy.eng.vmware.com -Dhttps.proxyPort=3128 ${test.osvmargs}</test.vmargs>
-        <!--
-        <p2.qualifier>CI-B${bamboo.buildNumber}</p2.qualifier>
-        <p2.replaceQualifier>true</p2.replaceQualifier>
-        -->
-        
-      </properties>
-    </profile>
-
     <profile>
       <id>osx</id>
       <activation>
@@ -244,13 +199,6 @@
   </pluginRepositories>
 
   <build>
-    <extensions>
-      <extension>
-        <groupId>org.springframework.build.aws</groupId>
-        <artifactId>org.springframework.build.aws.maven</artifactId>
-        <version>3.1.0.RELEASE</version>
-      </extension>
-    </extensions>
 
     <plugins>
 
@@ -284,27 +232,6 @@
       </plugin>
 
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>properties-maven-plugin</artifactId>
-        <version>1.0-alpha-2</version>
-        <executions>
-          <execution>
-            <phase>initialize</phase>
-            <goals>
-              <goal>read-project-properties</goal>
-            </goals>
-            <configuration>
-              <files>
-                <file>${project.build.directory}/git.properties</file>
-              </files>
-              <!-- do not fail if properties file does not exist to support, required to build eclipse-repository projects -->
-              <quiet>true</quiet>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
         <artifactId>maven-deploy-plugin</artifactId>
         <version>2.5</version>
         <configuration>
@@ -327,27 +254,6 @@
           <resolver>p2</resolver>
         </configuration>
       </plugin>
-		
-		<plugin>
-			<groupId>org.apache.maven.plugins</groupId>
-			<artifactId>maven-jarsigner-plugin</artifactId>
-			<version>1.2</version>
-			<executions>
-				<execution>
-					<id>sign</id>
-					<goals>
-						<goal>sign</goal>
-					</goals>
-				</execution>
-			</executions>
-			<configuration>
-				<skip>${signing.skip}</skip>
-				<alias>${signing.alias}</alias>
-				<keystore>${signing.keystore}</keystore>
-				<storepass>${signing.store.password}</storepass>
-				<keypass>${signing.key.password}</keypass>
-			</configuration>
-		</plugin>
 		
     </plugins>
     <pluginManagement>
