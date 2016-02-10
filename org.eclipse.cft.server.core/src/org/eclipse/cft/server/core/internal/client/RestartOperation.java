@@ -76,9 +76,6 @@ public class RestartOperation extends ApplicationOperation {
 				throw CloudErrorUtil.toCoreException(
 						"Unable to start application. Missing application deployment name in application deployment information."); //$NON-NLS-1$
 			}
-			
-			server.setModuleState(getModules(), IServer.STATE_STARTING);
-
 
 			SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
 
@@ -114,6 +111,10 @@ public class RestartOperation extends ApplicationOperation {
 							throw new OperationCanceledException(
 									Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
 						}
+						
+						
+						// Set the state of the module to Starting
+						server.setModuleState(getModules(), IServer.STATE_STARTING);
 
 						StartingInfo info = client.restartApplication(deploymentName);
 
@@ -155,8 +156,7 @@ public class RestartOperation extends ApplicationOperation {
 						// externally therefore cancel the restart operation.
 						CloudFoundryApplicationModule updatedModule = getBehaviour()
 								.updateModuleWithAllCloudInfo(deploymentName, progress);
-						if (updatedModule == null || updatedModule.getApplication() == null
-								|| updatedModule.getState() == IServer.STATE_STOPPED) {
+						if (updatedModule == null || updatedModule.getApplication() == null) {
 							server.setModuleState(getModules(), IServer.STATE_STOPPED);
 
 							throw new OperationCanceledException(

@@ -32,6 +32,7 @@ import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.InstanceState;
+import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -202,7 +203,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		deployAndWaitForAppStart(prefix);
 
 		// Verify it is deployed
-		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(prefix, IServer.STATE_STARTED);
+		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(prefix);
 		assertNotNull("Expected non-null Cloud Foundry application module", appModule);
 
 		IModule module = getModule(harness.getDefaultWebAppProjectName());
@@ -236,7 +237,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		deployApplication(prefix, stopMode);
 
 		// Invoke the helper method
-		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(prefix, IServer.STATE_STOPPED);
+		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(prefix);
 		assertNotNull("Expected non-null Cloud Foundry application module", appModule);
 
 		// Now CHECK that the expected conditions in the helper method assert to
@@ -256,11 +257,10 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		int moduleState = server.getModuleState(new IModule[] { module });
 		assertEquals(IServer.STATE_STOPPED, moduleState);
 
-		InstanceState state = new ApplicationInstanceRunningTracker(appModule, cloudServer)
-				.track(new NullProgressMonitor());
+		int state = new ApplicationInstanceRunningTracker(appModule, cloudServer).track(new NullProgressMonitor());
 
-		assertFalse("Expected application to be stopped, but server behaviour indicated it is running",
-				state == InstanceState.RUNNING);
+		assertTrue("Expected application to be stopped, but server behaviour indicated it is running",
+				state == IServer.STATE_STOPPED);
 
 	}
 
@@ -297,32 +297,63 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		serverBehavior.startModule(new IModule[] { appModule.getLocalModule() }, new NullProgressMonitor());
 
-		assertApplicationIsRunning(appModule);
+		trackApplicationRunning(appModule);
 
 		assertEquals(IServer.STATE_STARTED, appModule.getState());
 		assertEquals(AppState.STARTED, appModule.getApplication().getState());
 	}
 
-	public void testServerBehaviourIsApplicationRunning() throws Exception {
+	public void testApplicationInstanceRunningTracker() throws Exception {
 		// Tests the server behaviour API that checks if the application is
 		// running
-		String prefix = "testServerBehaviourIsApplicationRunning";
+		String prefix = "testApplicationInstanceRunningTracker";
 		createWebApplicationProject();
 
 		CloudFoundryApplicationModule appModule = deployAndWaitForAppStart(prefix);
 
-		InstanceState state = new ApplicationInstanceRunningTracker(appModule, cloudServer)
-				.track(new NullProgressMonitor());
+		int state = new ApplicationInstanceRunningTracker(appModule, cloudServer).track(new NullProgressMonitor());
 
 		assertTrue("Expected application to be started, but server behaviour indicated it is stopped",
-				state == InstanceState.RUNNING);
+				state == IServer.STATE_STARTED);
+
+		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
 		// The following are the expected conditions for the server behaviour to
 		// determine that the app is running
 		String appName = harness.getDefaultWebAppName(prefix);
+
+		// Verify start states in the module are correct
 		assertTrue(appModule.getState() == IServer.STATE_STARTED);
-		assertEquals(1, serverBehavior.getApplicationStats(appName, new NullProgressMonitor()).getRecords().size());
+		assertEquals(InstanceState.RUNNING, appModule.getApplicationStats().getRecords().get(0).getState());
+
+		// Check directly via CF that the start states are correct
+		List<InstanceStats> stats = serverBehavior.getApplicationStats(appName, new NullProgressMonitor()).getRecords();
+		assertEquals(1, stats.size());
 		assertEquals(1, serverBehavior.getInstancesInfo(appName, new NullProgressMonitor()).getInstances().size());
+		assertEquals(InstanceState.RUNNING, stats.get(0).getState());
+	}
+
+	public void testApplicationModuleRunningState() throws Exception {
+		// Tests the server behaviour API that checks if the application is
+		// running
+		String prefix = "testApplicationModuleRunningState";
+		createWebApplicationProject();
+
+		CloudFoundryApplicationModule appModule = deployAndWaitForAppStart(prefix);
+
+		// The following are the expected conditions for the server behaviour to
+		// determine that the app is running
+		String appName = harness.getDefaultWebAppName(prefix);
+
+		// Verify start states in the module are correct
+		assertTrue(appModule.getState() == IServer.STATE_STARTED);
+		assertEquals(InstanceState.RUNNING, appModule.getApplicationStats().getRecords().get(0).getState());
+
+		// Check directly via CF that the start states are correct
+		List<InstanceStats> stats = serverBehavior.getApplicationStats(appName, new NullProgressMonitor()).getRecords();
+		assertEquals(1, stats.size());
+		assertEquals(1, serverBehavior.getInstancesInfo(appName, new NullProgressMonitor()).getInstances().size());
+		assertEquals(InstanceState.RUNNING, stats.get(0).getState());
 	}
 
 	public void testStartModuleInvalidPassword() throws Exception {

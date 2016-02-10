@@ -765,7 +765,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		appModules = cloudServer.getExistingCloudModules();
 		assertEquals(harness.getDefaultWebAppName(appPrefix),
 				appModules.iterator().next().getDeployedApplicationName());
-		assertApplicationIsRunning(appModules.iterator().next());
+		trackApplicationRunning(appModules.iterator().next());
 
 	}
 
@@ -830,7 +830,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		assertEquals(expectedAppName, appModule.getDeployedApplicationName());
 
-		assertApplicationIsRunning(appModule);
+		trackApplicationRunning(appModule);
 	}
 
 }

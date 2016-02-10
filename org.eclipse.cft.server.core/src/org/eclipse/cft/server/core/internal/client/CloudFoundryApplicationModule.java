@@ -20,11 +20,15 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.InstanceState;
+import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.eclipse.cft.server.core.AbstractApplicationDelegate;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
@@ -334,21 +338,21 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 	 */
 	public synchronized int getState() {
 
-		// Check desired app state first
+		// Fetch the running state of the first instance that is running.
+		List<InstanceState> instanceStates = getInstanceRunstates();
+
+		for (InstanceState instanceState : instanceStates) {
+			if (instanceState == InstanceState.RUNNING) {
+				return IServer.STATE_STARTED;
+			}
+		}
+
+		// If the app desired state is stopped, then consider the app to be
+		// stopped.
 		if (this.application != null && this.application.getState() == AppState.STOPPED) {
 			return IServer.STATE_STOPPED;
 		}
-		InstanceState instanceState = getRunState();
-		if (instanceState != null) {
-			switch (instanceState) {
-			case RUNNING:
-				return IServer.STATE_STARTED;
-			case STARTING:
-				return IServer.STATE_STARTING;
-			case DOWN:
-				return IServer.STATE_STOPPED;
-			}
-		}
+
 		return IServer.STATE_UNKNOWN;
 	}
 
@@ -412,14 +416,24 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		}
 	}
 
-	public synchronized InstanceState getRunState() {
+	/**
+	 * The size of instance states matches the number of instances of the
+	 * application. So if the application has 3 instances, a list with 3 state
+	 * entries will be returned.
+	 * @return non-null list of all running states for the application
+	 * instances. Empty list if no instances can be resolved for the application
+	 * (e.g. app is stopped)
+	 */
+	public synchronized List<InstanceState> getInstanceRunstates() {
 
-		if (applicationStats != null && applicationStats.getRecords() != null
-				&& !applicationStats.getRecords().isEmpty()) {
-			return applicationStats.getRecords().get(0).getState();
+		List<InstanceState> states = new ArrayList<InstanceState>();
+		if (applicationStats != null && applicationStats.getRecords() != null) {
+			for (InstanceStats stats : applicationStats.getRecords()) {
+				states.add(stats.getState());
+			}
 		}
 
-		return null;
+		return states;
 	}
 
 	/**
@@ -435,10 +449,10 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		// when modifying this implementation
 		return exists() && getState() != IServer.STATE_UNKNOWN;
 	}
-	
+
 	/**
-	 * @return true if the application exists in CF. False otherwise. No information is
-	 * provided if the application is synchronised (published).
+	 * @return true if the application exists in CF. False otherwise. No
+	 * information is provided if the application is synchronised (published).
 	 */
 	public synchronized boolean exists() {
 		return getApplication() != null;

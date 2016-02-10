@@ -120,8 +120,6 @@ public class StartOperation extends RestartOperation {
 			// first.
 			appModule.setStatus(null);
 
-			server.setModuleState(getModules(), IServer.STATE_STARTING);
-
 			final String deploymentName = appModule.getDeploymentInfo().getDeploymentName();
 
 			// This request does three things:

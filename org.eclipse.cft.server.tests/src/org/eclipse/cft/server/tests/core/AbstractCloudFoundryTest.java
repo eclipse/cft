@@ -30,7 +30,6 @@ import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
-import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -146,23 +145,24 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
 
-		assertApplicationIsRunning(appModule);
+		trackApplicationRunning(appModule);
 		// Verify that the Application URL is set
 		List<String> uris = appModule.getApplication().getUris();
 		assertEquals(Collections.singletonList(harness.getExpectedDefaultURL(prefix)), uris);
 	}
 
-	protected void assertApplicationIsRunning(CloudFoundryApplicationModule appModule) throws Exception {
+	protected void trackApplicationRunning(CloudFoundryApplicationModule appModule) throws Exception {
 
-		// Test the Server behaviour API that checks if application is running
-		InstanceState state = new ApplicationInstanceRunningTracker(appModule, cloudServer)
+		// Wait for tracker to verify application is running.
+		int trackerState = new ApplicationInstanceRunningTracker(appModule, cloudServer)
 				.track(new NullProgressMonitor());
+
+		assertEquals(IServer.STATE_STARTED, trackerState);
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
 		assertEquals(IServer.STATE_STARTED, appModule.getState());
 		assertEquals(AppState.STARTED, appModule.getApplication().getState());
-		assertEquals(state, InstanceState.RUNNING);
 
 	}
 
@@ -223,28 +223,21 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 	 * @return
 	 * @throws Exception
 	 */
-	protected CloudFoundryApplicationModule assertApplicationIsDeployed(String appPrefix, int expectedAppState)
-			throws Exception {
+	protected CloudFoundryApplicationModule assertApplicationIsDeployed(String appPrefix) throws Exception {
 		// Get the local WST IModule. NOTE that the PROJECT name needs to be
 		// used as opposed to the
 		// app name, as the project name and app name may differ, and the
 		// IModule is mapped to the project.
 		IModule module = getModule(harness.getDefaultWebAppProjectName());
-		int moduleState = server.getModuleState(new IModule[] { module });
-		assertEquals(expectedAppState, moduleState);
 
-		// Once the application is started, verify that the Cloud module (the
-		// "Enhanced" WST
-		// Imodule that contains additional CF related information) is valid,
+		// Once the application is started, verify that the Cloud module is
+		// valid,
 		// and mapped to
 		// an actual CloudApplication representing the deployed application.
 		CloudFoundryApplicationModule appModule = assertCloudFoundryModuleExists(module, appPrefix);
 
 		assertNotNull("No Cloud Application mapping in Cloud module. Failed to refresh deployed application",
 				appModule.getApplication());
-
-		// The app state in the cloud module must be correct
-		assertEquals(expectedAppState, appModule.getState());
 
 		return appModule;
 	}
@@ -332,9 +325,7 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 		serverBehavior.publish(IServer.PUBLISH_INCREMENTAL, new NullProgressMonitor());
 
-		int expectedAppState = deployStopped ? IServer.STATE_STOPPED : IServer.STATE_STARTED;
-
-		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(appPrefix, expectedAppState);
+		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(appPrefix);
 
 		// Do a separate check to verify that there is in fact a
 		// CloudApplication for the
