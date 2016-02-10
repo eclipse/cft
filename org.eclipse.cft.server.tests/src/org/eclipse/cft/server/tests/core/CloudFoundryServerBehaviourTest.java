@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -38,8 +38,6 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
@@ -73,7 +71,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		String expectedAppName = harness.getDefaultWebAppName(prefix);
 
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
 		CloudService service = getCloudServiceToCreate("sqlService", "elephantsql", "turtle");
 		List<CloudService> servicesToBind = new ArrayList<CloudService>();
@@ -410,7 +408,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		// Now create a separate external standalone client (external to the WST
 		// CF Server instance) to delete the app
 
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 
 		client.login();
 		client.deleteApplication(appName);
@@ -446,10 +444,5 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		appModules = cloudServer.getExistingCloudModules();
 
 		assertTrue("Expected empty list of cloud application modules after server disconnect", appModules.isEmpty());
-	}
-
-	@Override
-	protected CloudFoundryTestFixture getTestFixture() throws CoreException {
-		return CloudFoundryTestFixture.getTestFixture();
 	}
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +28,6 @@ import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
-import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
@@ -147,10 +146,4 @@ public class AbstractCloudFoundryServicesTest extends AbstractRefreshCloudTest {
 		assertEquals(actualService.getName(), expectedService.getName());
 		assertEquals(actualService.getLabel(), expectedService.getLabel());
 	}
-
-	@Override
-	protected CloudFoundryTestFixture getTestFixture() throws CoreException {
-		return CloudFoundryTestFixture.getTestFixture();
-	}
-
 }

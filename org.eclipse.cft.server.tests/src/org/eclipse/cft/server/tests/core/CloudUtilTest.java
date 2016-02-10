@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -54,7 +54,7 @@ public class CloudUtilTest extends TestCase {
 
 	@Override
 	protected void setUp() throws Exception {
-		harness = CloudFoundryTestFixture.getTestFixture().createHarness();
+		harness = CloudFoundryTestFixture.getSafeTestFixture().createHarness();
 		server = harness.createServer();
 	}
 

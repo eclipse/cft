@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc.
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -35,10 +35,8 @@ import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
-import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture;
 import org.eclipse.cft.server.tests.util.WaitForApplicationToStopOp;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.internal.Server;
@@ -54,11 +52,6 @@ import org.eclipse.wst.server.core.internal.Server;
  *
  */
 public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
-
-	@Override
-	protected CloudFoundryTestFixture getTestFixture() throws CoreException {
-		return CloudFoundryTestFixture.getTestFixture();
-	}
 
 	public void testAsynchInstanceUpdate() throws Exception {
 		// Test asynchronous Application instance update and that it triggers

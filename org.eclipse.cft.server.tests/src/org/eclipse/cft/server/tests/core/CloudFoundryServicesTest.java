@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -265,7 +265,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 	}
 
 	public void testExternalCreatedServiceRefresh() throws Exception {
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
 		CloudService service = getCloudServiceToCreate("testExternalCreatedServiceRefresh", "elephantsql", "turtle");
 
@@ -291,7 +291,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 	}
 
 	public void testExternalCreatedServiceBehaviour() throws Exception {
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
 		CloudService service = getCloudServiceToCreate("testExternalCreatedServiceBehaviour", "elephantsql", "turtle");
 

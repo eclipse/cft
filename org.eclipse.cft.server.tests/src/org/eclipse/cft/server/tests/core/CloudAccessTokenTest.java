@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc.
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,6 @@ import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryLoginHandler;
 import org.eclipse.cft.server.tests.AllCloudFoundryTests;
-import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
@@ -40,13 +39,8 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
  */
 public class CloudAccessTokenTest extends AbstractCloudFoundryTest {
 
-	@Override
-	protected CloudFoundryTestFixture getTestFixture() throws CoreException {
-		return CloudFoundryTestFixture.getTestFixture();
-	}
-
 	public void testFailingRequestAccessTokenErrorClient() throws Exception {
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		CloudFoundryLoginHandler handler = new CloudFoundryLoginHandler(client);
 
 		OAuth2AccessToken token = handler.login(new NullProgressMonitor());

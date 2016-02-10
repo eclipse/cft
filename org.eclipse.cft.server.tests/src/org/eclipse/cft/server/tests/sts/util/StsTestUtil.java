@@ -91,31 +91,37 @@ import junit.framework.Assert;
 public class StsTestUtil {
 
 	public static void validateCredentials(CredentialProperties credentials) throws CoreException {
-		String userEmail = credentials.userEmail;
-		String password = credentials.password;
-		String org = credentials.organization;
-		String space = credentials.space;
-
-		if (userEmail == null || password == null) {
-			userEmail = System.getProperty("vcap.email", "");
-			password = System.getProperty("vcap.passwd", "");
-		}
-
 		String missingInfo = "";
-		if (userEmail == null) {
-			missingInfo += "-Username-";
-		}
 
-		if (password == null) {
-			missingInfo += "-Password-";
+		if (credentials == null) {
+			missingInfo = "No credentials and Cloud target information available to run the junits.";
 		}
+		else {
+			String userEmail = credentials.userEmail;
+			String password = credentials.password;
+			String org = credentials.organization;
+			String space = credentials.space;
 
-		if (org == null) {
-			missingInfo += "-Org-";
-		}
+			if (userEmail == null || password == null) {
+				userEmail = System.getProperty("vcap.email", "");
+				password = System.getProperty("vcap.passwd", "");
+			}
 
-		if (space == null) {
-			missingInfo += "-Space-";
+			if (userEmail == null) {
+				missingInfo += "-Username-";
+			}
+
+			if (password == null) {
+				missingInfo += "-Password-";
+			}
+
+			if (org == null) {
+				missingInfo += "-Org-";
+			}
+
+			if (space == null) {
+				missingInfo += "-Space-";
+			}
 		}
 
 		if (missingInfo.length() > 0) {
@@ -132,15 +138,15 @@ public class StsTestUtil {
 	 * space. This is not the client used by the server instance, but a new
 	 * client for testing purposes only.
 	 */
-	public static CloudFoundryOperations createStandaloneClient(CredentialProperties credentials, String url,
-			boolean selfsigned) throws CoreException {
+	public static CloudFoundryOperations createStandaloneClient(CredentialProperties credentials, String url)
+			throws CoreException {
 
 		validateCredentials(credentials);
 
 		try {
 			return CloudFoundryPlugin.getCloudFoundryClientFactory().getCloudFoundryOperations(
 					new CloudCredentials(credentials.userEmail, credentials.password), new URL(url),
-					credentials.organization, credentials.space, selfsigned);
+					credentials.organization, credentials.space, credentials.selfSignedCertificate);
 		}
 		catch (MalformedURLException e) {
 			throw CloudErrorUtil.toCoreException(e);
@@ -155,8 +161,8 @@ public class StsTestUtil {
 	 */
 	public static CloudFoundryOperations createStandaloneClient(String userName, String password, String org,
 			String space, String url, boolean selfsigned) throws CoreException {
-		CredentialProperties credentials = new CredentialProperties(null, userName, password, org, space);
-		return createStandaloneClient(credentials, url, selfsigned);
+		CredentialProperties credentials = new CredentialProperties(null, userName, password, org, space, selfsigned);
+		return createStandaloneClient(credentials, url);
 	}
 
 	public static final long WAIT_TIME = 2000;

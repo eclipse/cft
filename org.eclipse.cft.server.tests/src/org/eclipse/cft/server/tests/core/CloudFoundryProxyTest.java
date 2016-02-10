@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -34,7 +34,6 @@ import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryClientFactory;
 import org.eclipse.cft.server.tests.sts.util.ProxyHandler;
-import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture;
 import org.eclipse.cft.server.tests.util.ModulesRefreshListener;
 import org.eclipse.core.net.proxy.IProxyData;
 import org.eclipse.core.net.proxy.IProxyService;
@@ -64,7 +63,7 @@ public class CloudFoundryProxyTest extends AbstractAsynchCloudTest {
 					uris.add("test-proxy-upload.cloudfoundry.com");
 
 					// Do a direct client test with the proxy settings
-					client = harness.createExternalClient();
+					client = getTestFixture().createExternalClient();
 					client.createApplication("test", new Staging(), 128, uris, new ArrayList<String>());
 					fail("Expected ResourceAccessException due to invalid proxy configuration");
 				}
@@ -322,11 +321,6 @@ public class CloudFoundryProxyTest extends AbstractAsynchCloudTest {
 
 			}
 		}.run();
-	}
-
-	@Override
-	protected CloudFoundryTestFixture getTestFixture() throws CoreException {
-		return CloudFoundryTestFixture.getTestFixture();
 	}
 
 }

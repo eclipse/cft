@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc.
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
-import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture;
 import org.eclipse.cft.server.tests.util.ModulesRefreshListener;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -40,11 +39,6 @@ import org.eclipse.jface.operation.IRunnableWithProgress;
  *
  */
 public abstract class AbstractAsynchCloudTest extends AbstractCloudFoundryTest {
-
-	@Override
-	protected CloudFoundryTestFixture getTestFixture() throws CoreException {
-		return null;
-	}
 
 	/**
 	 * Runs the given operation asynchronously in a separate Job, and waits in

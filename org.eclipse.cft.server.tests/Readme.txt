@@ -6,10 +6,12 @@ that is, the same location as this file.
 The plain text properties file should contain:
 
 url: [target Cloud URL]
+selfsigned: [true/false. true if target Cloud uses self signed certificate. false or omit if not needed]
 username: [your username]
 password: [your password]
 org: [Cloud organisation]
 space: [Cloud space]
+
 
 The full path location of the file should then be specified by the VM argument:
 
@@ -21,12 +23,13 @@ Example:
 Create CFcredentials.txt in this location with the following entries:
 
 url: api.run.pivotal.io
+selfsigned: false
 username: myusername@pivotal.io
 password: mypassword
 org: PivotalOrg
 space: TestSpace
 
-The values of all entries above, except "url", should be modified as per your account information.
+The values of all entries above should be modified as per your account information and target.
 
 
 The file location is then passed as a VM argument:

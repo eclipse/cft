@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -79,6 +79,8 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 	protected TestServlet testServlet;
 
+	protected CloudFoundryTestFixture testFixture;
+
 	@Override
 	protected void setUp() throws Exception {
 
@@ -87,8 +89,9 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 		// therefore if the test case or any helper methods need to reference
 		// the harness
 		// they must all reference this instance variable.
-		getTestFixture().baseConfiguration();
-		harness = getTestFixture().createHarness();
+		testFixture = createTestFixture();
+		testFixture.baseConfiguration();
+		harness = testFixture.createHarness();
 		server = harness.createServer();
 		cloudServer = (CloudFoundryServer) server.loadAdapter(CloudFoundryServer.class, null);
 		serverBehavior = (CloudFoundryServerBehaviour) server.loadAdapter(CloudFoundryServerBehaviour.class, null);
@@ -136,7 +139,6 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 	@Override
 	protected void tearDown() throws Exception {
-		serverBehavior.deleteAllApplications(new NullProgressMonitor());
 		harness.dispose();
 	}
 
@@ -155,6 +157,8 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 		// Test the Server behaviour API that checks if application is running
 		InstanceState state = new ApplicationInstanceRunningTracker(appModule, cloudServer)
 				.track(new NullProgressMonitor());
+
+		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
 		assertEquals(IServer.STATE_STARTED, appModule.getState());
 		assertEquals(AppState.STARTED, appModule.getApplication().getState());
@@ -398,6 +402,17 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 		return null;
 	}
 
-	abstract protected CloudFoundryTestFixture getTestFixture() throws CoreException;
+	/**
+	 *
+	 * @return creates a test fixture for use PER setup
+	 * @throws Exception
+	 */
+	protected CloudFoundryTestFixture createTestFixture() throws Exception {
+		return CloudFoundryTestFixture.getSafeTestFixture();
+	}
+
+	protected CloudFoundryTestFixture getTestFixture() {
+		return testFixture;
+	}
 
 }

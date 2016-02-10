@@ -39,10 +39,8 @@ import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
-import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture;
 import org.eclipse.cft.server.tests.util.ModulesRefreshListener;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -58,11 +56,6 @@ import org.eclipse.wst.server.core.IModule;
  */
 public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
-	@Override
-	protected CloudFoundryTestFixture getTestFixture() throws CoreException {
-		return CloudFoundryTestFixture.getTestFixture();
-	}
-
 	public void testUpdateModulesServerBehaviourExistingCloudApp() throws Exception {
 		// Update modules API in behaviour will return a
 		// CloudFoundryApplicationModule for an existing Cloud application in
@@ -76,7 +69,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		// Create the app externally AFTER the server connects in the setup to
 		// ensure the tools did not pick up the Cloud application during refresh
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
 
 		List<String> urls = new ArrayList<String>();
@@ -115,7 +108,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		// Create the app externally AFTER the server connects in the setup to
 		// ensure the tools did not pick up the Cloud application during refresh
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
 
 		List<String> urls = new ArrayList<String>();
@@ -170,7 +163,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		// Create the app externally AFTER the server connects in the setup to
 		// ensure the tools did not pick up the Cloud application during refresh
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
 
 		List<String> urls = new ArrayList<String>();
@@ -202,7 +195,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		// Create the app externally AFTER the server connects in the setup to
 		// ensure the tools did not pick up the Cloud application during refresh
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
 
 		List<String> urls = new ArrayList<String>();
@@ -343,7 +336,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		// that the new changes are picked up by the tooling
 
 		// Create separate external client
-		CloudFoundryOperations externalClient = harness.createExternalClient();
+		CloudFoundryOperations externalClient = getTestFixture().createExternalClient();
 		externalClient.login();
 
 		// Refresh Module through behaviour to check if it picks up changes
@@ -425,7 +418,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		// change
 
 		// Create separate external client
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
 
 		client.deleteApplication(appName);
@@ -518,7 +511,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		// change
 
 		// Create separate external client
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
 		client.deleteApplication(appName);
 
@@ -553,7 +546,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		assertNull(appModule);
 
 		// Create separate external client
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
 
 		List<String> urls = new ArrayList<String>();
@@ -582,7 +575,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		assertNull(appModule);
 
 		// Create separate external client
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
 
 		List<String> urls = new ArrayList<String>();
@@ -814,7 +807,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		// Now create an external client to independently check that the
 		// application remains deployed and in started mode
 
-		CloudFoundryOperations client = harness.createExternalClient();
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
 		List<CloudApplication> deployedApplications = client.getApplications();
 		assertEquals("Expected 1 Cloud application in Cloud space after server disconnect", 1,

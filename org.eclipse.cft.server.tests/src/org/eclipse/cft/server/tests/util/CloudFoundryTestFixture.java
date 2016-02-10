@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,6 +32,7 @@ import java.util.Properties;
 import java.util.Random;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
+import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudService;
@@ -56,6 +57,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
 import org.eclipse.wst.server.core.IServerWorkingCopy;
@@ -95,7 +97,11 @@ public class CloudFoundryTestFixture {
 
 	public static final String URL_PROPERTY = "url";
 
+	public static final String SELF_SIGNED_CERTIFICATE_PROPERTY = "selfsigned";
+
 	public static final String CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY = "test.credentials";
+
+	private static boolean safeTearDown = false;
 
 	/**
 	 *
@@ -137,12 +143,21 @@ public class CloudFoundryTestFixture {
 
 		private String applicationDomain;
 
+		private final String serverUrl;
+
 		// Added to the application name in order to avoid host name taken
 		// errors
 		// Even when clearing routes, host name taken errors are occasionally
 		// thrown
 		// if the tests are run within short intervals of one another.
 		private int randomPrefix = 0;
+
+		private final CloudFoundryTestFixture fixture;
+
+		public Harness(String serverUrl, CloudFoundryTestFixture fixture) {
+			this.serverUrl = serverUrl;
+			this.fixture = fixture;
+		}
 
 		/**
 		 * Creates a default web application project in the workspace, and
@@ -184,18 +199,19 @@ public class CloudFoundryTestFixture {
 			return StsTestUtil.createPredefinedProject(projectName, CloudFoundryTestFixture.PLUGIN_ID);
 		}
 
-		public IServer createServer() throws CoreException {
+		public IServer createServer() throws Exception {
+
 			Assert.isTrue(server == null, "createServer() already invoked");
 
 			server = handler.createServer(new NullProgressMonitor(), ServerHandler.ALWAYS_OVERWRITE);
 			IServerWorkingCopy serverWC = server.createWorkingCopy();
 			CloudFoundryServer cloudFoundryServer = (CloudFoundryServer) serverWC.loadAdapter(CloudFoundryServer.class,
 					null);
-			CredentialProperties credentials = getCredentials();
 			cloudFoundryServer.setPassword(credentials.password);
 			cloudFoundryServer.setUsername(credentials.userEmail);
 
 			cloudFoundryServer.setUrl(getUrl());
+			cloudFoundryServer.setSelfSignedCertificate(credentials.selfSignedCertificate);
 
 			setCloudSpace(cloudFoundryServer, credentials.organization, credentials.space);
 
@@ -224,7 +240,7 @@ public class CloudFoundryTestFixture {
 				return "http://localhost:" + webContainer.getPort() + "/";
 			}
 			else {
-				return url;
+				return this.serverUrl;
 			}
 		}
 
@@ -232,48 +248,13 @@ public class CloudFoundryTestFixture {
 			return (CloudFoundryServerBehaviour) server.loadAdapter(CloudFoundryServerBehaviour.class, null);
 		}
 
-		public void setup() throws CoreException {
+		public void setup() throws Exception {
 
 			Random random = new Random(100);
 			randomPrefix = Math.abs(random.nextInt(1000000));
 
 			// Clean up all projects from workspace
 			StsTestUtil.cleanUpProjects();
-
-			// Perform clean up on existing published apps and services
-			if (server != null) {
-				CloudFoundryServerBehaviour serverBehavior = getBehaviour();
-				// Delete all applications
-				serverBehavior.deleteAllApplications(null);
-
-				// Delete all services
-				deleteAllServices();
-
-				// Clear all domains and routes to avoid host taken errors
-				clearTestDomainAndRoutes();
-
-			}
-
-		}
-
-		public CloudFoundryOperations createExternalClient() throws CoreException {
-			CredentialProperties cred = getTestFixture().getCredentials();
-			StsTestUtil.validateCredentials(cred);
-			CloudFoundryServer cfServer = (CloudFoundryServer) server.getAdapter(CloudFoundryServer.class);
-			return StsTestUtil.createStandaloneClient(cred, getTestFixture().getUrl(),
-					cfServer.getSelfSignedCertificate());
-		}
-
-		private void clearTestDomainAndRoutes() throws CoreException {
-			CloudFoundryOperations client = createExternalClient();
-			client.login();
-			String domain = getDomain();
-			if (domain != null) {
-				List<CloudRoute> routes = client.getRoutes(domain);
-				for (CloudRoute route : routes) {
-					client.deleteRoute(route.getHost(), route.getDomain().getName());
-				}
-			}
 		}
 
 		public void deleteService(CloudService serviceToDelete) throws CoreException {
@@ -286,14 +267,6 @@ public class CloudFoundryTestFixture {
 			serverBehavior.operations().deleteServices(services).run(new NullProgressMonitor());
 		}
 
-		public void deleteAllServices() throws CoreException {
-			List<CloudService> services = getAllServices();
-			for (CloudService service : services) {
-				deleteService(service);
-				CloudFoundryTestUtil.waitIntervals(1000);
-			}
-		}
-
 		public List<CloudService> getAllServices() throws CoreException {
 			List<CloudService> services = getBehaviour().getServices(new NullProgressMonitor());
 			if (services == null) {
@@ -302,7 +275,27 @@ public class CloudFoundryTestFixture {
 			return services;
 		}
 
-		public void dispose() throws CoreException {
+		private void clearTestDomainAndRoutes() throws Exception {
+			CloudFoundryOperations client = createExternalClient();
+			client.login();
+			String domain = getDomain();
+			if (domain != null) {
+				List<CloudRoute> routes = client.getRoutes(domain);
+				for (CloudRoute route : routes) {
+					client.deleteRoute(route.getHost(), route.getDomain().getName());
+				}
+			}
+		}
+
+		public void deleteAllServices() throws CoreException {
+			List<CloudService> services = getAllServices();
+			for (CloudService service : services) {
+				deleteService(service);
+				CloudFoundryTestUtil.waitIntervals(1000);
+			}
+		}
+
+		public void dispose() throws Exception {
 			if (webContainer != null) {
 
 				// FIXNS: Commented out because of STS-3159
@@ -312,11 +305,15 @@ public class CloudFoundryTestFixture {
 			if (server != null) {
 				CloudFoundryServerBehaviour cloudFoundryServer = (CloudFoundryServerBehaviour) server
 						.loadAdapter(CloudFoundryServerBehaviour.class, null);
-				if (projectCreated) {
+				if (projectCreated && fixture.safeTearDown()) {
+					// Dont let errors in CF cleanup stop server cleanup in the
+					// workspace
 					try {
 						cloudFoundryServer.deleteAllApplications(null);
+						deleteAllServices();
+						clearTestDomainAndRoutes();
 					}
-					catch (CoreException e) {
+					catch (Exception e) {
 						e.printStackTrace();
 					}
 				}
@@ -395,11 +392,39 @@ public class CloudFoundryTestFixture {
 
 	private static CloudFoundryTestFixture current;
 
-	public static CloudFoundryTestFixture getTestFixture() throws CoreException {
+	/**
+	 * Performs safety validations against a CF target (e.g. making sure it is
+	 * empty before deleting apps). Should be called only once per setup as each
+	 * call performs a safety validation on the Cloud Target.
+	 * @return non-null Test fixture that contains a harness for CF testing
+	 * @throws Exception if failed to obtain a safe test fixture in which to
+	 * perform CF tests
+	 */
+	public static CloudFoundryTestFixture getSafeTestFixture() throws Exception {
 		if (current == null) {
-			current = new CloudFoundryTestFixture("run.pivotal.io");
+			CredentialProperties credentials = getCredentialsFromProperties(getDefaultCloudTargetDomain());
+			current = new CloudFoundryTestFixture(credentials);
 		}
+		current.verifySafeCloudTarget();
 		return current;
+	}
+
+	/**
+	 *
+	 * @return a default Cloud target domain. Note that this is not the full
+	 * Cloud API URL, but just a Cloud domain
+	 */
+	public static String getDefaultCloudTargetDomain() {
+		return "run.pivotal.io";
+	}
+
+	public static CloudFoundryOperations createExternalClient(CredentialProperties cred) throws Exception {
+		StsTestUtil.validateCredentials(cred);
+		return StsTestUtil.createStandaloneClient(cred, cred.url);
+	}
+
+	public CloudFoundryOperations createExternalClient() throws Exception {
+		return createExternalClient(getCredentialProperties());
 	}
 
 	/**
@@ -408,8 +433,8 @@ public class CloudFoundryTestFixture {
 	 * @return
 	 * @throws CoreException
 	 */
-	public CloudFoundryTestFixture baseConfiguration() throws CoreException {
-		return configureForApplicationDeployment(null, CloudUtil.DEFAULT_MEMORY, false);
+	public void baseConfiguration() throws Exception {
+		configureForApplicationDeployment(null, CloudUtil.DEFAULT_MEMORY, false);
 	}
 
 	/**
@@ -421,25 +446,20 @@ public class CloudFoundryTestFixture {
 	 * @return
 	 * @throws CoreException
 	 */
-	public CloudFoundryTestFixture configureForApplicationDeployment(String fullApplicationName, int memory,
-			boolean deployStopped) throws CoreException {
+	public void configureForApplicationDeployment(String fullApplicationName, int memory, boolean deployStopped)
+			throws Exception {
 		CloudFoundryPlugin.setCallback(new TestCallback(fullApplicationName, memory, deployStopped));
-		return getTestFixture();
 	}
 
-	public CloudFoundryTestFixture configureForApplicationDeployment(String fullApplicationName, int memory,
-			boolean deployStopped, List<EnvironmentVariable> variables, List<CloudService> services)
-					throws CoreException {
+	public void configureForApplicationDeployment(String fullApplicationName, int memory, boolean deployStopped,
+			List<EnvironmentVariable> variables, List<CloudService> services) throws Exception {
 		CloudFoundryPlugin
 				.setCallback(new TestCallback(fullApplicationName, memory, deployStopped, variables, services));
-		return getTestFixture();
 	}
 
 	private final ServerHandler handler;
 
-	private static CredentialProperties credentials;
-
-	private final String url;
+	private final CredentialProperties credentials;
 
 	/**
 	 * This will create a Cloud server instances based either on the URL in a
@@ -449,26 +469,8 @@ public class CloudFoundryTestFixture {
 	 * instead
 	 * @param serverDomain default domain to use for the Cloud space.
 	 */
-	public CloudFoundryTestFixture(String serverDomain) {
-		String urlFromProperties = null;
-		try {
-			urlFromProperties = getCredentials().url;
-		}
-		catch (CoreException e) {
-			e.printStackTrace();
-		}
-
-		if (urlFromProperties != null) {
-			if (urlFromProperties.startsWith("http://") || urlFromProperties.startsWith("https://")) {
-				this.url = urlFromProperties;
-			}
-			else {
-				this.url = "http://" + urlFromProperties;
-			}
-		}
-		else {
-			this.url = "http://api." + serverDomain;
-		}
+	public CloudFoundryTestFixture(CredentialProperties credentials) {
+		this.credentials = credentials;
 
 		ServerDescriptor descriptor = new ServerDescriptor("server") {
 			{
@@ -482,19 +484,60 @@ public class CloudFoundryTestFixture {
 		handler = new ServerHandler(descriptor);
 	}
 
-	public CredentialProperties getCredentials() throws CoreException {
-		if (credentials == null) {
-			credentials = getUserTestCredentials();
+	/**
+	 * A safe target is a target that can be tested against. In particular, the
+	 * target should not contain existing applications and services. This is to
+	 * avoid accidentally deleting existing applications and services in shared
+	 * Cloud targets during setup or teardown of junits.
+	 * @throws CoreException if target is not safe to run junits
+	 */
+	public void verifySafeCloudTarget() throws Exception {
+		try {
+			checkSafeTarget(getCredentialProperties());
+			safeTearDown = true;
 		}
-		return credentials;
+		catch (Exception e) {
+			// Be sure to set this flag to avoid deletion of apps and
+			// services on junit tear down even when it is not a safe target.
+			safeTearDown = false;
+			throw e;
+		}
 	}
 
-	public String getUrl() {
-		return url;
+	/**
+	 *
+	 * @return true if it is safe to tear down. False if tear down should be
+	 * aborted (to avoid deleting apps and services in the CF target).
+	 */
+	public boolean safeTearDown() {
+		return safeTearDown;
 	}
 
-	public boolean getSelfSignedCertificate() {
-		return false;
+	protected static void checkSafeTarget(CredentialProperties cred) throws Exception {
+
+		StsTestUtil.validateCredentials(cred);
+
+		// To avoid junits deleting contents of a target by accident, ensure
+		// the target is empty
+		CloudFoundryOperations ops = createExternalClient(cred);
+
+		List<CloudApplication> apps = ops.getApplications();
+		if (apps != null && !apps.isEmpty()) {
+			throw CloudErrorUtil.toCoreException(NLS.bind(
+					"Empty Cloud target required to run junits. Existing number of applications {0} found in: server = {1}, org = {2}, space = {3}",
+					new Object[] { apps.size(), cred.url, cred.organization, cred.space }));
+		}
+		List<CloudService> services = ops.getServices();
+		if (services != null && !services.isEmpty()) {
+			throw CloudErrorUtil.toCoreException(NLS.bind(
+					"Empty Cloud target required to run junits. Existing number of services {0} found in: server = {1}, org = {2}, space = {3}",
+					new Object[] { services.size(), cred.url, cred.organization, cred.space }));
+		}
+
+	}
+
+	public CredentialProperties getCredentialProperties() {
+		return this.credentials;
 	}
 
 	/**
@@ -506,7 +549,7 @@ public class CloudFoundryTestFixture {
 	 * @return new Harness. Never null
 	 */
 	public Harness createHarness() {
-		return new Harness();
+		return new Harness(getCredentialProperties().url, this);
 	}
 
 	public static class CredentialProperties {
@@ -521,28 +564,36 @@ public class CloudFoundryTestFixture {
 
 		public final String url;
 
-		public CredentialProperties(String url, String userEmail, String password, String organization, String space) {
+		public final boolean selfSignedCertificate;
+
+		public CredentialProperties(String url, String userEmail, String password, String organization, String space,
+				boolean selfSignedCertificate) {
 			this.url = url;
 			this.userEmail = userEmail;
 			this.password = password;
 			this.organization = organization;
 			this.space = space;
+			this.selfSignedCertificate = selfSignedCertificate;
 		}
 
 	}
 
 	/**
-	 * Returns non-null credentials, although values of the credentials may be
-	 * empty if failed to read credentials
+	 * Reads properties to connect to a CF target (e.g API URL, org, space,
+	 * username, password). If the properties does not include a API URL, the
+	 * passed defaultDomain will be used to construct a API URL Returns non-null
+	 * credentials, although values of the credentials may be empty if failed to
+	 * read credentials
 	 * @return
 	 */
-	private static CredentialProperties getUserTestCredentials() throws CoreException {
+	private static CredentialProperties getCredentialsFromProperties(String defaultDomain) throws CoreException {
 		String propertiesLocation = System.getProperty(CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY);
 		String userEmail = null;
 		String password = null;
 		String org = null;
 		String space = null;
 		String url = null;
+		boolean selfSignedCertificate = false;
 		if (propertiesLocation != null) {
 
 			File propertiesFile = new File(propertiesLocation);
@@ -558,6 +609,9 @@ public class CloudFoundryTestFixture {
 					org = properties.getProperty(ORG_PROPERTY);
 					space = properties.getProperty(SPACE_PROPERTY);
 					url = properties.getProperty(URL_PROPERTY);
+					String selfSignedVal = properties.getProperty(SELF_SIGNED_CERTIFICATE_PROPERTY);
+
+					selfSignedCertificate = "true".equals(selfSignedVal) || "TRUE".equals(selfSignedVal);
 				}
 			}
 			catch (FileNotFoundException e) {
@@ -578,7 +632,15 @@ public class CloudFoundryTestFixture {
 			}
 		}
 
-		CredentialProperties cred = new CredentialProperties(url, userEmail, password, org, space);
+		if (url == null) {
+			url = "http://api." + defaultDomain;
+		}
+		else if (!url.startsWith("http")) {
+			url = "http://" + url;
+		}
+
+		CredentialProperties cred = new CredentialProperties(url, userEmail, password, org, space,
+				selfSignedCertificate);
 		StsTestUtil.validateCredentials(cred);
 		return cred;
 
