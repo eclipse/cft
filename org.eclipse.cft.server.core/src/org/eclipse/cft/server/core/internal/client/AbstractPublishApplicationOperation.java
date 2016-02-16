@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -107,13 +107,33 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 
 			CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
 
-			CloudFoundryApplicationModule appModule = cloudServer.getCloudModule(getModule());
+			CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(getModule());
 			if (appModule != null && e.getMessage() != null) {
 				CloudFoundryPlugin.getCallback().printToConsole(cloudServer, appModule,
 						NLS.bind(Messages.AbstractPublishApplicationOperation_OPERATION_CANCELED, e.getMessage())
 								+ '\n',
 						false, false);
 			}
+		}
+		catch (CoreException e) {
+
+			((Server) getBehaviour().getServer()).setModulePublishState(getModules(), IServer.PUBLISH_STATE_UNKNOWN);
+
+			// [486691] - On error, update the module to ensure that the it is
+			// in a consistent state with the IServer.
+			// If this step is not done, an error that would cause the module
+			// NOT to be deployed
+			// but still exist in the Cloud can result in unexpected behaviour
+			// when deleting the module and attempting the publish operation
+			// again (for example, archiving failing or failure to properly prompt for deployment details)
+			getBehaviour().operations().updateModuleWithAllCloudInfo(getModule()).run(monitor);
+
+			CloudFoundryApplicationModule appModule = getBehaviour().getCloudFoundryServer()
+					.getExistingCloudModule(getModule());
+			if (appModule != null) {
+				appModule.setError(e);
+			}
+			throw e;
 		}
 
 	}

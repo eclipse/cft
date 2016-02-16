@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -114,106 +114,97 @@ public class StartOperation extends RestartOperation {
 		final Server server = (Server) getBehaviour().getServer();
 		final CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
 
-		try {
+		// Update the local cloud module representing the application
+		// first.
+		appModule.setStatus(null);
 
-			// Update the local cloud module representing the application
-			// first.
-			appModule.setStatus(null);
+		final String deploymentName = appModule.getDeploymentInfo().getDeploymentName();
 
-			final String deploymentName = appModule.getDeploymentInfo().getDeploymentName();
+		// This request does three things:
+		// 1. Checks if the application external or mapped to a local
+		// project. If mapped to a local project
+		// it creates an archive of the application's content
+		// 2. If an archive file was created, it pushes the archive
+		// file.
+		// 3. While pushing the archive file, a check is made to see if
+		// the application exists remotely. If not, the application is
+		// created in the
+		// CF server.
 
-			// This request does three things:
-			// 1. Checks if the application external or mapped to a local
-			// project. If mapped to a local project
-			// it creates an archive of the application's content
-			// 2. If an archive file was created, it pushes the archive
-			// file.
-			// 3. While pushing the archive file, a check is made to see if
-			// the application exists remotely. If not, the application is
-			// created in the
-			// CF server.
+		if (!getModules()[0].isExternal()) {
 
-			if (!getModules()[0].isExternal()) {
+			String generatingArchiveLabel = NLS.bind(Messages.CONSOLE_GENERATING_ARCHIVE,
+					appModule.getDeployedApplicationName());
+			getBehaviour().printlnToConsole(appModule, generatingArchiveLabel);
 
-				String generatingArchiveLabel = NLS.bind(Messages.CONSOLE_GENERATING_ARCHIVE,
-						appModule.getDeployedApplicationName());
-				getBehaviour().printlnToConsole(appModule, generatingArchiveLabel);
+			SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
 
-				SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
-
-				subMonitor.subTask(generatingArchiveLabel);
-				ApplicationArchive applicationArchive = getBehaviour().generateApplicationArchiveFile(
-						appModule.getDeploymentInfo(), appModule, getModules(), server, incrementalPublish,
-						subMonitor.newChild(20));
-				if (applicationArchive == null) {
-					// An app archive must be always available, so if we reached
-					// this point and we have none
-					// then we must throw an exception.
-					throw new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID,
-							"Application archive is not available for application: " + deploymentName)); //$NON-NLS-1$
-				}
-
-				// Tell webtools the module has been published
-				getBehaviour().resetPublishState(getModules());
-
-				// update server publish status
-				IModule[] serverModules = server.getModules();
-				boolean allSynched = true;
-				for (IModule serverModule : serverModules) {
-					int modulePublishState = server.getModulePublishState(new IModule[] { serverModule });
-					if (modulePublishState == IServer.PUBLISH_STATE_INCREMENTAL
-							|| modulePublishState == IServer.PUBLISH_STATE_FULL) {
-						allSynched = false;
-					}
-				}
-
-				if (allSynched) {
-					server.setServerPublishState(IServer.PUBLISH_STATE_NONE);
-				}
-
-				subMonitor.worked(10);
-
-				final ApplicationArchive applicationArchiveFin = applicationArchive;
-				final CloudFoundryApplicationModule appModuleFin = appModule;
-				// Now push the application resources to the server
-
-				new BehaviourRequest<Void>(getOperationName() + " - " + deploymentName, getBehaviour()) { //$NON-NLS-1$
-					@Override
-					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress)
-							throws CoreException, OperationCanceledException {
-
-						getBehaviour().printlnToConsole(appModuleFin, getRequestLabel());
-
-						// Check for cancel here prior to pushing the
-						// application
-						if (progress.isCanceled()) {
-							throw new OperationCanceledException(
-									Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
-						}
-						pushApplication(client, appModuleFin, applicationArchiveFin, progress);
-
-						CloudFoundryPlugin.trace("Application " + deploymentName //$NON-NLS-1$
-								+ " pushed to Cloud Foundry server."); //$NON-NLS-1$
-
-						cloudServer.tagAsDeployed(getModule());
-
-						return null;
-					}
-
-				}.run(subMonitor.newChild(70));
-
-				getBehaviour().printlnToConsole(appModule, Messages.CONSOLE_APP_PUSHED_MESSAGE);
-
+			subMonitor.subTask(generatingArchiveLabel);
+			ApplicationArchive applicationArchive = getBehaviour().generateApplicationArchiveFile(
+					appModule.getDeploymentInfo(), appModule, getModules(), server, incrementalPublish,
+					subMonitor.newChild(20));
+			if (applicationArchive == null) {
+				// An app archive must be always available, so if we reached
+				// this point and we have none
+				// then we must throw an exception.
+				throw new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID,
+						"Application archive is not available for application: " + deploymentName)); //$NON-NLS-1$
 			}
 
-			super.performDeployment(appModule, monitor);
+			// Tell webtools the module has been published
+			getBehaviour().resetPublishState(getModules());
+
+			// update server publish status
+			IModule[] serverModules = server.getModules();
+			boolean allSynched = true;
+			for (IModule serverModule : serverModules) {
+				int modulePublishState = server.getModulePublishState(new IModule[] { serverModule });
+				if (modulePublishState == IServer.PUBLISH_STATE_INCREMENTAL
+						|| modulePublishState == IServer.PUBLISH_STATE_FULL) {
+					allSynched = false;
+				}
+			}
+
+			if (allSynched) {
+				server.setServerPublishState(IServer.PUBLISH_STATE_NONE);
+			}
+
+			subMonitor.worked(10);
+
+			final ApplicationArchive applicationArchiveFin = applicationArchive;
+			final CloudFoundryApplicationModule appModuleFin = appModule;
+			// Now push the application resources to the server
+
+			new BehaviourRequest<Void>(getOperationName() + " - " + deploymentName, getBehaviour()) { //$NON-NLS-1$
+				@Override
+				protected Void doRun(final CloudFoundryOperations client, SubMonitor progress)
+						throws CoreException, OperationCanceledException {
+
+					getBehaviour().printlnToConsole(appModuleFin, getRequestLabel());
+
+					// Check for cancel here prior to pushing the
+					// application
+					if (progress.isCanceled()) {
+						throw new OperationCanceledException(
+								Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
+					}
+					pushApplication(client, appModuleFin, applicationArchiveFin, progress);
+
+					CloudFoundryPlugin.trace("Application " + deploymentName //$NON-NLS-1$
+							+ " pushed to Cloud Foundry server."); //$NON-NLS-1$
+
+					cloudServer.tagAsDeployed(getModule());
+
+					return null;
+				}
+
+			}.run(subMonitor.newChild(70));
+
+			getBehaviour().printlnToConsole(appModule, Messages.CONSOLE_APP_PUSHED_MESSAGE);
 
 		}
-		catch (CoreException e) {
-			appModule.setError(e);
-			server.setModulePublishState(getModules(), IServer.PUBLISH_STATE_UNKNOWN);
-			throw e;
-		}
+
+		super.performDeployment(appModule, monitor);
 	}
 
 	/**
@@ -343,11 +334,10 @@ public class StartOperation extends RestartOperation {
 			}
 		}
 		catch (IOException e) {
-			throw new CoreException(
-					CloudFoundryPlugin.getErrorStatus(
-							"Failed to deploy application " + //$NON-NLS-1$
-									appModule.getDeploymentInfo().getDeploymentName() + " due to " + e.getMessage(), //$NON-NLS-1$
-							e));
+			throw new CoreException(CloudFoundryPlugin.getErrorStatus(
+					"Failed to deploy application " + //$NON-NLS-1$
+							appModule.getDeploymentInfo().getDeploymentName() + " due to " + e.getMessage(), //$NON-NLS-1$
+					e));
 		}
 
 	}

@@ -62,40 +62,32 @@ public class RestartOperation extends ApplicationOperation {
 	protected void performDeployment(CloudFoundryApplicationModule appModule, IProgressMonitor monitor)
 			throws CoreException {
 		final Server server = (Server) getBehaviour().getServer();
+		appModule.setStatus(null);
 
-		try {
-			appModule.setStatus(null);
+		final String deploymentName = appModule.getDeploymentInfo().getDeploymentName();
 
-			final String deploymentName = appModule.getDeploymentInfo().getDeploymentName();
+		if (deploymentName == null) {
+			server.setModuleState(getModules(), IServer.STATE_UNKNOWN);
 
-			if (deploymentName == null) {
-				server.setModuleState(getModules(), IServer.STATE_UNKNOWN);
-
-				throw CloudErrorUtil.toCoreException(
-						"Unable to start application. Missing application deployment name in application deployment information."); //$NON-NLS-1$
-			}
-
-			SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
-
-			// Update the module with the latest CloudApplication from the
-			// client before starting the application
-			appModule = getBehaviour().updateModuleWithAllCloudInfo(appModule.getDeployedApplicationName(),
-					subMonitor.newChild(20));
-
-			final ApplicationAction deploymentMode = getDeploymentConfiguration().getApplicationStartMode();
-			if (deploymentMode != ApplicationAction.STOP) {
-				startAndTrackApplication(appModule, subMonitor);
-			}
-			else {
-				// User has selected to deploy the app in STOP mode
-				server.setModuleState(getModules(), IServer.STATE_STOPPED);
-				subMonitor.worked(80);
-			}
+			throw CloudErrorUtil.toCoreException(
+					"Unable to start application. Missing application deployment name in application deployment information."); //$NON-NLS-1$
 		}
-		catch (CoreException e) {
-			appModule.setError(e);
-			server.setModulePublishState(getModules(), IServer.PUBLISH_STATE_UNKNOWN);
-			throw e;
+
+		SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
+
+		// Update the module with the latest CloudApplication from the
+		// client before starting the application
+		appModule = getBehaviour().updateModuleWithAllCloudInfo(appModule.getDeployedApplicationName(),
+				subMonitor.newChild(20));
+
+		final ApplicationAction deploymentMode = getDeploymentConfiguration().getApplicationStartMode();
+		if (deploymentMode != ApplicationAction.STOP) {
+			startAndTrackApplication(appModule, subMonitor);
+		}
+		else {
+			// User has selected to deploy the app in STOP mode
+			server.setModuleState(getModules(), IServer.STATE_STOPPED);
+			subMonitor.worked(80);
 		}
 	}
 
