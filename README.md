@@ -30,7 +30,7 @@
   
   CFT has not yet been released, therefore only nightly drivers can be installed using this URL:
     
-  http://dist.springsource.com/snapshot/TOOLS/cft/nightly
+  http://download.eclipse.org/cft/nightly/
   
   (place this URL into the "Install New Software" dialog of your Eclipse)
   
