@@ -20,7 +20,6 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.eclipse.cft.server.core.AbstractAppStateTracker;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
@@ -31,7 +30,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
 import org.eclipse.wst.server.core.internal.Server;
@@ -81,136 +79,12 @@ public class RestartOperation extends ApplicationOperation {
 
 			// Update the module with the latest CloudApplication from the
 			// client before starting the application
-			appModule = getBehaviour().updateModuleWithAllCloudInfo(appModule.getDeployedApplicationName(), subMonitor.newChild(20));
-
-			final CloudFoundryApplicationModule cloudModule = appModule;
+			appModule = getBehaviour().updateModuleWithAllCloudInfo(appModule.getDeployedApplicationName(),
+					subMonitor.newChild(20));
 
 			final ApplicationAction deploymentMode = getDeploymentConfiguration().getApplicationStartMode();
 			if (deploymentMode != ApplicationAction.STOP) {
-
-				// Start the application. Use a regular request rather than
-				// a staging-aware request, as any staging errors should not
-				// result in a reattempt, unlike other cases (e.g. get the
-				// staging
-				// logs or refreshing app instance stats after an app has
-				// started).
-
-				String startLabel = Messages.RestartOperation_STARTING_APP + " - " + deploymentName; //$NON-NLS-1$
-				getBehaviour().printlnToConsole(cloudModule, startLabel);
-
-				CloudFoundryPlugin.getCallback().startApplicationConsole(getBehaviour().getCloudFoundryServer(),
-						cloudModule, 0, subMonitor.newChild(20));
-
-				new BehaviourRequest<Void>(startLabel, getBehaviour()) {
-					@Override
-					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress)
-							throws CoreException, OperationCanceledException {
-						CloudFoundryPlugin.trace("Application " + deploymentName + " starting"); //$NON-NLS-1$ //$NON-NLS-2$
-
-						if (progress.isCanceled()) {
-							throw new OperationCanceledException(
-									Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
-						}
-						
-						
-						// Set the state of the module to Starting
-						server.setModuleState(getModules(), IServer.STATE_STARTING);
-
-						StartingInfo info = client.restartApplication(deploymentName);
-
-						// Similarly, check for cancel at this point
-						if (progress.isCanceled()) {
-							throw new OperationCanceledException(
-									Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
-						}
-						if (info != null) {
-
-							cloudModule.setStartingInfo(info);
-
-							// Inform through callback that application
-							// has started
-							CloudFoundryPlugin.getCallback().applicationStarting(
-									RestartOperation.this.getBehaviour().getCloudFoundryServer(), cloudModule);
-						}
-						return null;
-					}
-				}.run(subMonitor.newChild(20));
-
-				// This should be staging aware, in order to reattempt on
-				// staging related issues when checking if an app has
-				// started or not
-				new StagingAwareRequest<Void>(
-						NLS.bind(Messages.CloudFoundryServerBehaviour_WAITING_APP_START, deploymentName),
-						getBehaviour()) {
-					@Override
-					protected Void doRun(final CloudFoundryOperations client, SubMonitor progress)
-							throws CoreException {
-
-						// TODO: integrate with Application tracker used below.
-						// Get the running state of the application based on the instance state
-						RestartOperation.this.getBehaviour().getApplicationInstanceRunningTracker(cloudModule)
-								.track(progress);
-						
-						// Check if the app still exists as instance checks can be long running
-						// If app is stopped , it may have been stopped
-						// externally therefore cancel the restart operation.
-						CloudFoundryApplicationModule updatedModule = getBehaviour()
-								.updateModuleWithAllCloudInfo(deploymentName, progress);
-						if (updatedModule == null || updatedModule.getApplication() == null) {
-							server.setModuleState(getModules(), IServer.STATE_STOPPED);
-
-							throw new OperationCanceledException(
-									NLS.bind(Messages.RestartOperation_TERMINATING_APP_STOPPED_OR_NOT_EXISTS,
-											deploymentName));
-						}
-				
-
-						AbstractAppStateTracker curTracker = CloudFoundryPlugin.getAppStateTracker(
-								RestartOperation.this.getBehaviour().getServer().getServerType().getId(), cloudModule);
-						// Check for cancel
-						if (progress.isCanceled()) {
-							throw new OperationCanceledException(
-									Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
-						}
-						if (curTracker != null) {
-							curTracker.setServer(RestartOperation.this.getBehaviour().getServer());
-							curTracker.startTracking(cloudModule, progress);
-						}
-
-						CloudFoundryPlugin.trace("Application " + deploymentName + " started"); //$NON-NLS-1$ //$NON-NLS-2$
-
-						CloudFoundryPlugin.getCallback().applicationStarted(
-								RestartOperation.this.getBehaviour().getCloudFoundryServer(), cloudModule);
-
-						if (curTracker != null) {
-							// Framework-based run state tracker. If tracker indicates that the app is no longer starting, it is considered started
-							// Wait for application to be ready or getting
-							// out of the starting state.
-							boolean isAppStarting = true;
-							while (isAppStarting && !progress.isCanceled()) {
-								if (curTracker.getApplicationState(cloudModule) == IServer.STATE_STARTING) {
-									try {
-										Thread.sleep(200);
-									}
-									catch (InterruptedException e) {
-										// Do nothing
-									}
-								}
-								else {
-									isAppStarting = false;
-								}
-							}
-							curTracker.stopTracking(cloudModule, progress);
-							server.setModuleState(getModules(), IServer.STATE_STARTED);
-
-						} else {
-							server.setModuleState(getModules(), cloudModule.getState());
-						}
-
-
-						return null;
-					}
-				}.run(subMonitor.newChild(40));
+				startAndTrackApplication(appModule, subMonitor);
 			}
 			else {
 				// User has selected to deploy the app in STOP mode
@@ -223,6 +97,127 @@ public class RestartOperation extends ApplicationOperation {
 			server.setModulePublishState(getModules(), IServer.PUBLISH_STATE_UNKNOWN);
 			throw e;
 		}
+	}
+
+	protected void startAndTrackApplication(CloudFoundryApplicationModule appModule, SubMonitor monitor)
+			throws CoreException {
+
+		final String deploymentName = appModule.getDeployedApplicationName();
+
+		final String startLabel = Messages.RestartOperation_STARTING_APP + " - " + deploymentName; //$NON-NLS-1$
+		Server server = (Server) getBehaviour().getServer();
+
+		getBehaviour().printlnToConsole(appModule, startLabel);
+
+		CloudFoundryPlugin.getCallback().startApplicationConsole(getBehaviour().getCloudFoundryServer(), appModule, 0,
+				monitor.newChild(20));
+
+		CloudFoundryPlugin.trace("Application " + deploymentName + " starting"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		if (monitor.isCanceled()) {
+			throw new OperationCanceledException(Messages.bind(Messages.OPERATION_CANCELED, startLabel));
+		}
+
+		// Get the old state first in case it needs to be restored due to
+		// tracking or restart failure
+		int updatedState = appModule.getState();
+
+		// IMPORTANT: this sets the module state in the server to STARTING. Be
+		// sure to update the module state to another state
+		// after the restart and tracking is completed, even on exception, to
+		// avoid the state to be stuck in STARTING even if restarting
+		// or tracking failed, or operation was canceled.
+		try {
+
+			// Set the state of the module to Starting
+			server.setModuleState(getModules(), IServer.STATE_STARTING);
+
+			// Perform the actual restarting in the client
+			StartingInfo info = getBehaviour().getRequestFactory().restartApplication(deploymentName, startLabel)
+					.run(monitor.newChild(20));
+
+			appModule.setStartingInfo(info);
+
+			updatedState = trackApplicationRunningState(appModule, startLabel, monitor);
+		}
+		catch (OperationCanceledException oce) {
+			updatedState = IServer.STATE_UNKNOWN;
+			throw oce;
+		}
+		catch (CoreException ce) {
+			updatedState = IServer.STATE_UNKNOWN;
+			throw ce;
+		}
+		finally {
+			// Always update the module state in the server
+			server.setModuleState(getModules(), updatedState);
+
+			// This may also update the module state in the server indirectly,
+			// but in case an error occurs during the module update, the module
+			// state is still explicitly set above to avoid apps to be stuck in
+			// "Starting"
+			getBehaviour().updateModuleWithAllCloudInfo(deploymentName, monitor);
+		}
+	}
+
+	protected int trackApplicationRunningState(CloudFoundryApplicationModule cloudModule, String startLabel,
+			IProgressMonitor progress) throws CoreException {
+
+		Server server = (Server) getBehaviour().getServer();
+		String deploymentName = cloudModule.getDeployedApplicationName();
+
+		// TODO: integrate with Application tracker used below.
+		// Get the running state of the application based on the instance state
+		// using the default tracker
+		int updatedState = RestartOperation.this.getBehaviour().getApplicationInstanceRunningTracker(cloudModule)
+				.track(progress);
+
+		CloudFoundryPlugin.trace("Default tracker: application " + deploymentName + " tracking completed"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		// Perform additional tracking checks through the tracker framework
+		AbstractAppStateTracker curTracker = CloudFoundryPlugin.getAppStateTracker(
+				RestartOperation.this.getBehaviour().getServer().getServerType().getId(), cloudModule);
+		
+		// Check for cancel
+		if (progress.isCanceled()) {
+			throw new OperationCanceledException(Messages.bind(Messages.OPERATION_CANCELED, startLabel));
+		}
+
+		if (curTracker != null) {
+			
+			curTracker.setServer(RestartOperation.this.getBehaviour().getServer());
+			curTracker.startTracking(cloudModule, progress);
+
+			// Framework-based run state tracker. If tracker indicates that
+			// the
+			// app is no longer starting, it is considered started
+			// Wait for application to be ready or getting
+			// out of the starting state.
+			boolean isAppStarting = true;
+			while (isAppStarting && !progress.isCanceled()) {
+				// For framework trackers, keep tracking as long as tracker
+				// indicates it is in STARTING state
+				updatedState = curTracker.getApplicationState(cloudModule);
+				if (updatedState == IServer.STATE_STARTING) {
+					try {
+						Thread.sleep(200);
+					}
+					catch (InterruptedException e) {
+						// Do nothing
+					}
+				}
+				else {
+					isAppStarting = false;
+				}
+			}
+			curTracker.stopTracking(cloudModule, progress);
+		}
+
+		if (updatedState == IServer.STATE_STARTED) {
+			CloudFoundryPlugin.getCallback()
+					.applicationStarted(RestartOperation.this.getBehaviour().getCloudFoundryServer(), cloudModule);
+		}
+		return updatedState;
 	}
 
 	@Override

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2014, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -279,8 +279,6 @@ public class Messages extends NLS {
 
 	public static String RestartOperation_STARTING_APP;
 	
-	public static String RestartOperation_TERMINATING_APP_STOPPED_OR_NOT_EXISTS;
-
 	public static String PUBLISHING_MODULE;
 
 	public static String StopApplicationOperation_STOPPING_APP;

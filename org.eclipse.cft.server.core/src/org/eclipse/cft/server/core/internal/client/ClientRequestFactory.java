@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
+import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
@@ -40,6 +41,7 @@ import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.osgi.util.NLS;
@@ -72,6 +74,17 @@ public class ClientRequestFactory {
 			@Override
 			protected List<CloudRoute> doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 				return client.getRoutes(domainName);
+			}
+		};
+	}
+
+	public BaseClientRequest<StartingInfo> restartApplication(final String appName, final String opLabel)
+			throws CoreException {
+		return new BehaviourRequest<StartingInfo>(opLabel, behaviour) {
+			@Override
+			protected StartingInfo doRun(final CloudFoundryOperations client, SubMonitor progress)
+					throws CoreException, OperationCanceledException {
+				return client.restartApplication(appName);
 			}
 		};
 	}
@@ -409,8 +422,8 @@ public class ClientRequestFactory {
 	 * modules. Note that this may be a long-running operation. If fetching a
 	 * known application , it is recommended to call
 	 * {@link #getCloudApplication(String, IProgressMonitor)} or
-	 * {@link #updateModuleWithBasicCloudInfo(IModule, IProgressMonitor)} as it may be
-	 * potentially faster
+	 * {@link #updateModuleWithBasicCloudInfo(IModule, IProgressMonitor)} as it
+	 * may be potentially faster
 	 * @param monitor
 	 * @return List of all applications in the Cloud space.
 	 * @throws CoreException
@@ -512,27 +525,35 @@ public class ClientRequestFactory {
 			}
 		};
 	}
-	
+
 	/**
-	 * Check if the 'host' in the 'domainName' is reserved (route owned by us or someone else), and if not reserve it.  
-	 * Clients are expected to call {@link #deleteRoute(String, String)} after to remove any unused routes.
+	 * Check if the 'host' in the 'domainName' is reserved (route owned by us or
+	 * someone else), and if not reserve it. Clients are expected to call
+	 * {@link #deleteRoute(String, String)} after to remove any unused routes.
 	 * 
 	 * @see deleteRoute(String, String)
 	 * @param host - the Subdomain of the deployed URL
 	 * @param domainName - the domainName part of the deployed URL
-	 * @param deleteRoute - true to delete the route (if it was created in this method), false to reserve it and leave deletion to the calling method if necessary
+	 * @param deleteRoute - true to delete the route (if it was created in this
+	 * method), false to reserve it and leave deletion to the calling method if
+	 * necessary
 	 * @return true if the route was created, false otherwise
 	 */
 	public BaseClientRequest<Boolean> reserveRouteIfAvailable(final String host, final String domainName) {
-		return new BehaviourRequest<Boolean>(Messages.bind(Messages.CloudFoundryServerBehaviour_CHECKING_HOSTNAME_AVAILABLE, host), behaviour) {
+		return new BehaviourRequest<Boolean>(
+				Messages.bind(Messages.CloudFoundryServerBehaviour_CHECKING_HOSTNAME_AVAILABLE, host), behaviour) {
 			@Override
 			protected Boolean doRun(CloudFoundryOperations client, SubMonitor progress) {
-				
-				// Check if the route can be added.  If successful, then it is not taken.
+
+				// Check if the route can be added. If successful, then it is
+				// not taken.
 				try {
 					client.addRoute(host, domainName);
-				} catch(CloudFoundryException t) {
-					// addRoute will throw a CloudFoundryException indicating the route is taken; but we should also return false for any other
+				}
+				catch (CloudFoundryException t) {
+					// addRoute will throw a CloudFoundryException indicating
+					// the route is taken; but we should also return false for
+					// any other
 					// exceptions that might be thrown here.
 					return false;
 				}
@@ -543,7 +564,7 @@ public class ClientRequestFactory {
 	}
 
 	/**
-	 * Delete the route.  
+	 * Delete the route.
 	 * 
 	 * @see checkHostTaken(String, String, boolean) {
 	 * @param host - the Subdomain of the deployed URL
@@ -551,7 +572,8 @@ public class ClientRequestFactory {
 	 * @return
 	 */
 	public BaseClientRequest<Void> deleteRoute(final String host, final String domainName) {
-		return new BehaviourRequest<Void>(Messages.bind(Messages.CloudFoundryServerBehaviour_CLEANING_UP_RESERVED_HOSTNAME, host), behaviour) {
+		return new BehaviourRequest<Void>(
+				Messages.bind(Messages.CloudFoundryServerBehaviour_CLEANING_UP_RESERVED_HOSTNAME, host), behaviour) {
 			@Override
 			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 				client.deleteRoute(host, domainName);

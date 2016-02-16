@@ -21,15 +21,25 @@
 package org.eclipse.cft.server.core.internal;
 
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
+import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
+import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IServer;
 
 /**
  * Tracks the running state of an application in Cloud Foundry by checking if
- * the application instances are running.
+ * the application instances are running (i.e. started). The tracking will stop
+ * if it detects that the application is started, stopped, or tracking times
+ * out.
+ * <p/>
+ * This does NOT update the modules in the {@link IServer}. The purpose of the
+ * tracker is to resolve up-to-date running state of the application in Cloud
+ * Foundry by direct tracking of the application, but not perform any updates on
+ * the {@link IServer}
  *
  */
 public class ApplicationInstanceRunningTracker {
@@ -39,36 +49,38 @@ public class ApplicationInstanceRunningTracker {
 
 	private final CloudFoundryServer cloudServer;
 
-	private final String appName;
+	private final CloudFoundryApplicationModule appModule;
 
 	private final long timeout;
 
 	public ApplicationInstanceRunningTracker(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer) {
 		this.cloudServer = cloudServer;
-		this.appName = appModule.getDeployedApplicationName();
+		this.appModule = appModule;
 		this.timeout = TIMEOUT;
 	}
 
 	/**
 	 * 
 	 * @param monitor
-	 * @return One of the following application running states: {@link IServer#STATE_STARTED}, {@link IServer#STATE_STARTING},
-	 * {@link IServer#STATE_STOPPED}, {@link IServer#STATE_STOPPING},
+	 * @return One of the following application running states:
+	 * {@link IServer#STATE_STARTED}, {@link IServer#STATE_STOPPED},
 	 * {@link IServer#STATE_UNKNOWN}
-	 * @throws CoreException
+	 * @throws CoreException if failure occurred during tracking
+	 * @throws OperationCanceledException if tracking was cancelled.
 	 */
-	public int track(IProgressMonitor monitor) throws CoreException {
+	public int track(IProgressMonitor monitor) throws CoreException, OperationCanceledException {
 
 		long currentTime = System.currentTimeMillis();
 
 		long totalTime = currentTime + timeout;
 
-		CloudFoundryApplicationModule appModule = cloudServer.getBehaviour().updateModuleWithAllCloudInfo(appName,
-				monitor);
+		CloudFoundryServerBehaviour behaviour = cloudServer.getBehaviour();
+		String appName = appModule.getDeployedApplicationName();
 
 		printlnToConsole(NLS.bind(Messages.ApplicationInstanceStartingTracker_STARTING_TRACKING, appName), appModule);
 
-		int state = appModule.getState();
+		int state = IServer.STATE_UNKNOWN;
+
 		while (state != IServer.STATE_STARTED && state != IServer.STATE_STOPPED && currentTime < totalTime) {
 
 			// NOTE: app state is NOT the same as the INSTANCE state. Instance
@@ -77,31 +89,35 @@ public class ApplicationInstanceRunningTracker {
 			// STOPPED state will not have instances running. If
 			// app is STARTED, instances may still not be running if the app
 			// instances are still starting, are flapping, or have crashed.
-			appModule = cloudServer.getBehaviour().updateModuleWithAllCloudInfo(appName, monitor);
-			if (appModule == null || appModule.getApplication() == null) {
-				// app may no longer exist
-				printlnToConsole(NLS.bind(Messages.ApplicationInstanceStartingTracker_APPLICATION_NOT_EXISTS, appName),
-						appModule);
-				return IServer.STATE_UNKNOWN;
-			}
 
 			if (monitor != null && monitor.isCanceled()) {
-				printlnToConsole(
-						NLS.bind(Messages.ApplicationInstanceStartingTracker_APPLICATION_CHECK_CANCELED, appName),
-						appModule);
+				String error = NLS.bind(Messages.ApplicationInstanceStartingTracker_APPLICATION_CHECK_CANCELED,
+						appName);
+				printlnToConsole(error, appModule);
 
-				return IServer.STATE_UNKNOWN;
+				throw new OperationCanceledException(error);
 			}
 
-			state = appModule.getState();
-			try {
-				Thread.sleep(WAIT_TIME);
-			}
-			catch (InterruptedException e) {
+			CloudApplication cloudApp = behaviour.getCloudApplication(appName, monitor);
+			ApplicationStats applicationStats = behaviour.getApplicationStats(appName, monitor);
 
+			if (cloudApp == null) {
+				// app may no longer exist
+				String error = NLS.bind(Messages.ApplicationInstanceStartingTracker_APPLICATION_NOT_EXISTS, appName);
+				printlnToConsole(error, appModule);
+				throw CloudErrorUtil.toCoreException(error);
 			}
+			else {
+				state = CloudFoundryApplicationModule.getCloudState(cloudApp, applicationStats);
+				try {
+					Thread.sleep(WAIT_TIME);
+				}
+				catch (InterruptedException e) {
 
-			currentTime = System.currentTimeMillis();
+				}
+
+				currentTime = System.currentTimeMillis();
+			}
 		}
 
 		String runningStateMessage = state == IServer.STATE_STARTED
@@ -117,7 +133,4 @@ public class ApplicationInstanceRunningTracker {
 		CloudFoundryPlugin.getCallback().printToConsole(cloudServer, appModule, message, false, false);
 	}
 
-	protected ApplicationStats getStats(IProgressMonitor monitor) throws CoreException {
-		return cloudServer.getBehaviour().getApplicationStats(appName, monitor);
-	}
 }

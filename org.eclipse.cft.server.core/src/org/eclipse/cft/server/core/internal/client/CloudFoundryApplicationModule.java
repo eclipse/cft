@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.StartingInfo;
@@ -38,6 +37,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -49,61 +49,81 @@ import org.eclipse.wst.server.core.internal.ExternalModule;
 /**
  * 
  * Representation of an application that either already exists in a Cloud
- * Foundry server, or is about to be pushed to a server, and contains additional
- * properties local to the plugin framework not found in a
- * {@link CloudApplication}. It contains additional Cloud Foundry information
- * like a deployment information ( {@link ApplicationDeploymentInfo} ),
- * application stats, instances, and staging that is not available from the
- * local WST {@link IModule}. A cloud foundry application module need not
- * necessarily indicate that the application exists and is deployed in a CF
- * server. Modules are also created by the framework PRIOR to deploying an app.
- * If the module has a corresponding {@link CloudApplication}, it means that the
- * module does indeed represent an actual deployed app in a CF server. In
- * addition:
+ * Foundry server, or is about to be pushed to a server, and therefore may wrap
+ * around both {@link CloudApplication} and {@link IModule}.
  * <p/>
- * 1. A Cloud module can be external, meaning that the deployed application does
- * not have an accessible workspace project. If this is the case, generally the
- * module will also have a mapped {@link CloudApplication}, since only
- * applications that have already been deployed can ever be external. Note
- * although all external apps are apps that are deployed in a Cloud server, not
- * all deployed apps are external. "External" is not the only indication of
- * deployment, rather it is meant to indicate whether the application is linked
- * to a local, accessible workspace project.
+ * IMPORTANT NOTE: This is NOT a stateless handle to the application in the
+ * Cloud target and does NOT provide up-to-date information from the Cloud, but
+ * rather a local model representation of a possible Cloud application that, for
+ * example, can be used in cache-based mechanisms. Therefore two different Cloud
+ * modules that reference the same Cloud application may not be the same.
+ * Additional external update or synchronising mechanisms are required such that
+ * up-to-date modules are provided to components that request them. Also, Cloud
+ * modules may NOT necessarily model an existing Cloud application. They may
+ * also used to indicate possible Cloud applications that do not yet, or no
+ * longer, exist in a Cloud target.
  * <p/>
- * 2. A Cloud module can also be mapped to a local workspace project via a local
- * {@link IModule}, in which case it would not be classified as external. This
- * does NOT mean that the application is not deployed. The application may be
- * deployed in a CF server, but also have a link to a local workspace project.
- * An application may also have a link to a local workspace project, but NOT yet
- * be deployed (so it wouldn't have a mapped {@link CloudApplication}).
+ * The Cloud module contains additional Cloud Foundry information like a
+ * deployment information ( {@link ApplicationDeploymentInfo} ), application
+ * stats, instances, and staging that is not available from the local WST
+ * {@link IModule}. Likewise, it contains information that is not available
+ * through the {@link CloudApplication}: for example, if the application is
+ * linked to an existing IProject, this information can be accessed through the
+ * wrapped IModule.
  * 
  * <p/>
- * The application name of this CF-aware module may differ from the module name
- * of the local WST {@link IModule}. The reason is that the module name of the
- * local WST {@link IModule} is typically the associated workspace project, if
- * the project is accessible, while the application name in the CF Application
- * Module is the user-specified CF app name, which may be different.
+ * Important points to note:
  * <p/>
+ * 1. A Cloud module can be external, meaning that it has not been associated
+ * with any other known module type (e.g jst.web). This may typically be the
+ * case of existing applications in a Cloud whose link to a workspace project
+ * cannot be determined, or whose module type cannot be resolved from
+ * information provided purely from the Cloud.
+ * <p/>
+ * 2. A Cloud module can also be linked to a local workspace project via the
+ * wrapped {@link IModule}. To obtain the associated {@link IProject} for a
+ * Cloud module, call {@link #getLocalModule()} and fetch the IProject from the
+ * local module API. External modules may not have an associated
+ * {@link IProject}.
+ * <p/>
+ * 3. A "local module" obtained {@link #getLocalModule()} is the wrapped WST
+ * module. For external modules the "local module" may be the same as the
+ * external module, since external modules do NOT have a resolved wrapped
+ * IModule of other types (like jst.web). Therefore, for external modules the
+ * local module itself may in fact be a {@link CloudFoundryApplicationModule}
+ * type.
+ * <p/>
+ * 4. Cloud modules that wrap around a {@link CloudApplication}, obtained via
+ * {@link #getApplication()}, are considered to exist in a Cloud server. They
+ * may not necessarily be considered "deployed" from the {@link IServer} point
+ * of view as publish state of the module in the {@link IServer} is also a
+ * factor. However, in general, to check if the module exists in the Cloud
+ * target, a non-null check on {@link #getApplication()} is sufficient to
+ * determine its existence, keeping in mind that Cloud modules are not handles,
+ * and the {@link CloudApplication} obtained from the module may be out of date.
+ * <p/>
+ * 5. The actual Cloud application name of this Cloud-aware module may differ
+ * from the underlying wrapped {@link IModule}. For example, when there is a
+ * link from a Cloud application to a local IProject whose names are different.
  * To obtain the local WST module name, use {@link #getName()} or get it through
  * {@link #getLocalModule()}, although the latter may be null if no IModule
- * mapping has been created and linked by the framework. Local names may be used
- * for obtaining workspace resources, like for example the application's
- * corresponding workspace project.
+ * mapping has been created and linked by the framework.
  * <p/>
  * To obtain the deployed application name, use
  * {@link #getDeployedApplicationName()}.
  * <p/>
- * The application module may be shared by multiple threads, therefore changes
- * should be synchronised at the very least.
+ * The Cloud module may be shared in a multi-threaded environment therefore when
+ * adding new API care should be taken if access needs to be synchronized.
  * <p/>
  * The app module also contains a deployment information (
  * {@link ApplicationDeploymentInfo} ), which describes deployment properties of
  * the application (e.g., URLs, memory settings, etc..), as well as services
  * that are bound, or will be bound, to the application.
  * <p/>
- * If the application has already been deployed (i.e. has a corresponding
- * {@link CloudApplication}), the deployment information is kept in synch any
- * time the module mapping to a {@link CloudApplication} is changed.
+ * If the application already exists in the Cloud target (i.e. has a
+ * corresponding {@link CloudApplication}), the deployment information is kept
+ * in synch any time the module mapping to a {@link CloudApplication} is
+ * changed.
  * 
  * IMPORTANT NOTE: This class can be referred by the branding extension from
  * adopter so this class should not be moved or renamed to avoid breakage to
@@ -332,24 +352,46 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 	}
 
 	/**
+	 * Compute the running state of the application in the Cloud. This may not
+	 * match {@link IServer#getModuleState(IModule[])}. The module state in the
+	 * server is a cached state, and may be managed by external components like
+	 * deployment or restart operations. In turn, these operations may rely on
+	 * the computed application state as determined by this method to set the
+	 * appropriate module state in the server.
 	 * 
-	 * @return {@link IServer} state of the application based on the application
-	 * running state in the Cloud
+	 * @return One of the following state of the application on the Cloud
+	 * target: {@link IServer#STATE_STARTED}, {@link IServer#STATE_STOPPED},
+	 * {@link IServer#STATE_UNKNOWN}
+	 * 
 	 */
 	public synchronized int getState() {
+		return getCloudState(getApplication(), this.applicationStats);
+	}
 
+	/**
+	 * @return One of the following state of the application on the Cloud
+	 * target: {@link IServer#STATE_STARTED}, {@link IServer#STATE_STOPPED},
+	 * {@link IServer#STATE_UNKNOWN}
+	 */
+	public static int getCloudState(CloudApplication cloudApp, ApplicationStats applicationStats) {
 		// Fetch the running state of the first instance that is running.
-		List<InstanceState> instanceStates = getInstanceRunstates();
 
-		for (InstanceState instanceState : instanceStates) {
-			if (instanceState == InstanceState.RUNNING) {
-				return IServer.STATE_STARTED;
+		if (applicationStats != null) {
+			List<InstanceStats> records = applicationStats.getRecords();
+
+			if (records != null) {
+				for (InstanceStats stats : records) {
+					if (stats != null && stats.getState() == InstanceState.RUNNING) {
+						return IServer.STATE_STARTED;
+					}
+				}
 			}
 		}
 
-		// If the app desired state is stopped, then consider the app to be
-		// stopped.
-		if (this.application != null && this.application.getState() == AppState.STOPPED) {
+		// If the app desired state is stopped (so it may indicate that a
+		// request to stop the app has been made)
+		// consider the app to be stopped
+		if (cloudApp != null && cloudApp.getState() == AppState.STOPPED) {
 			return IServer.STATE_STOPPED;
 		}
 
@@ -414,26 +456,6 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 				internalSetDeploymentInfo(cloudApplicationInfo);
 			}
 		}
-	}
-
-	/**
-	 * The size of instance states matches the number of instances of the
-	 * application. So if the application has 3 instances, a list with 3 state
-	 * entries will be returned.
-	 * @return non-null list of all running states for the application
-	 * instances. Empty list if no instances can be resolved for the application
-	 * (e.g. app is stopped)
-	 */
-	public synchronized List<InstanceState> getInstanceRunstates() {
-
-		List<InstanceState> states = new ArrayList<InstanceState>();
-		if (applicationStats != null && applicationStats.getRecords() != null) {
-			for (InstanceStats stats : applicationStats.getRecords()) {
-				states.add(stats.getState());
-			}
-		}
-
-		return states;
 	}
 
 	/**
