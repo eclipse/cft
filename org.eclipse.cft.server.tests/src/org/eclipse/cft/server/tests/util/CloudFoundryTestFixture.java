@@ -101,8 +101,6 @@ public class CloudFoundryTestFixture {
 
 	public static final String CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY = "test.credentials";
 
-	private static boolean safeTearDown = false;
-
 	/**
 	 *
 	 * The intention of the harness is to create a web project and server
@@ -255,6 +253,10 @@ public class CloudFoundryTestFixture {
 
 			// Clean up all projects from workspace
 			StsTestUtil.cleanUpProjects();
+
+			// Clear any cloud test apps and services as some tests may require
+			// that the target be empty
+			clearCloudTarget();
 		}
 
 		public void deleteService(CloudService serviceToDelete) throws CoreException {
@@ -275,23 +277,45 @@ public class CloudFoundryTestFixture {
 			return services;
 		}
 
-		private void clearTestDomainAndRoutes() throws Exception {
+		private void clearRoutes() throws Exception {
 			CloudFoundryOperations client = createExternalClient();
 			client.login();
 			String domain = getDomain();
 			if (domain != null) {
 				List<CloudRoute> routes = client.getRoutes(domain);
 				for (CloudRoute route : routes) {
-					client.deleteRoute(route.getHost(), route.getDomain().getName());
+					if (!route.inUse()) {
+						client.deleteRoute(route.getHost(), route.getDomain().getName());
+					}
 				}
 			}
 		}
 
-		public void deleteAllServices() throws CoreException {
+		public void deleteTestServices() throws CoreException {
 			List<CloudService> services = getAllServices();
 			for (CloudService service : services) {
 				deleteService(service);
 				CloudFoundryTestUtil.waitIntervals(1000);
+			}
+		}
+
+		public void deleteTestApps() throws CoreException {
+			List<CloudApplication> apps = getBehaviour().getApplications(new NullProgressMonitor());
+			if (apps != null) {
+				for (CloudApplication app : apps) {
+					getBehaviour().deleteApplication(app.getName(), new NullProgressMonitor());
+				}
+			}
+		}
+
+		protected void clearCloudTarget() {
+			try {
+				deleteTestApps();
+				clearRoutes();
+				deleteTestServices();
+			}
+			catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 
@@ -302,27 +326,19 @@ public class CloudFoundryTestFixture {
 				// webContainer.stop();
 			}
 
+			clearCloudTarget();
+
 			if (server != null) {
 				CloudFoundryServerBehaviour cloudFoundryServer = (CloudFoundryServerBehaviour) server
 						.loadAdapter(CloudFoundryServerBehaviour.class, null);
-				if (projectCreated && fixture.safeTearDown()) {
-					// Dont let errors in CF cleanup stop server cleanup in the
-					// workspace
-					try {
-						cloudFoundryServer.deleteAllApplications(null);
-						deleteAllServices();
-						clearTestDomainAndRoutes();
-					}
-					catch (Exception e) {
-						e.printStackTrace();
-					}
-				}
+
 				try {
 					cloudFoundryServer.disconnect(null);
 				}
 				catch (CoreException e) {
 					e.printStackTrace();
 				}
+
 			}
 			try {
 				handler.deleteServerAndRuntime(new NullProgressMonitor());
@@ -405,7 +421,6 @@ public class CloudFoundryTestFixture {
 			CredentialProperties credentials = getCredentialsFromProperties(getDefaultCloudTargetDomain());
 			current = new CloudFoundryTestFixture(credentials);
 		}
-		current.verifySafeCloudTarget();
 		return current;
 	}
 
@@ -484,36 +499,7 @@ public class CloudFoundryTestFixture {
 		handler = new ServerHandler(descriptor);
 	}
 
-	/**
-	 * A safe target is a target that can be tested against. In particular, the
-	 * target should not contain existing applications and services. This is to
-	 * avoid accidentally deleting existing applications and services in shared
-	 * Cloud targets during setup or teardown of junits.
-	 * @throws CoreException if target is not safe to run junits
-	 */
-	public void verifySafeCloudTarget() throws Exception {
-		try {
-			checkSafeTarget(getCredentialProperties());
-			safeTearDown = true;
-		}
-		catch (Exception e) {
-			// Be sure to set this flag to avoid deletion of apps and
-			// services on junit tear down even when it is not a safe target.
-			safeTearDown = false;
-			throw e;
-		}
-	}
-
-	/**
-	 *
-	 * @return true if it is safe to tear down. False if tear down should be
-	 * aborted (to avoid deleting apps and services in the CF target).
-	 */
-	public boolean safeTearDown() {
-		return safeTearDown;
-	}
-
-	protected static void checkSafeTarget(CredentialProperties cred) throws Exception {
+	public static void checkSafeTarget(CredentialProperties cred) throws Exception {
 
 		StsTestUtil.validateCredentials(cred);
 
@@ -550,6 +536,10 @@ public class CloudFoundryTestFixture {
 	 */
 	public Harness createHarness() {
 		return new Harness(getCredentialProperties().url, this);
+	}
+
+	public long getAppStartingTimeout() {
+		return 5 * 60 * 1000;
 	}
 
 	public static class CredentialProperties {

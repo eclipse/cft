@@ -20,7 +20,6 @@
  ********************************************************************************/
 package org.eclipse.cft.server.tests.core;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,7 +29,7 @@ import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
-import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
+import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudUtil;
@@ -145,24 +144,43 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
 
-		trackApplicationRunning(appModule);
+		waitApplicationStarted(appModule, 0);
 		// Verify that the Application URL is set
 		List<String> uris = appModule.getApplication().getUris();
 		assertEquals(Collections.singletonList(harness.getExpectedDefaultURL(prefix)), uris);
 	}
 
-	protected void trackApplicationRunning(CloudFoundryApplicationModule appModule) throws Exception {
+	protected void waitApplicationStarted(CloudFoundryApplicationModule appModule, int instance) throws Exception {
 
-		// Wait for tracker to verify application is running.
-		int trackerState = new ApplicationInstanceRunningTracker(appModule, cloudServer)
-				.track(new NullProgressMonitor());
+		long timeout = getTestFixture().getAppStartingTimeout();
+		long waitTime = 2000;
 
-		assertEquals(IServer.STATE_STARTED, trackerState);
+		CloudFoundryApplicationModule startedModule = cloudServer.getBehaviour()
+				.updateModuleWithAllCloudInfo(appModule.getDeployedApplicationName(), new NullProgressMonitor());
 
-		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
+		while (startedModule.getState() != IServer.STATE_STARTED && timeout > 0) {
+			try {
+				Thread.sleep(waitTime);
+			}
+			catch (InterruptedException e) {
 
-		assertEquals(IServer.STATE_STARTED, appModule.getState());
+			}
+			timeout -= waitTime;
+
+			startedModule = cloudServer.getBehaviour()
+					.updateModuleWithAllCloudInfo(appModule.getDeployedApplicationName(), new NullProgressMonitor());
+
+		}
+
+		assertEquals("Timed out waiting for application " + appModule.getDeployedApplicationName() + " to start",
+				IServer.STATE_STARTED, startedModule.getState());
+
+		// Check that the desired application state is also STARTED.
 		assertEquals(AppState.STARTED, appModule.getApplication().getState());
+
+		// Check that the instance is indeed running
+		assertEquals("Expected running application instance: " + instance, InstanceState.RUNNING,
+				appModule.getApplicationStats().getRecords().get(instance).getState());
 
 	}
 
@@ -187,18 +205,14 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 		assertEquals(project.getName(), projectName);
 
-		// There should only be one module available in the WST CF local server
-		// instance
-		IModule[] modules = server.getModules();
-		assertEquals(
-				"Expected only 1 web application module created by local Cloud server instance, but got "
-						+ Arrays.toString(modules) + ". Modules from previous deployments may be present.",
-				1, modules.length);
+		IModule module = getModule(projectName);
+
+		IModule[] modules = new IModule[] { module };
+
 		int moduleState = server.getModulePublishState(modules);
 		assertTrue(IServer.PUBLISH_STATE_UNKNOWN == moduleState || IServer.PUBLISH_STATE_NONE == moduleState);
 
 		// Verify that the WST module that exists matches the app project app
-		IModule module = getModule(projectName);
 
 		assertNotNull(module);
 		assertTrue(module.getName().equals(projectName));

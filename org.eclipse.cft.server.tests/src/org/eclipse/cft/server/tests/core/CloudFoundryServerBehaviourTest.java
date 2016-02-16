@@ -297,7 +297,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		serverBehavior.startModule(new IModule[] { appModule.getLocalModule() }, new NullProgressMonitor());
 
-		trackApplicationRunning(appModule);
+		waitApplicationStarted(appModule, 0);
 
 		assertEquals(IServer.STATE_STARTED, appModule.getState());
 		assertEquals(AppState.STARTED, appModule.getApplication().getState());
