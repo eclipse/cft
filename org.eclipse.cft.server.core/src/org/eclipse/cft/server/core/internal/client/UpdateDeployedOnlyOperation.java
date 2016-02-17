@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,24 +25,19 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.wst.server.core.IModule;
 
 /**
- * Performs a {@link BaseClientRequest} that updates an existing published
- * application. After the request is performed it will fire an event indicating
- * that the published application has been updated (e.g. memory scaled, mapped
- * URL changed, etc.)
+ * Updates a module only if it is deployed (it exists in the Cloud target and
+ * publish state is known in the IServer) and notifies when the operation is
+ * completed.
  *
  */
-public class ApplicationUpdateOperation extends BehaviourOperation {
+public class UpdateDeployedOnlyOperation extends UpdateModuleOperation {
 
-	private final BaseClientRequest<?> request;
-
-	public ApplicationUpdateOperation(BaseClientRequest<?> request, CloudFoundryServerBehaviour behaviour, IModule module) {
+	public UpdateDeployedOnlyOperation(CloudFoundryServerBehaviour behaviour, IModule module) {
 		super(behaviour, module);
-		this.request = request;
 	}
 
-	@Override
-	public void run(IProgressMonitor monitor) throws CoreException {
-		request.run(monitor);
-		getBehaviour().getRefreshHandler().updateDeployedModule(getModule());
+	protected CloudFoundryApplicationModule updateModule(IProgressMonitor monitor) throws CoreException {
+		return getBehaviour().updateDeployedModule(getModule(), monitor);
 	}
+
 }

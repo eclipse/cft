@@ -169,14 +169,14 @@ public class RestartOperation extends ApplicationOperation {
 		// Perform additional tracking checks through the tracker framework
 		AbstractAppStateTracker curTracker = CloudFoundryPlugin.getAppStateTracker(
 				RestartOperation.this.getBehaviour().getServer().getServerType().getId(), cloudModule);
-		
+
 		// Check for cancel
 		if (progress.isCanceled()) {
 			throw new OperationCanceledException(Messages.bind(Messages.OPERATION_CANCELED, startLabel));
 		}
 
 		if (curTracker != null) {
-			
+
 			curTracker.setServer(RestartOperation.this.getBehaviour().getServer());
 			curTracker.startTracking(cloudModule, progress);
 
@@ -208,7 +208,7 @@ public class RestartOperation extends ApplicationOperation {
 		if (updatedState == IServer.STATE_STARTED) {
 			CloudFoundryPlugin.getCallback()
 					.applicationStarted(RestartOperation.this.getBehaviour().getCloudFoundryServer(), cloudModule);
-		}
+		} 
 		return updatedState;
 	}
 

@@ -274,7 +274,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		ModulesRefreshListener refreshListener = new ModulesRefreshListener(cloudServer,
 				CloudServerEvent.EVENT_SERVER_REFRESHED);
 
-		serverBehavior.getRefreshHandler().scheduleRefreshAll();
+		serverBehavior.getRefreshHandler().updateAll();
 
 		assertTrue(refreshListener.modulesRefreshed(new NullProgressMonitor()));
 

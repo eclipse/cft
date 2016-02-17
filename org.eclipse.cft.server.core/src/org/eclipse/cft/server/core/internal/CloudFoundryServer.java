@@ -888,18 +888,25 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		
 		this.initialServerId = getServerId(); 
 	}
+	
 
 	/**
-	 * Update the local (WST) ( {@link IModule} ) and corresponding cloud module
-	 * ( {@link CloudFoundryApplicationModule} ) such that they are in synch
-	 * with the actual deployed applications (represented by
-	 * {@link CloudApplication} ). Local WST modules ( {@link IModule} ) that do
-	 * not have a corresponding deployed application ( {@link CloudApplication})
+	 * Update the wrapped (WST) ( {@link IModule} ) and corresponding cloud
+	 * module ( {@link CloudFoundryApplicationModule} ) such that they are in
+	 * synch with the actual deployed applications (represented by
+	 * {@link CloudApplication} ). WST modules ( {@link IModule} ) that do not
+	 * have a corresponding deployed application ( {@link CloudApplication})
 	 * will be removed.
+	 * <p/>
+	 * This does not update the module state in the Server except for deleted
+	 * modules
+	 * <p/>
+	 * To do a full update of modules including update of module state, use
+	 * {@link #updateModules(Map, Map)}
 	 * @param deployedApplications
 	 * @throws CoreException
 	 */
-	public void updateModules(Map<String, CloudApplication> deployedApplications, Map<String, ApplicationStats> applicationStats) throws CoreException {
+	public void addAndDeleteModules(Map<String, CloudApplication> deployedApplications, Map<String, ApplicationStats> applicationStats) throws CoreException {
 		Server server = (Server) getServer();
 
 		final Set<CloudFoundryApplicationModule> allModules = new HashSet<CloudFoundryApplicationModule>();
@@ -989,7 +996,6 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 					// state may be dependent on the application stats
 					ApplicationStats stats = applicationStats.get(appModule.getDeployedApplicationName());
 					appModule.setApplicationStats(stats);
-					updateState(server, appModule);
 				}
 			}
 
@@ -1015,6 +1021,61 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 			}
 		}
 	}
+	
+	/**
+	 * Updates the module state of all existing Cloud modules in the server
+	 * @throws CoreException
+	 */
+	public void updateModulesState() throws CoreException {
+		updateModulesState(null);
+	}
+	
+	/**
+	 * Updates all modules in the server except those whose state matches the list of states to skip.
+	 */
+	public void updateModulesState(int[] skipModulesInThisState) throws CoreException {
+		synchronized (this) {
+			Server server = (Server) getServer();
+
+			for (IModule module : server.getModules()) {
+				CloudFoundryApplicationModule appModule = getExistingCloudModule(module);
+				if (appModule != null) {
+
+					boolean update = true;
+
+					if (skipModulesInThisState != null) {
+						int currentModState = server.getModuleState(new IModule[] { module });
+						for (int state : skipModulesInThisState) {
+							if (currentModState == state) {
+								update = false;
+								break;
+							}
+						}
+					}
+					if (update) {
+						updateState(server, appModule);
+					}
+				}
+			}
+		}
+	}
+	
+	
+	/**
+	 * Update the local (WST) ( {@link IModule} ) and corresponding cloud module
+	 * ( {@link CloudFoundryApplicationModule} ) such that they are in synch
+	 * with the actual deployed applications (represented by
+	 * {@link CloudApplication} ). Local WST modules ( {@link IModule} ) that do
+	 * not have a corresponding deployed application ( {@link CloudApplication})
+	 * will be removed.
+	 * @param deployedApplications
+	 * @throws CoreException
+	 */
+	public void updateModules(Map<String, CloudApplication> deployedApplications, Map<String, ApplicationStats> applicationStats) throws CoreException {
+		addAndDeleteModules(deployedApplications, applicationStats);
+		updateModulesState();
+	}
+
 
 	/**
 	 * Updates the {@link IModule} and {@link ICloudFoundryApplicationModule}

@@ -187,7 +187,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 		getApplicationUrlLookup().refreshDomains(monitor);
 
-		getRefreshHandler().scheduleRefreshAll();
+		getRefreshHandler().updateAll();
 
 		ServerEventHandler.getDefault().fireServerEvent(
 				new CloudServerEvent(getCloudFoundryServer(), CloudServerEvent.EVENT_SERVER_CONNECTED));
@@ -697,7 +697,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @param monitor
 	 */
 	public void refreshModules(IProgressMonitor monitor) {
-		getRefreshHandler().scheduleRefreshAll();
+		getRefreshHandler().updateAll();
 	}
 
 	/**
@@ -1020,7 +1020,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			// performs a server connection and sets server state.
 			// The server connection is indirectly performed by this
 			// first refresh call.
-			getRefreshHandler().scheduleRefreshAll();
+			getRefreshHandler().updateAll();
 
 			ServerEventHandler.getDefault().fireServerEvent(
 					new CloudServerEvent(getCloudFoundryServer(), CloudServerEvent.EVENT_SERVER_CONNECTED));

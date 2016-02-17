@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,6 @@ import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.actions.EditorAction.RefreshArea;
 import org.eclipse.cft.server.ui.internal.editor.CloudFoundryApplicationsEditorPage;
 import org.eclipse.jface.action.Action;
-import org.eclipse.wst.server.core.IModule;
 
 /**
  * Performs a full refresh of all published modules. This may be a long running
@@ -68,8 +67,7 @@ public class RefreshEditorAction extends Action {
 
 	@Override
 	public void run() {
-		IModule selectedModule = editorPage.getMasterDetailsBlock().getCurrentModule();
 		CloudFoundryServerBehaviour behaviour = editorPage.getCloudServer().getBehaviour();
-		behaviour.getRefreshHandler().scheduleRefreshAll(selectedModule);
+		behaviour.getRefreshHandler().updateAll();
 	}
 }

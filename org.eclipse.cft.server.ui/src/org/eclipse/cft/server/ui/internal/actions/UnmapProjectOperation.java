@@ -63,7 +63,7 @@ public class UnmapProjectOperation implements ICloudFoundryOperation {
 			// Do a complete update of the module with Cloud information since
 			// the link/unlink project may re-create
 			// the module
-			cloudServer.getBehaviour().operations().updateModuleWithAllCloudInfo(updatedModule.getLocalModule()).run(monitor);
+			cloudServer.getBehaviour().operations().updateModule(updatedModule.getLocalModule()).run(monitor);
 		}
 
 		ServerEventHandler.getDefault().fireServerRefreshed(cloudServer);

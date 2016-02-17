@@ -88,7 +88,7 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 
 		try {
 			doApplicationOperation(monitor);
-			getBehaviour().getRefreshHandler().scheduleRefreshForDeploymentChange(getModule());
+			getBehaviour().getRefreshHandler().updateOnPublish(getModule());
 		}
 		catch (OperationCanceledException e) {
 			// ignore so webtools does not show an exception
@@ -126,7 +126,7 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 			// but still exist in the Cloud can result in unexpected behaviour
 			// when deleting the module and attempting the publish operation
 			// again (for example, archiving failing or failure to properly prompt for deployment details)
-			getBehaviour().operations().updateModuleWithAllCloudInfo(getModule()).run(monitor);
+			getBehaviour().operations().updateModule(getModule()).run(monitor);
 
 			CloudFoundryApplicationModule appModule = getBehaviour().getCloudFoundryServer()
 					.getExistingCloudModule(getModule());

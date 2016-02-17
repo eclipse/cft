@@ -22,6 +22,7 @@ package org.eclipse.cft.server.core.internal;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.internal.client.BehaviourOperation;
+import org.eclipse.cft.server.core.internal.client.CloudBehaviourOperations;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -64,16 +65,14 @@ public class RefreshModulesHandler {
 	}
 
 	/**
-	 * Refresh all modules in the Cloud space, as well as services, but does not
-	 * refresh the application instances information as that is triggered
-	 * individually on a module selection to avoid a slow refresh
+	 * Updates all modules in the server, as well as services
 	 */
-	public synchronized void scheduleRefreshAll() {
+	public synchronized void updateAll() {
 		if (cloudServer == null) {
 			CloudFoundryPlugin.logError(NO_SERVER_ERROR);
 		}
 		else if (this.opToRun == null) {
-			scheduleRefresh(cloudServer.getBehaviour().operations().refreshAll(null));
+			scheduleRefresh(cloudServer.getBehaviour().operations().updateAll());
 		}
 	}
 
@@ -82,27 +81,12 @@ public class RefreshModulesHandler {
 	}
 
 	/**
-	 * Schedules to refresh all modules, services, as well as the instances for
-	 * the given module, if not null. Passing a module is optional. If not
-	 * module is passed, only a server-wide module refresh is performed.
+	 * Schedule an update on a deployed module. If module is not deployed, no
+	 * refresh will occur. 
+	 * @see CloudBehaviourOperations#updateDeployedModule(IModule)
 	 * @param module to refresh
 	 */
-	public synchronized void scheduleRefreshAll(IModule module) {
-		if (cloudServer == null) {
-			CloudFoundryPlugin.logError(NO_SERVER_ERROR);
-		}
-		else if (this.opToRun == null) {
-			scheduleRefresh(cloudServer.getBehaviour().operations().refreshAll(module));
-		}
-	}
-
-	/**
-	 * Schedule an application refresh to update the application's stats and
-	 * information, including its instances. Does not perform a refresh on any
-	 * other application, only on the given application module.
-	 * @param module to refresh
-	 */
-	public synchronized void schedulesRefreshApplication(IModule module) {
+	public synchronized void updateDeployedModule(IModule module) {
 		if (cloudServer == null) {
 			CloudFoundryPlugin.logError(NO_SERVER_ERROR);
 		}
@@ -110,21 +94,32 @@ public class RefreshModulesHandler {
 			scheduleRefresh(cloudServer.getBehaviour().operations().updateDeployedModule(module));
 		}
 	}
-
+	
 	/**
-	 * Schedules an application refresh after there is a deployment change (app
-	 * is started, stopped, restarted, or removed). This is meant to indicate a
-	 * refresh is required after a long-running operation as opposed to
-	 * {@link #schedulesRefreshApplication(IModule)} which is meant for updates
-	 * on an existing application
-	 * @param module
+	 * Schedule an update on a module regardless if it is deployed or no.
+	 * @see CloudBehaviourOperations#updateModule(IModule)
 	 */
-	public synchronized void scheduleRefreshForDeploymentChange(IModule module) {
+	public synchronized void updateModule(IModule module) {
 		if (cloudServer == null) {
 			CloudFoundryPlugin.logError(NO_SERVER_ERROR);
 		}
 		else if (this.opToRun == null) {
-			scheduleRefresh(cloudServer.getBehaviour().operations().refreshForDeploymentChange(module));
+			scheduleRefresh(cloudServer.getBehaviour().operations().updateModule(module));
+		}
+	}
+
+	/**
+	 * * Updates module and notifies that module has been updated after publish.
+	 * This generates a different event than
+	 * {@link #updateDeployedModule(IModule)} specific to publishing
+	 * @param module
+	 */
+	public synchronized void updateOnPublish(IModule module) {
+		if (cloudServer == null) {
+			CloudFoundryPlugin.logError(NO_SERVER_ERROR);
+		}
+		else if (this.opToRun == null) {
+			scheduleRefresh(cloudServer.getBehaviour().operations().updateOnPublish(module));
 		}
 	}
 
@@ -167,8 +162,8 @@ public class RefreshModulesHandler {
 					// Cloud server must not be null as it's the source of
 					// the event
 					if (cloudServer == null) {
-						CloudFoundryPlugin.logError(NLS.bind(Messages.RefreshModulesHandler_EVENT_CLOUD_SERVER_NULL,
-								opToRun.getClass()));
+						CloudFoundryPlugin.logError(
+								NLS.bind(Messages.RefreshModulesHandler_EVENT_CLOUD_SERVER_NULL, opToRun.getClass()));
 					}
 					else {
 						ServerEventHandler.getDefault().fireError(cloudServer, module,

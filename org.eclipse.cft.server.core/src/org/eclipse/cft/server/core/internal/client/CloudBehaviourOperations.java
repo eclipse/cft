@@ -20,27 +20,17 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.cloudfoundry.client.lib.domain.ApplicationStats;
-import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.CloudServerEvent;
-import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
-import org.eclipse.wst.server.core.internal.Server;
 
 /**
  * 
@@ -114,7 +104,7 @@ public class CloudBehaviourOperations {
 				// may take
 				// time to be updated (the new instances may have to be
 				// restarted in the Cloud Space)
-				getBehaviour().getRefreshHandler().schedulesRefreshApplication(getModule());
+				getBehaviour().getRefreshHandler().updateDeployedModule(getModule());
 			}
 
 		};
@@ -257,76 +247,32 @@ public class CloudBehaviourOperations {
 	}
 
 	/**
-	 * Refreshes all modules, services, and the instance info and stats for the
-	 * given optional module. If null is passed only the list of modules and
-	 * services is refreshed.
+	 * Update all modules, services, and the instance info and stats for the
+	 * given optional module.
 	 * <p/>
 	 * This may be a long running operation
 	 * @return Non-null operation
 	 */
-	public BehaviourOperation refreshAll(final IModule module) {
-		return new BehaviourOperation(behaviour, module) {
-
-			@Override
-			public void run(IProgressMonitor monitor) throws CoreException {
-
-				CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
-
-				SubMonitor subMonitor = SubMonitor.convert(monitor);
-				subMonitor.beginTask(NLS.bind(Messages.CloudBehaviourOperations_REFRESHING_APPS_AND_SERVICES,
-						cloudServer.getServer().getId()), 100);
-
-				if (getModule() != null) {
-					getBehaviour().updateDeployedModule(getModule(), subMonitor.newChild(40));
-				}
-				else {
-					subMonitor.worked(40);
-				}
-				// Get updated list of cloud applications from the server
-				List<CloudApplication> applications = getBehaviour().getApplications(subMonitor.newChild(20));
-
-				// update applications and deployments from server
-				Map<String, CloudApplication> deployedApplicationsByName = new LinkedHashMap<String, CloudApplication>();
-				Map<String, ApplicationStats> stats = new LinkedHashMap<String, ApplicationStats>();
-
-				for (CloudApplication application : applications) {
-					ApplicationStats sts = getBehaviour().getApplicationStats(application.getName(), subMonitor);
-					stats.put(application.getName(), sts);
-					deployedApplicationsByName.put(application.getName(), application);
-				}
-
-				cloudServer.updateModules(deployedApplicationsByName, stats);
-
-				// Clear publish error
-				Server server = (Server) cloudServer.getServer();
-
-				for (IModule module : server.getModules()) {
-					CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
-					if (appModule != null) {
-						appModule.setStatus(null);
-						appModule.validateDeploymentInfo();
-					}
-				}
-
-				List<CloudService> services = getBehaviour().getServices(subMonitor.newChild(20));
-
-				ServerEventHandler.getDefault()
-						.fireServerEvent(new CloudRefreshEvent(getBehaviour().getCloudFoundryServer(), getModule(),
-								CloudServerEvent.EVENT_SERVER_REFRESHED, services));
-
-				subMonitor.worked(20);
-			}
-		};
+	public BehaviourOperation updateAll() {
+		return new UpdateAllOperation(behaviour);
 	}
 
-	public BehaviourOperation refreshForDeploymentChange(final IModule module) {
+	/**
+	 * Updates module and notifies that module has been updated after publish.
+	 * This generates a different event than
+	 * {@link #updateDeployedModule(IModule)}, and should be used specifically
+	 * after publish operations.
+	 * @param module
+	 * @return
+	 */
+	public BehaviourOperation updateOnPublish(final IModule module) {
 		return new BehaviourOperation(behaviour, module) {
 
 			@Override
 			public void run(IProgressMonitor monitor) throws CoreException {
 
 				if (module == null) {
-					throw CloudErrorUtil.toCoreException("Internal Error: No module to refresh in - " + //$NON-NLS-1$
+					throw CloudErrorUtil.toCoreException("Internal Error: No module to update in - " + //$NON-NLS-1$
 							getBehaviour().getCloudFoundryServer().getServerId());
 				}
 
@@ -348,58 +294,20 @@ public class CloudBehaviourOperations {
 	 * @return Non-null operation.
 	 */
 	public BehaviourOperation updateDeployedModule(final IModule module) {
-
-		return new BehaviourOperation(behaviour, module) {
-
-			@Override
-			public void run(IProgressMonitor monitor) throws CoreException {
-
-				if (module == null) {
-					throw CloudErrorUtil.toCoreException("Internal Error: No module to update in - " + //$NON-NLS-1$
-							getBehaviour().getCloudFoundryServer().getServerId());
-				}
-
-				CloudFoundryApplicationModule appModule = getBehaviour().updateDeployedModule(module, monitor);
-
-				// Clear the publish errors for now
-				if (appModule != null) {
-					appModule.setStatus(null);
-					appModule.validateDeploymentInfo();
-				}
-
-				ServerEventHandler.getDefault().fireApplicationRefreshed(behaviour.getCloudFoundryServer(), module);
-			}
-		};
+		return new UpdateDeployedOnlyOperation(behaviour, module);
 	}
 
 	/**
-	 * Updates the given module with complete Cloud information
-	 * about the application including application deployment state.
+	 * Updates the given module in the Server regardless of whether it is
+	 * deployed or not. Use this to update the Server in case module has been
+	 * deleted. This is not as restrictive as
+	 * {@link #updateDeployedModule(IModule)}, where update is only performed
+	 * IFF the module is deployed.
 	 * @param module
 	 * @return Non-null operation.
 	 */
-	public BehaviourOperation updateModuleWithAllCloudInfo(final IModule module) {
-
-		return new BehaviourOperation(behaviour, module) {
-
-			@Override
-			public void run(IProgressMonitor monitor) throws CoreException {
-
-				if (module == null) {
-					throw CloudErrorUtil.toCoreException("Internal Error: No module to update in - " + //$NON-NLS-1$
-							getBehaviour().getCloudFoundryServer().getServerId());
-				}
-
-				CloudFoundryApplicationModule appModule = getBehaviour().updateModuleWithAllCloudInfo(module, monitor);
-				// Clear the publish errors for now
-				if (appModule != null) {
-					appModule.setStatus(null);
-					appModule.validateDeploymentInfo();
-				}
-
-				ServerEventHandler.getDefault().fireApplicationRefreshed(behaviour.getCloudFoundryServer(), module);
-			}
-		};
+	public BehaviourOperation updateModule(final IModule module) {
+		return new UpdateModuleOperation(behaviour, module);
 	}
 
 	public ICloudFoundryOperation deleteModules(IModule[] modules, final boolean deleteServices) {
