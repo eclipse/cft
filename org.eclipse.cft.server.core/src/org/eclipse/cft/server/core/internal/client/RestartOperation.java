@@ -123,6 +123,9 @@ public class RestartOperation extends ApplicationOperation {
 
 			// Set the state of the module to Starting
 			server.setModuleState(getModules(), IServer.STATE_STARTING);
+			
+			// IMPORTANT: Notify that module state has been changed
+			getBehaviour().operations().updateModule(getModule()).run(monitor);
 
 			// Perform the actual restarting in the client
 			StartingInfo info = getBehaviour().getRequestFactory().restartApplication(deploymentName, startLabel)

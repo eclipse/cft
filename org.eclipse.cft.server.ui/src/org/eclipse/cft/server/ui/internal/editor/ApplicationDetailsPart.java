@@ -58,7 +58,6 @@ import org.eclipse.cft.server.ui.internal.actions.StartStopApplicationAction;
 import org.eclipse.cft.server.ui.internal.actions.TerminateDebugEditorAction;
 import org.eclipse.cft.server.ui.internal.actions.UpdateApplicationMemoryAction;
 import org.eclipse.cft.server.ui.internal.actions.UpdateInstanceCountAction;
-import org.eclipse.cft.server.ui.internal.debug.ApplicationDebugUILauncher;
 import org.eclipse.cft.server.ui.internal.editor.AppStatsContentProvider.InstanceStatsAndInfo;
 import org.eclipse.cft.server.ui.internal.wizards.EnvVarsWizard;
 import org.eclipse.cft.server.ui.internal.wizards.MappedURLsWizard;
@@ -120,6 +119,7 @@ import org.eclipse.ui.internal.progress.ProgressManager;
 import org.eclipse.ui.progress.UIJob;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
+import org.eclipse.wst.server.core.internal.Server;
 import org.eclipse.wst.server.ui.internal.ImageResource;
 
 /**
@@ -291,7 +291,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 				|| topButtonRow.isDisposed()) {
 			return;
 		}
-		int state = appModule.getState();
+		int state = appModule.getStateInServer();
 
 		// Don't refresh if the restart buttons were selected
 		if (skipButtonRefreshOnRestart) {
@@ -300,7 +300,8 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		}
 
 		// Show/hide action buttons based on server state
-		if (state == IServer.STATE_STOPPED || state == IServer.STATE_UNKNOWN) {
+		// [487916] - Enable Stop button at all times except when app is stopped
+		if (state == IServer.STATE_STOPPED) {
 			stopAppButton.setEnabled(false);
 
 			startAppButton.setText(Messages.ApplicationDetailsPart_TEXT_START);

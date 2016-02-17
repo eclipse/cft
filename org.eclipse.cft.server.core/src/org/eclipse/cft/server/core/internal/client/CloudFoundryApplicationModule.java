@@ -367,6 +367,15 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 	public synchronized int getState() {
 		return getCloudState(getApplication(), this.applicationStats);
 	}
+	
+	/**
+	 * 
+	 * @return state in the IServer. This may differ from the computed
+	 * state from {@link #getState()} which relies on Cloud information.
+	 */
+	public int getStateInServer() {
+		return server.getModuleState(new IModule[] { getLocalModule() });
+	}
 
 	/**
 	 * @return One of the following state of the application on the Cloud
