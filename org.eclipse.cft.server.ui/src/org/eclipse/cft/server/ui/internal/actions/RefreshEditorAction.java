@@ -68,6 +68,6 @@ public class RefreshEditorAction extends Action {
 	@Override
 	public void run() {
 		CloudFoundryServerBehaviour behaviour = editorPage.getCloudServer().getBehaviour();
-		behaviour.getRefreshHandler().updateAll();
+		behaviour.getOperationsScheduler().updateAll();
 	}
 }

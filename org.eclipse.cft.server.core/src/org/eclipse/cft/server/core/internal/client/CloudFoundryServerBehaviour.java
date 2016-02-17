@@ -62,7 +62,7 @@ import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ModuleResourceDeltaWrapper;
-import org.eclipse.cft.server.core.internal.RefreshModulesHandler;
+import org.eclipse.cft.server.core.internal.BehaviourOperationsScheduler;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
@@ -133,7 +133,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	private CloudFoundryOperations client;
 
-	private RefreshModulesHandler refreshHandler;
+	private BehaviourOperationsScheduler operationsScheduler;
 
 	private ApplicationUrlLookupService applicationUrlLookup;
 
@@ -187,7 +187,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 		getApplicationUrlLookup().refreshDomains(monitor);
 
-		getRefreshHandler().updateAll();
+		getOperationsScheduler().updateAll();
 
 		ServerEventHandler.getDefault().fireServerEvent(
 				new CloudServerEvent(getCloudFoundryServer(), CloudServerEvent.EVENT_SERVER_CONNECTED));
@@ -206,11 +206,13 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	/**
-	 * 
-	 * @return Handles refresh of modules for this server behaviour. Never null.
+	 * Allows asynchronous execution of operations defined in
+	 * {@link #cloudBehaviourOperations}. For synchronous execution, use
+	 * {@link #operations()}
+	 * @return Non-null scheduler
 	 */
-	public RefreshModulesHandler getRefreshHandler() {
-		if (refreshHandler == null) {
+	public BehaviourOperationsScheduler getOperationsScheduler() {
+		if (operationsScheduler == null) {
 			CloudFoundryServer server = null;
 			try {
 				server = getCloudFoundryServer();
@@ -218,9 +220,9 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			catch (CoreException ce) {
 				CloudFoundryPlugin.logError(ce);
 			}
-			refreshHandler = new RefreshModulesHandler(server);
+			operationsScheduler = new BehaviourOperationsScheduler(server);
 		}
-		return refreshHandler;
+		return operationsScheduler;
 	}
 
 	/**
@@ -649,8 +651,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * modules. Note that this may be a long-running operation. If fetching a
 	 * known application , it is recommended to call
 	 * {@link #getCloudApplication(String, IProgressMonitor)} or
-	 * {@link #updateModuleWithBasicCloudInfo(IModule, IProgressMonitor)} as it may
-	 * be potentially faster
+	 * {@link #updateModuleWithBasicCloudInfo(IModule, IProgressMonitor)} as it
+	 * may be potentially faster
 	 * @param monitor
 	 * @return List of all applications in the Cloud space.
 	 * @throws CoreException
@@ -693,11 +695,11 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * job to execute at certain intervals. This will synch all local
 	 * application modules with the actual deployed applications. This may be a
 	 * long running operation.
-	 * @deprecated user {@link #getRefreshHandler()} instead
+	 * @deprecated user {@link #getOperationsScheduler()} instead
 	 * @param monitor
 	 */
 	public void refreshModules(IProgressMonitor monitor) {
-		getRefreshHandler().updateAll();
+		getOperationsScheduler().updateAll();
 	}
 
 	/**
@@ -733,7 +735,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		client = null;
 		applicationUrlLookup = null;
 		cloudBehaviourOperations = null;
-		refreshHandler = null;
+		operationsScheduler = null;
 	}
 
 	@Override
@@ -1020,7 +1022,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			// performs a server connection and sets server state.
 			// The server connection is indirectly performed by this
 			// first refresh call.
-			getRefreshHandler().updateAll();
+			getOperationsScheduler().updateAll();
 
 			ServerEventHandler.getDefault().fireServerEvent(
 					new CloudServerEvent(getCloudFoundryServer(), CloudServerEvent.EVENT_SERVER_CONNECTED));
@@ -1271,12 +1273,12 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	/** Retrieves the routes for the given domain name; will return early if cancelled, with 
 	 * an OperationCanceledException. */
 	public List<CloudRoute> getRoutes(final String domainName, IProgressMonitor monitor) throws CoreException {
-		
+
 		BaseClientRequest<List<CloudRoute>> request = getRequestFactory().getRoutes(domainName);
-		
+
 		CancellableRequestThread<List<CloudRoute>> t = new CancellableRequestThread<List<CloudRoute>>(request, monitor);
 		return t.runAndWaitForCompleteOrCancelled();
-		
+
 	}
 
 	public void deleteRoute(final List<CloudRoute> routes, IProgressMonitor monitor) throws CoreException {
@@ -1303,14 +1305,14 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public boolean reserveRouteIfAvailable(final String host, final String domainName, IProgressMonitor monitor) throws CoreException {
 
 		BaseClientRequest<Boolean> request = getRequestFactory().reserveRouteIfAvailable(host, domainName);
-		
+
 		CancellableRequestThread<Boolean> t = new CancellableRequestThread<Boolean>(request, monitor);
 		Boolean result = t.runAndWaitForCompleteOrCancelled();
-		
-		if(result != null) {
+
+		if (result != null) {
 			return result;
 		}
-		
+
 		return false;
 	}
 
@@ -1775,21 +1777,23 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 
 /** Requests may be wrapped using this class, such that if the user cancels the monitor, the thread will automatically return.
- *  
+ * 
  * Note: Since the BaseClientRequest itself does not check the monitor, the BaseClientRequest may still be running even though 
  * the calling thread has return. Care should be taken to consider this logic. */
 class CancellableRequestThread<T> {
-	
+
 	private T result = null;
+
 	private Throwable exceptionThrown = null;
-	
-	private boolean threadComplete = false; 
-	
+
+	private boolean threadComplete = false;
+
 	private final Object lock = new Object();
-	
+
 	private final IProgressMonitor monitor;
+
 	private final BaseClientRequest<T> request;
-	
+
 	public CancellableRequestThread(BaseClientRequest<T> request, IProgressMonitor monitor) {
 		this.request = request;
 		this.monitor = monitor;
@@ -1797,96 +1801,94 @@ class CancellableRequestThread<T> {
 
 	/** This is called by ThreadWrapper.run(...) */
 	private void runInThread() {
-		
+
 		try {
 			result = request.run(monitor);
 		} catch (Exception e) {
 			exceptionThrown = e;
 		} finally {
-			synchronized(lock) {
+			synchronized (lock) {
 				threadComplete = true;
 				lock.notify();
 			}
 		}
-		
+
 	}
-	
+
 	/** Starts the thread to invoke the request, and begins waiting for the thread to complete or be cancelled. */
 	public T runAndWaitForCompleteOrCancelled() {
 		try {
-			
+
 			// Start the thread that runs the requst
 			ThreadWrapper tw = new ThreadWrapper();
 			tw.start();
-			
 
-			while(!monitor.isCanceled()) {
-				
-				synchronized(lock) {
+			while (!monitor.isCanceled()) {
+
+				synchronized (lock) {
 					// Check for cancelled every 0.25 seconds.
-					lock.wait(250); 
-					
-					if(threadComplete) {
+					lock.wait(250);
+
+					if (threadComplete) {
 						break;
 					}
 				}
 			}
 
-
 			Throwable thr = getExceptionThrown();
 			// Throw any caught exceptions
-			if(thr != null ) {
-				if(thr instanceof RuntimeException) {
+			if (thr != null) {
+				if (thr instanceof RuntimeException) {
 					// Throw unchecked exception
-					throw (RuntimeException)thr;
-					
+					throw (RuntimeException) thr;
+
 				} else {
 					// Convert checked to unchecked exception
 					throw new RuntimeException(thr);
 				}
-				
+
 			}
-			
+
 			// Check for cancelled
-			if(!isThreadComplete() && getResult() == null) {
-				throw new OperationCanceledException();				
+			if (!isThreadComplete() && getResult() == null) {
+				throw new OperationCanceledException();
 			}
-			
+
 			T result = getResult();
-			
+
 			return result;
-			
+
 		} catch (InterruptedException e) {
 			throw new OperationCanceledException();
-		}		
+		}
 	}
-		
+
 	public Throwable getExceptionThrown() {
-		synchronized(lock) {
+		synchronized (lock) {
 			return exceptionThrown;
 		}
 	}
-	
+
 	public boolean isThreadComplete() {
-		synchronized(lock) {
+		synchronized (lock) {
 			return threadComplete;
 		}
 	}
-	
+
 	public T getResult() {
-		synchronized(lock) {
+		synchronized (lock) {
 			return result;
 		}
 	}
-	
+
 	/** Simple thread that calls runInThread(...), to ensure that the BaseClientRequest may only be started by calling the runAndWaitForCompleteOrCancelled(...) method. */
 	private class ThreadWrapper extends Thread {
-		
+
 		private ThreadWrapper() {
 			setDaemon(true);
 			setName(CancellableRequestThread.class.getName());
 		}
-		
+
 		@Override
 		public void run() {
 			runInThread();

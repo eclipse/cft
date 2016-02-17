@@ -104,7 +104,7 @@ public class CloudBehaviourOperations {
 				// may take
 				// time to be updated (the new instances may have to be
 				// restarted in the Cloud Space)
-				getBehaviour().getRefreshHandler().updateDeployedModule(getModule());
+				getBehaviour().getOperationsScheduler().updateDeployedModule(getModule());
 			}
 
 		};

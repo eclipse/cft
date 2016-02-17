@@ -20,7 +20,6 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal;
 
-import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.internal.client.BehaviourOperation;
 import org.eclipse.cft.server.core.internal.client.CloudBehaviourOperations;
 import org.eclipse.core.runtime.CoreException;
@@ -32,16 +31,11 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
 
 /**
- * Handles refresh of modules in a target Cloud Space.
- * <p/>
- * As refreshing modules may include fetch a list of {@link CloudApplication}
- * from the target Cloud space associated with the given
- * {@link CloudFoundryServer} which may be a long-running task, module refreshes
- * is performed asynchronously as a job, and only one job is scheduled per
- * behaviour regardless of the number of refresh requests received
+ * Schedules behaviour operations for asynchronous execution.
+ * 
  * 
  */
-public class RefreshModulesHandler {
+public class BehaviourOperationsScheduler {
 
 	private BehaviourRefreshJob refreshJob;
 
@@ -55,7 +49,7 @@ public class RefreshModulesHandler {
 	 * 
 	 * @param cloudServer may be null if not resolved.
 	 */
-	public RefreshModulesHandler(CloudFoundryServer cloudServer) {
+	public BehaviourOperationsScheduler(CloudFoundryServer cloudServer) {
 		this.cloudServer = cloudServer;
 		String serverName = cloudServer != null ? cloudServer.getServer().getId() : "Unknown server"; //$NON-NLS-1$
 
@@ -82,7 +76,7 @@ public class RefreshModulesHandler {
 
 	/**
 	 * Schedule an update on a deployed module. If module is not deployed, no
-	 * refresh will occur. 
+	 * refresh will occur.
 	 * @see CloudBehaviourOperations#updateDeployedModule(IModule)
 	 * @param module to refresh
 	 */
@@ -94,7 +88,7 @@ public class RefreshModulesHandler {
 			scheduleRefresh(cloudServer.getBehaviour().operations().updateDeployedModule(module));
 		}
 	}
-	
+
 	/**
 	 * Schedule an update on a module regardless if it is deployed or no.
 	 * @see CloudBehaviourOperations#updateModule(IModule)

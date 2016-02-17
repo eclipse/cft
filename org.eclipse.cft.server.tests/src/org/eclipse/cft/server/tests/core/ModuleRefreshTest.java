@@ -621,21 +621,21 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		// selected module.
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
 				CloudServerEvent.EVENT_SERVER_REFRESHED);
-		cloudServer.getBehaviour().getRefreshHandler().updateAll();
+		cloudServer.getBehaviour().getOperationsScheduler().updateAll();
 
 		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_SERVER_REFRESHED);
 
 		refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
 				CloudServerEvent.EVENT_SERVER_REFRESHED);
 
-		cloudServer.getBehaviour().getRefreshHandler().updateAll();
+		cloudServer.getBehaviour().getOperationsScheduler().updateAll();
 
 		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_SERVER_REFRESHED);
 
 		refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
 				CloudServerEvent.EVENT_SERVER_REFRESHED);
 
-		cloudServer.getBehaviour().getRefreshHandler().updateAll();
+		cloudServer.getBehaviour().getOperationsScheduler().updateAll();
 
 		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_SERVER_REFRESHED);
 	}
@@ -653,7 +653,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(
 				appModule.getDeployedApplicationName(), cloudServer, CloudServerEvent.EVENT_APPLICATION_REFRESHED);
 
-		cloudServer.getBehaviour().getRefreshHandler().updateDeployedModule(appModule.getLocalModule());
+		cloudServer.getBehaviour().getOperationsScheduler().updateDeployedModule(appModule.getLocalModule());
 
 		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_APPLICATION_REFRESHED);
 	}
@@ -670,7 +670,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
 				CloudServerEvent.EVENT_SERVER_REFRESHED);
 
-		cloudServer.getBehaviour().getRefreshHandler().updateAll();
+		cloudServer.getBehaviour().getOperationsScheduler().updateAll();
 
 		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_SERVER_REFRESHED);
 	}
@@ -687,7 +687,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
 				CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
 
-		cloudServer.getBehaviour().getRefreshHandler().updateOnPublish(appModule.getLocalModule());
+		cloudServer.getBehaviour().getOperationsScheduler().updateOnPublish(appModule.getLocalModule());
 
 		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
 	}

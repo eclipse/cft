@@ -88,7 +88,7 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 
 		try {
 			doApplicationOperation(monitor);
-			getBehaviour().getRefreshHandler().updateOnPublish(getModule());
+			getBehaviour().getOperationsScheduler().updateOnPublish(getModule());
 		}
 		catch (OperationCanceledException e) {
 			// ignore so webtools does not show an exception
