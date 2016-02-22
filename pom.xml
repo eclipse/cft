@@ -76,7 +76,7 @@
     <test.useUIThread>true</test.useUIThread>
     <test.skip>${maven.test.skip}</test.skip>
 
-    <tycho-version>0.18.1</tycho-version>
+    <tycho-version>0.22.0</tycho-version>
     <tycho-extras-version>${tycho-version}</tycho-extras-version>
     
 
@@ -101,7 +101,52 @@
         <dist.platform.version>4.3</dist.platform.version>
         <package.qualifierPrefix>e43</package.qualifierPrefix>
       </properties>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>target-platform-configuration</artifactId>
+				<version>${tycho-version}</version>
+				<configuration>
+					<resolver>p2</resolver>
+					<target>
+						<artifact>
+							<groupId>org.eclipse.cft.server</groupId>
+							<artifactId>org.eclipse.cft.server.target</artifactId>
+							<version>1.0.0-SNAPSHOT</version>
+							<classifier>${dist.target.classifier}</classifier>
+						</artifact>
+					</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
     </profile>
+
+	<profile>
+		<id>e46</id>
+		<properties>
+			<p2.repository.name>CFT for Eclipse 4.6</p2.repository.name>
+		</properties>
+		<repositories>
+			<repository>
+				<id>platform-e46</id>
+				<layout>p2</layout>
+				<url>http://download.eclipse.org/eclipse/updates/4.6/</url>
+			</repository>
+			<repository>
+				<id>mars</id>
+				<layout>p2</layout>
+				<url>http://download.eclipse.org/releases/neon/</url>
+			</repository>
+			<repository>
+				<id>orbit-neon</id>
+				<layout>p2</layout>
+				<url>http://download.eclipse.org/tools/orbit/downloads/drops/S20151204220443/repository/</url>
+			</repository>
+		</repositories>
+	</profile>
 		
     <profile>
       <id>osx</id>
@@ -272,22 +317,9 @@
           <version>${tycho-version}</version>
           <configuration>
             <resolver>p2</resolver>
-            <target>
-              <artifact>
-                <groupId>org.eclipse.cft.server</groupId>
-                <artifactId>org.eclipse.cft.server.target</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
-                <classifier>${dist.target.classifier}</classifier>
-              </artifact>
-            </target>
             <pomDependencies>consider</pomDependencies>
             <ignoreTychoRepositories>true</ignoreTychoRepositories>
             <environments>
-              <environment>
-                <os>macosx</os>
-                <ws>cocoa</ws>
-                <arch>x86</arch>
-              </environment>
               <environment>
                 <os>macosx</os>
                 <ws>cocoa</ws>
