@@ -147,19 +147,30 @@
 			</repository>
 		</repositories>
 	</profile>
-		
-    <profile>
-      <id>osx</id>
-      <activation>
-        <property>
-          <name>java.vendor.url</name>
-          <value>http://www.apple.com/</value>
-        </property>
-      </activation>
-      <properties>
-        <test.osvmargs>-Dosgi.ws=cocoa -XstartOnFirstThread</test.osvmargs>
-      </properties>
-    </profile>
+
+	<profile>
+		<id>mac</id>
+		<activation>
+			<os>
+				<family>mac</family>
+			</os>
+		</activation>
+		<properties>
+			<test.osvmargs>-XstartOnFirstThread</test.osvmargs>
+		</properties>
+	</profile>
+
+	<profile>
+		<id>windows</id>
+		<activation>
+			<os>
+				<family>Windows</family>
+			</os>
+		</activation>
+		<properties>
+			<test.osvmargs>-Dgreclipse.nonlocking=true</test.osvmargs>
+		</properties>
+	</profile>
     
      <profile>
         <id>eclipse-sign</id>
@@ -451,31 +462,9 @@
             <useUIHarness>true</useUIHarness>
             <forkedProcessTimeoutInSeconds>7200</forkedProcessTimeoutInSeconds>
             <showEclipseLog>true</showEclipseLog>
-            <testSuite>${project.artifactId}</testSuite>
-            <testClass>${test.class}</testClass>
             <argLine>
-              -Xmx1024m -XX:MaxPermSize=256m -Dtest.credentials=${bamboo.sts.cf.properties} -Djava.io.tmpdir=${project.build.directory} -Duser.home=${project.build.directory} ${test.vmargs}
-            </argLine>
-            <appArgLine>
-              -eclipse.keyring ${project.build.directory}/keystore -eclipse.password ${project.build.directory}/keystore.password
-            </appArgLine>
-            <dependencies>
-              <dependency>
-                <type>p2-installable-unit</type>
-                <artifactId>org.eclipse.wst.server_ui.feature.feature.group</artifactId>
-                <version>0.0.0</version>
-              </dependency>
-              <dependency>
-                <type>p2-installable-unit</type>
-                <artifactId>org.eclipse.jst.web_ui.feature.feature.group</artifactId>
-                <version>0.0.0</version>
-              </dependency>
-              <dependency>
-                <type>p2-installable-unit</type>
-                <artifactId>org.eclipse.jst.enterprise_ui.feature.feature.group</artifactId>
-                <version>0.0.0</version>
-              </dependency>
-            </dependencies>
+              -Xmx1024m -XX:MaxPermSize=256m -Duser.home=${project.build.directory} ${test.vmargs}
+            </argLine>      
           </configuration>
         </plugin>
         <plugin>

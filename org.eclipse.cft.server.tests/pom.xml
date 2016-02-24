@@ -10,31 +10,19 @@
   </parent>
   <artifactId>org.eclipse.cft.server.tests</artifactId>
   <packaging>eclipse-test-plugin</packaging>
-  <properties>
-	<test.class>org.eclipse.cft.server.tests.AllCloudFoundryTests</test.class>
-  </properties>
   <build>
 	<plugins>
-	  <plugin>
-		<groupId>org.apache.maven.plugins</groupId>
-		<artifactId>maven-antrun-plugin</artifactId>
-		<version>1.6</version>
-		<executions>
-		  <execution>
-			<id>prepare-tests</id>
-			<phase>pre-integration-test</phase>
-			<configuration>
-			  <target>
-<!-- 				<ant antfile="../common/build.xml" target="prepare-tests">
-				</ant> -->
-			  </target>
-			</configuration>
-			<goals>
-			  <goal>run</goal>
-			</goals>
-		  </execution>
-		</executions>
-	  </plugin>
+	<plugin>
+		<groupId>org.eclipse.tycho</groupId>
+		<artifactId>tycho-surefire-plugin</artifactId>
+		<version>${tycho-version}</version>
+		<configuration>
+			<useUIHarness>true</useUIHarness>
+			<forkedProcessTimeoutInSeconds>7200</forkedProcessTimeoutInSeconds>
+			<testSuite>org.eclipse.cft.server.tests</testSuite>
+			<testClass>org.eclipse.cft.server.tests.AllCloudFoundryTests</testClass>
+		</configuration>
+	</plugin>
 	  <plugin>
         <groupId>org.eclipse.tycho</groupId>
         <artifactId>tycho-source-plugin</artifactId>
