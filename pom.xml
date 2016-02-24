@@ -404,11 +404,6 @@
               <version>1.8.1</version>  
             </dependency>  
             <dependency>
-              <groupId>org.springframework.build</groupId>
-              <artifactId>org.springframework.build.aws.ant</artifactId>
-              <version>3.0.6.RELEASE</version>
-            </dependency>
-            <dependency>
               <groupId>net.java.dev.jets3t</groupId>
               <artifactId>jets3t</artifactId>
               <version>0.8.1</version>
@@ -458,12 +453,10 @@
           <version>${tycho-version}</version>
           <configuration>
             <skip>${test.skip}</skip> 
-            <useUIThread>${test.useUIThread}</useUIThread>
-            <useUIHarness>true</useUIHarness>
             <forkedProcessTimeoutInSeconds>7200</forkedProcessTimeoutInSeconds>
             <showEclipseLog>true</showEclipseLog>
             <argLine>
-              -Xmx1024m -XX:MaxPermSize=256m -Duser.home=${project.build.directory} ${test.vmargs}
+              -Xmx1024m -XX:MaxPermSize=256m ${test.vmargs}
             </argLine>      
           </configuration>
         </plugin>
