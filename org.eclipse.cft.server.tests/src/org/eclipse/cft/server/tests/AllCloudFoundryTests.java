@@ -20,8 +20,16 @@
  ********************************************************************************/
 package org.eclipse.cft.server.tests;
 
+import org.eclipse.cft.server.tests.core.BehaviourOperationsTest;
+import org.eclipse.cft.server.tests.core.CloudFoundryClientConnectionTest;
+import org.eclipse.cft.server.tests.core.CloudFoundryProxyTest;
 import org.eclipse.cft.server.tests.core.CloudFoundryServerBehaviourTest;
+import org.eclipse.cft.server.tests.core.CloudFoundryServerTest;
+import org.eclipse.cft.server.tests.core.CloudFoundryServicesTest;
+import org.eclipse.cft.server.tests.core.CloudUtilTest;
 import org.eclipse.cft.server.tests.core.DeploymentURLTest;
+import org.eclipse.cft.server.tests.core.ModuleRefreshTest;
+import org.eclipse.cft.server.tests.core.ServerCredentialsStoreTest;
 import org.eclipse.cft.server.tests.sts.util.ManagedTestSuite;
 
 import junit.framework.Test;
@@ -41,18 +49,18 @@ public class AllCloudFoundryTests {
 	public static Test suite(boolean heartbeat) {
 		TestSuite suite = new ManagedTestSuite(AllCloudFoundryTests.class.getName());
 
-		// suite.addTestSuite(BehaviourOperationsTest.class);
-		// suite.addTestSuite(ModuleRefreshTest.class);
-		// suite.addTestSuite(CloudFoundryServerBehaviourTest.class);
-		//
-		// suite.addTestSuite(CloudFoundryProxyTest.class);
-		// suite.addTestSuite(ServerCredentialsStoreTest.class);
-		// suite.addTestSuite(CloudFoundryServerTest.class);
-		// suite.addTestSuite(CloudUtilTest.class);
+		suite.addTestSuite(BehaviourOperationsTest.class);
+		suite.addTestSuite(ModuleRefreshTest.class);
+		suite.addTestSuite(CloudFoundryServerBehaviourTest.class);
+
+		suite.addTestSuite(CloudFoundryProxyTest.class);
+		suite.addTestSuite(ServerCredentialsStoreTest.class);
+		suite.addTestSuite(CloudFoundryServerTest.class);
+		suite.addTestSuite(CloudUtilTest.class);
 
 		suite.addTestSuite(DeploymentURLTest.class);
-		// suite.addTestSuite(CloudFoundryServicesTest.class);
-		// suite.addTestSuite(CloudFoundryClientConnectionTest.class);
+		suite.addTestSuite(CloudFoundryServicesTest.class);
+		suite.addTestSuite(CloudFoundryClientConnectionTest.class);
 
 		return suite;
 	}
