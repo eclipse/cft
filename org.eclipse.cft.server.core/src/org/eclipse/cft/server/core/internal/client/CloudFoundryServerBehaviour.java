@@ -1058,9 +1058,10 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		}
 		catch (CoreException ce) {
 			handlePublishError(ce);
-			return Status.CANCEL_STATUS;
+			return ce.getStatus();
 		}
-		return Status.OK_STATUS;
+		return CloudFoundryPlugin.getErrorStatus("Internal error: no module with name : " + moduleName //$NON-NLS-1$
+				+ " found to publish. Refresh or clean the server and try again.");//$NON-NLS-1$
 	}
 
 	/**
@@ -1082,11 +1083,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	protected void handlePublishError(CoreException e) {
-		// Do not automatically delete apps on errors, even
-		// if critical errors
-		// as there may be features that may allow an app to
-		// be redeployed without drag/drop (i.e. clicking
-		// "Start").
 		IStatus errorStatus = CloudFoundryPlugin
 				.getErrorStatus(NLS.bind(Messages.ERROR_FAILED_TO_PUSH_APP, e.getMessage()));
 
