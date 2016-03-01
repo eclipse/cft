@@ -35,10 +35,10 @@ import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
-import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
+import org.eclipse.cft.server.tests.util.CloudFoundryTestUtil;
 import org.eclipse.cft.server.tests.util.ModulesRefreshListener;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -54,7 +54,7 @@ import org.eclipse.wst.server.core.IModule;
  * {@link CloudFoundryServer} and {@link CloudFoundryServerBehaviour}
  *
  */
-public class ModuleRefreshTest extends AbstractRefreshCloudTest {
+public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 
 	public void testUpdateModulesServerBehaviourExistingCloudApp() throws Exception {
 		// Update modules API in behaviour will return a
@@ -74,7 +74,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		List<String> urls = new ArrayList<String>();
 		urls.add(harness.getExpectedDefaultURL(prefix));
-		client.createApplication(expectedAppName, new Staging(), CloudUtil.DEFAULT_MEMORY, urls,
+		client.createApplication(expectedAppName, new Staging(), CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, urls,
 				new ArrayList<String>());
 
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(expectedAppName);
@@ -91,7 +91,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		// Check the mapping is correct
 		assertEquals(updateModule.getName(), updateModule.getApplication().getName());
-		assertEquals(CloudUtil.DEFAULT_MEMORY, updateModule.getApplication().getMemory());
+		assertEquals(CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, updateModule.getApplication().getMemory());
 		assertEquals(updateModule.getDeploymentInfo().getMemory(), updateModule.getApplication().getMemory());
 	}
 
@@ -113,7 +113,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		List<String> urls = new ArrayList<String>();
 		urls.add(harness.getExpectedDefaultURL(prefix));
-		client.createApplication(expectedAppName, new Staging(), CloudUtil.DEFAULT_MEMORY, urls,
+		client.createApplication(expectedAppName, new Staging(), CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, urls,
 				new ArrayList<String>());
 
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(expectedAppName);
@@ -130,7 +130,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		// Check the mapping is correct
 		assertEquals(updateModule.getName(), updateModule.getApplication().getName());
-		assertEquals(CloudUtil.DEFAULT_MEMORY, updateModule.getApplication().getMemory());
+		assertEquals(CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, updateModule.getApplication().getMemory());
 		assertEquals(updateModule.getDeploymentInfo().getMemory(), updateModule.getApplication().getMemory());
 		assertEquals(1, updateModule.getInstanceCount());
 
@@ -168,7 +168,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		List<String> urls = new ArrayList<String>();
 		urls.add(harness.getExpectedDefaultURL(prefix));
-		client.createApplication(expectedAppName, new Staging(), CloudUtil.DEFAULT_MEMORY, urls,
+		client.createApplication(expectedAppName, new Staging(), CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, urls,
 				new ArrayList<String>());
 
 		// The tool has not refreshed after the app was created with an external
@@ -200,7 +200,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		List<String> urls = new ArrayList<String>();
 		urls.add(harness.getExpectedDefaultURL(prefix));
-		client.createApplication(expectedAppName, new Staging(), CloudUtil.DEFAULT_MEMORY, urls,
+		client.createApplication(expectedAppName, new Staging(), CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, urls,
 				new ArrayList<String>());
 
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(expectedAppName);
@@ -231,7 +231,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		// Check the mapping is correct
 		assertEquals(actualApp.getName(), appModule.getApplication().getName());
 
-		assertEquals(CloudUtil.DEFAULT_MEMORY, appModule.getApplication().getMemory());
+		assertEquals(CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, appModule.getApplication().getMemory());
 		assertEquals(appModule.getDeploymentInfo().getMemory(), appModule.getApplication().getMemory());
 
 		// It should match what is obtained through getExisting API
@@ -243,7 +243,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		// Check the mapping is correct
 		assertEquals(actualApp.getName(), existingCloudMod.getApplication().getName());
 
-		assertEquals(CloudUtil.DEFAULT_MEMORY, existingCloudMod.getApplication().getMemory());
+		assertEquals(CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, existingCloudMod.getApplication().getMemory());
 		assertEquals(existingCloudMod.getDeploymentInfo().getMemory(), existingCloudMod.getApplication().getMemory());
 
 		// Check the other existing Modules API
@@ -254,21 +254,9 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		// Check the mapping is correct
 		assertEquals(actualApp.getName(), sameExistingApp.getApplication().getName());
 
-		assertEquals(CloudUtil.DEFAULT_MEMORY, sameExistingApp.getApplication().getMemory());
+		assertEquals(CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, sameExistingApp.getApplication().getMemory());
 		assertEquals(sameExistingApp.getDeploymentInfo().getMemory(), sameExistingApp.getApplication().getMemory());
 
-	}
-
-	public void testModuleRefreshAllOp() throws Exception {
-		// Tests both the CloudFoundryServerBehaviour refresh handler as well as
-		// the test harness refresh listener
-		String prefix = "testModuleRefreshAllOp";
-		createWebApplicationProject();
-
-		deployAndWaitForDeploymentEvent(prefix);
-
-		asynchExecuteOperationWaitForRefresh(cloudServer.getBehaviour().operations().updateAll(), prefix,
-				CloudServerEvent.EVENT_SERVER_REFRESHED);
 	}
 
 	public void testModuleUpdatesExternalChanges() throws Exception {
@@ -292,7 +280,8 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		// Configure the test fixture for deployment.
 		// This step is a substitute for the Application deployment wizard
-		getTestFixture().configureForApplicationDeployment(appName, CloudUtil.DEFAULT_MEMORY, stopMode);
+		getTestFixture().configureForApplicationDeployment(appName, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY,
+				stopMode);
 
 		IModule module = getModule(project.getName());
 
@@ -316,7 +305,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		assertEquals(appModule.getDeployedApplicationName(), appModule.getApplication().getName());
 
 		// To test update on external changes, verify the current memory
-		assertEquals(CloudUtil.DEFAULT_MEMORY, appModule.getDeploymentInfo().getMemory());
+		assertEquals(CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, appModule.getDeploymentInfo().getMemory());
 
 		// Verify that the CloudApplication in the Cloud space exists through
 		// the list of all CloudApplications
@@ -400,7 +389,8 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		// Configure the test fixture for deployment.
 		// This step is a substitute for the Application deployment wizard
-		getTestFixture().configureForApplicationDeployment(appName, CloudUtil.DEFAULT_MEMORY, stopMode);
+		getTestFixture().configureForApplicationDeployment(appName, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY,
+				stopMode);
 
 		IModule module = getModule(project.getName());
 
@@ -447,12 +437,11 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		// Configure the test fixture for deployment.
 		// This step is a substitute for the Application deployment wizard
-		getTestFixture().configureForApplicationDeployment(appName, CloudUtil.DEFAULT_MEMORY, stopMode);
+		getTestFixture().configureForApplicationDeployment(appName, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY,
+				stopMode);
 
 		IModule module = getModule(project.getName());
 
-		// After deployment the module must exist and be mapped to an existing
-		// CloudApplication
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(appName);
 
 		assertNull(appModule);
@@ -482,56 +471,6 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 	}
 
-	public void testAllModuleUpdateExternalAppDeletion() throws Exception {
-
-		String prefix = "testAllModuleUpdateExternalAppDeletion";
-		String appName = harness.getDefaultWebAppName(prefix);
-		IProject project = createWebApplicationProject();
-
-		boolean stopMode = false;
-
-		// Configure the test fixture for deployment.
-		// This step is a substitute for the Application deployment wizard
-		getTestFixture().configureForApplicationDeployment(appName, CloudUtil.DEFAULT_MEMORY, stopMode);
-
-		IModule module = getModule(project.getName());
-
-		// Push the application.
-		cloudServer.getBehaviour().operations().applicationDeployment(new IModule[] { module }, ApplicationAction.PUSH)
-				.run(new NullProgressMonitor());
-
-		// After deployment the module must exist and be mapped to an existing
-		// CloudApplication
-		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(appName);
-
-		// Verify the module exists
-		assertEquals(appModule.getDeployedApplicationName(), appModule.getApplication().getName());
-
-		// Delete module externally and verify that module refresh picks up the
-		// change
-
-		// Create separate external client
-		CloudFoundryOperations client = getTestFixture().createExternalClient();
-		client.login();
-		client.deleteApplication(appName);
-
-		// Update through all-modules update, and also verify existing modules
-		// matches results
-		Map<String, CloudApplication> allApps = new HashMap<String, CloudApplication>();
-		cloudServer.updateModules(allApps, new HashMap<String, ApplicationStats>());
-
-		appModule = cloudServer.getExistingCloudModule(appName);
-		assertNull(appModule);
-
-		// Update through single-module update, and also verify that existing
-		// modules matches the results
-		appModule = serverBehavior.updateModuleWithBasicCloudInfo(appName, new NullProgressMonitor());
-		assertNull(appModule);
-
-		appModule = cloudServer.getExistingCloudModule(appName);
-		assertNull(appModule);
-	}
-
 	public void testSingleModuleUpdateExternalCreation() throws Exception {
 
 		String prefix = "testSingleModuleUpdateExternalCreation";
@@ -551,13 +490,14 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		List<String> urls = new ArrayList<String>();
 		urls.add(harness.getExpectedDefaultURL(prefix));
-		client.createApplication(appName, new Staging(), CloudUtil.DEFAULT_MEMORY, urls, new ArrayList<String>());
+		client.createApplication(appName, new Staging(), CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, urls,
+				new ArrayList<String>());
 
 		appModule = serverBehavior.updateModuleWithBasicCloudInfo(appName, new NullProgressMonitor());
 
 		assertEquals(appName, appModule.getDeployedApplicationName());
 		assertEquals(appModule.getDeployedApplicationName(), appModule.getApplication().getName());
-		assertEquals(CloudUtil.DEFAULT_MEMORY, appModule.getApplication().getMemory());
+		assertEquals(CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, appModule.getApplication().getMemory());
 		assertEquals(appModule.getDeploymentInfo().getMemory(), appModule.getApplication().getMemory());
 	}
 
@@ -566,8 +506,6 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		String prefix = "testAllModuleUpdateExternalCreation";
 		String appName = harness.getDefaultWebAppName(prefix);
 
-		// After deployment the module must exist and be mapped to an existing
-		// CloudApplication
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(appName);
 		assertNull(appModule);
 
@@ -580,7 +518,8 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		List<String> urls = new ArrayList<String>();
 		urls.add(harness.getExpectedDefaultURL(prefix));
-		client.createApplication(appName, new Staging(), CloudUtil.DEFAULT_MEMORY, urls, new ArrayList<String>());
+		client.createApplication(appName, new Staging(), CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, urls,
+				new ArrayList<String>());
 
 		CloudApplication application = client.getApplication(appName);
 		Map<String, CloudApplication> allApps = new HashMap<String, CloudApplication>();
@@ -597,7 +536,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 
 		assertEquals(appModule.getDeployedApplicationName(), appModule.getApplication().getName());
 		assertEquals(appName, appModule.getDeployedApplicationName());
-		assertEquals(CloudUtil.DEFAULT_MEMORY, appModule.getApplication().getMemory());
+		assertEquals(CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, appModule.getApplication().getMemory());
 		assertEquals(appModule.getDeploymentInfo().getMemory(), appModule.getApplication().getMemory());
 
 		// It should match what is obtained through update cloud module
@@ -605,7 +544,7 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		assertNotNull(appModule);
 		assertNotNull(appModule.getApplication());
 		assertEquals(appName, appModule.getDeployedApplicationName());
-		assertEquals(CloudUtil.DEFAULT_MEMORY, appModule.getApplication().getMemory());
+		assertEquals(CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, appModule.getApplication().getMemory());
 		assertEquals(appModule.getDeploymentInfo().getMemory(), appModule.getApplication().getMemory());
 	}
 
@@ -615,7 +554,8 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		String prefix = "testScheduleRefreshHandlerAllModules";
 		createWebApplicationProject();
 
-		CloudFoundryApplicationModule appModule = deployAndWaitForDeploymentEvent(prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApp(prefix, startApp);
 
 		// Test the server-wide refresh of all modules without specifying a
 		// selected module.
@@ -646,10 +586,9 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		String prefix = "testScheduleRefreshHandlerRefreshApplication";
 		createWebApplicationProject();
 
-		CloudFoundryApplicationModule appModule = deployAndWaitForDeploymentEvent(prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApp(prefix, startApp);
 
-		// Test the server-wide refresh of all modules therefore do not pass the
-		// app name
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(
 				appModule.getDeployedApplicationName(), cloudServer, CloudServerEvent.EVENT_APPLICATION_REFRESHED);
 
@@ -663,10 +602,9 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		String prefix = "testScheduleRefreshHandlerAllModuleInstances";
 		createWebApplicationProject();
 
-		CloudFoundryApplicationModule appModule = deployAndWaitForDeploymentEvent(prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApp(prefix, startApp);
 
-		// Test the server-wide refresh of all modules including refreshing
-		// instances of a selected module
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
 				CloudServerEvent.EVENT_SERVER_REFRESHED);
 
@@ -680,10 +618,9 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		String prefix = "testScheduleRefreshHandlerDeploymentChange";
 		createWebApplicationProject();
 
-		CloudFoundryApplicationModule appModule = deployAndWaitForAppStart(prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApp(prefix, startApp);
 
-		// Test the server-wide refresh of all modules including refreshing
-		// instances of a selected module
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
 				CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
 
@@ -692,15 +629,16 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
 	}
 
-	public void testFireEventAppChanged() throws Exception {
+	public void testApplicationRefreshedEvent() throws Exception {
 		// Tests the general event handler
 
-		String prefix = "testFireEventAppChanged";
+		String prefix = "testApplicationRefreshedEvent";
 		createWebApplicationProject();
 
 		String expectedAppName = harness.getDefaultWebAppName(prefix);
 
-		deployAndWaitForDeploymentEvent(prefix);
+		boolean startApp = true;
+		deployApp(prefix, startApp);
 
 		final IModule module = cloudServer.getExistingCloudModule(expectedAppName).getLocalModule();
 
@@ -720,29 +658,12 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_APPLICATION_REFRESHED);
 	}
 
-	public void testModuleRefreshApplicationOp() throws Exception {
-		// Tests both the CloudFoundryServerBehaviour refresh handler as well as
-		// the test harness refresh handler
-
-		String prefix = "testModuleRefreshModuleInstances";
-		createWebApplicationProject();
-
-		String expectedAppName = harness.getDefaultWebAppName(prefix);
-
-		deployAndWaitForDeploymentEvent(prefix);
-
-		final IModule module = cloudServer.getExistingCloudModule(expectedAppName).getLocalModule();
-
-		asynchExecuteOperationWaitForRefresh(cloudServer.getBehaviour().operations().updateDeployedModule(module),
-				prefix, CloudServerEvent.EVENT_APPLICATION_REFRESHED);
-
-	}
-
 	public void testModuleRefreshDuringServerConnect1() throws Exception {
 		String appPrefix = "testModuleRefreshDuringServerConnect1";
 		createWebApplicationProject();
 
-		deployAndWaitForDeploymentEvent(appPrefix);
+		boolean startApp = true;
+		deployApp(appPrefix, startApp);
 
 		// Cloud module should have been created.
 		Collection<CloudFoundryApplicationModule> appModules = cloudServer.getExistingCloudModules();
@@ -765,7 +686,6 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		appModules = cloudServer.getExistingCloudModules();
 		assertEquals(harness.getDefaultWebAppName(appPrefix),
 				appModules.iterator().next().getDeployedApplicationName());
-		waitApplicationStarted(appModules.iterator().next(), 0);
 	}
 
 	public void testModuleRefreshDuringServerConnect2() throws Exception {
@@ -790,7 +710,8 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		// wait for the app change event from the deploy first, and then
 		// schedule the second listener to
 		// listen to the expected refresh event
-		deployAndWaitForDeploymentEvent(appPrefix);
+		boolean startApp = true;
+		deployApp(appPrefix, startApp);
 
 		// Cloud module should have been created.
 		Collection<CloudFoundryApplicationModule> appModules = cloudServer.getExistingCloudModules();
@@ -828,8 +749,6 @@ public class ModuleRefreshTest extends AbstractRefreshCloudTest {
 		CloudFoundryApplicationModule appModule = appModules.iterator().next();
 
 		assertEquals(expectedAppName, appModule.getDeployedApplicationName());
-
-		waitApplicationStarted(appModule, 0);
 	}
 
 }

@@ -60,18 +60,19 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		CloudService serviceToCreate = createDefaultService();
 		String prefix = "testServiceBindingInDeploymentInfo";
 		createWebApplicationProject();
-		CloudFoundryApplicationModule appModule = deployAndWaitForDeploymentEvent(prefix);
+
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
 
 		CloudApplication app = appModule.getApplication();
 
-		asynchExecuteOperationWaitForRefresh(getBindServiceOp(appModule, serviceToCreate), prefix,
-				CloudServerEvent.EVENT_APPLICATION_REFRESHED);
+		getBindServiceOp(appModule, serviceToCreate).run(new NullProgressMonitor());
 
 		assertServiceBound(serviceToCreate.getName(), app);
 
-		// Cloud Module should also now be updated
-		CloudFoundryApplicationModule updatedModule = cloudServer.getExistingCloudModule(app.getName());
-
+		// Get Updated cloud module
+		CloudFoundryApplicationModule updatedModule = cloudServer.getBehaviour()
+				.updateDeployedModule(appModule.getLocalModule(), new NullProgressMonitor());
 		List<CloudService> boundServices = updatedModule.getDeploymentInfo().getServices();
 		assertEquals(1, boundServices.size());
 		assertEquals(serviceToCreate.getName(), boundServices.get(0).getName());
@@ -82,22 +83,21 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 
 		String prefix = "testServiceBindingUnbindingAppStarted";
 		createWebApplicationProject();
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
 
-		CloudFoundryApplicationModule appModule = deployAndWaitForDeploymentEvent(prefix);
+		getBindServiceOp(appModule, service).run(new NullProgressMonitor());
 
-		asynchExecuteOperationWaitForRefresh(getBindServiceOp(appModule, service), prefix,
-				CloudServerEvent.EVENT_APPLICATION_REFRESHED);
-
-		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
-
+		appModule = cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
+				new NullProgressMonitor());
 		assertServiceBound(service.getName(), appModule.getApplication());
 		assertEquals(1, appModule.getDeploymentInfo().getServices().size());
 		assertEquals(SERVICE_NAME, appModule.getDeploymentInfo().getServices().get(0).getName());
 
-		asynchExecuteOperationWaitForRefresh(getUnbindServiceOp(appModule, service), prefix,
-				CloudServerEvent.EVENT_APPLICATION_REFRESHED);
+		getUnbindServiceOp(appModule, service).run(new NullProgressMonitor());
 
-		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
+		appModule = cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
+				new NullProgressMonitor());
 
 		assertServiceNotBound(service.getName(), appModule.getApplication());
 		assertEquals(0, appModule.getDeploymentInfo().getServices().size());
@@ -110,24 +110,21 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		String prefix = "testServiceBindingUnbindingAppStopped";
 		createWebApplicationProject();
 
-		CloudFoundryApplicationModule appModule = deployAndWaitForDeploymentEvent(prefix, true);
+		boolean startApp = false;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
 
-		waitForAppToStop(appModule);
+		getBindServiceOp(appModule, service).run(new NullProgressMonitor());
 
-		asynchExecuteOperationWaitForRefresh(getBindServiceOp(appModule, service), prefix,
-				CloudServerEvent.EVENT_APPLICATION_REFRESHED);
-
-		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
-
+		appModule = cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
+				new NullProgressMonitor());
 		assertServiceBound(service.getName(), appModule.getApplication());
 		assertEquals(1, appModule.getDeploymentInfo().getServices().size());
 		assertEquals(SERVICE_NAME, appModule.getDeploymentInfo().getServices().get(0).getName());
 
-		asynchExecuteOperationWaitForRefresh(getUnbindServiceOp(appModule, service), prefix,
-				CloudServerEvent.EVENT_APPLICATION_REFRESHED);
+		getUnbindServiceOp(appModule, service).run(new NullProgressMonitor());
 
-		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
-
+		appModule = cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
+				new NullProgressMonitor());
 		assertServiceNotBound(service.getName(), appModule.getApplication());
 		assertEquals(0, appModule.getDeploymentInfo().getServices().size());
 	}
@@ -137,8 +134,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		// creation triggers a service change event
 
 		CloudService service = getCloudServiceToCreate(SERVICE_NAME, "elephantsql", "turtle");
-		asynchExecuteOperationWaitForRefresh(serverBehavior.operations().createServices(new CloudService[] { service }),
-				null, CloudServerEvent.EVENT_UPDATE_SERVICES);
+		serverBehavior.operations().createServices(new CloudService[] { service }).run(new NullProgressMonitor());
 		assertServiceExists(service);
 
 		List<CloudService> existingServices = serverBehavior.getServices(new NullProgressMonitor());
@@ -156,8 +152,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		List<String> services = new ArrayList<String>();
 		services.add(serviceName);
 
-		asynchExecuteOperationWaitForRefresh(serverBehavior.operations().deleteServices(services), null,
-				CloudServerEvent.EVENT_UPDATE_SERVICES);
+		serverBehavior.operations().deleteServices(services).run(new NullProgressMonitor());
 
 		assertServiceNotExist(SERVICE_NAME);
 

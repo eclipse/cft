@@ -31,7 +31,7 @@ import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
-public class AbstractCloudFoundryServicesTest extends AbstractRefreshCloudTest {
+public class AbstractCloudFoundryServicesTest extends AbstractAsynchCloudTest {
 
 	protected void deleteService(CloudService service) throws CoreException {
 		harness.deleteService(service);

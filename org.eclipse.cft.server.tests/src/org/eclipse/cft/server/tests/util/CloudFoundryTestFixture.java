@@ -40,7 +40,6 @@ import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
@@ -449,27 +448,30 @@ public class CloudFoundryTestFixture {
 	 * @throws CoreException
 	 */
 	public void baseConfiguration() throws Exception {
-		configureForApplicationDeployment(null, CloudUtil.DEFAULT_MEMORY, false);
+		configureForApplicationDeployment(null, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, false);
 	}
 
 	/**
 	 * Configures a test fixture to deploy an application with the given
 	 * application name. The full application name must be used.
 	 * @param fullApplicationName
-	 * @param deployStopped true if the application should be deployed in
-	 * stopped state. False if it should also be started
+	 * @param startApp set to false if app is not to be started after being
+	 * created and pushed to CF.
 	 * @return
 	 * @throws CoreException
 	 */
-	public void configureForApplicationDeployment(String fullApplicationName, int memory, boolean deployStopped)
+	public void configureForApplicationDeployment(String fullApplicationName, int memory, boolean startApp)
 			throws Exception {
-		CloudFoundryPlugin.setCallback(new TestCallback(fullApplicationName, memory, deployStopped));
+		configureForApplicationDeployment(fullApplicationName, memory, startApp, null, null);
 	}
 
-	public void configureForApplicationDeployment(String fullApplicationName, int memory, boolean deployStopped,
+	public void configureForApplicationDeployment(String fullApplicationName, boolean startApp) throws Exception {
+		configureForApplicationDeployment(fullApplicationName, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp);
+	}
+
+	public void configureForApplicationDeployment(String fullApplicationName, int memory, boolean startApp,
 			List<EnvironmentVariable> variables, List<CloudService> services) throws Exception {
-		CloudFoundryPlugin
-				.setCallback(new TestCallback(fullApplicationName, memory, deployStopped, variables, services));
+		CloudFoundryPlugin.setCallback(new TestCallback(fullApplicationName, memory, startApp, variables, services));
 	}
 
 	private final ServerHandler handler;

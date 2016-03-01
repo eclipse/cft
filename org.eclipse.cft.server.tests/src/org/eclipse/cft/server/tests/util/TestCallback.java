@@ -49,33 +49,26 @@ public class TestCallback extends CloudFoundryCallback {
 
 	private final int memory;
 
-	private final boolean deployStopped;
+	private final boolean startApp;
 
 	private List<EnvironmentVariable> variables;
 
 	private List<CloudService> services;
 
-	public TestCallback(String appName, int memory, boolean deployStopped, List<EnvironmentVariable> variables,
+	public TestCallback(String appName, int memory, boolean startApp, List<EnvironmentVariable> variables,
 			List<CloudService> services) {
 		this.appName = appName;
 		this.url = null;
-		this.deployStopped = deployStopped;
+		this.startApp = startApp;
 		this.memory = memory;
 		this.variables = variables;
 		this.services = services;
 	}
 
-	public TestCallback(String appName, int memory, boolean deployStopped) {
-		this.appName = appName;
-		this.url = null;
-		this.deployStopped = deployStopped;
-		this.memory = memory;
-	}
-
 	public TestCallback(String appName, String url, int memory) {
 		this.appName = appName;
 		this.url = url;
-		deployStopped = false;
+		startApp = true;
 		this.memory = memory;
 	}
 
@@ -152,7 +145,7 @@ public class TestCallback extends CloudFoundryCallback {
 
 		copy.save();
 
-		ApplicationAction mode = deployStopped ? ApplicationAction.STOP : ApplicationAction.START;
+		ApplicationAction mode = startApp ? ApplicationAction.START : ApplicationAction.STOP;
 
 		return new DeploymentConfiguration(mode);
 	}

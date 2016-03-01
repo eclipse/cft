@@ -28,14 +28,12 @@ import java.util.Map;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
-import org.eclipse.cft.server.core.internal.CloudServerEvent;
-import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
-import org.eclipse.cft.server.tests.util.WaitForApplicationToStopOp;
+import org.eclipse.cft.server.tests.util.CloudFoundryTestUtil;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.wst.server.core.IModule;
@@ -51,28 +49,29 @@ import org.eclipse.wst.server.core.internal.Server;
  * deployments as well as waiting for refresh operations to complete.
  *
  */
-public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
+public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
-	public void testAsynchInstanceUpdate() throws Exception {
+	public void testInstanceUpdate() throws Exception {
 		// Test asynchronous Application instance update and that it triggers
 		// a module refresh event
-		String prefix = "testAsynchInstanceUpdate";
+		String prefix = "testInstanceUpdate";
 
 		String expectedAppName = harness.getDefaultWebAppName(prefix);
 
 		createWebApplicationProject();
-		CloudFoundryApplicationModule appModule = deployAndWaitForDeploymentEvent(prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
 
 		assertEquals(1, appModule.getApplicationStats().getRecords().size());
 		assertEquals(1, appModule.getInstanceCount());
 		assertEquals(1, appModule.getInstancesInfo().getInstances().size());
 		assertEquals(1, appModule.getDeploymentInfo().getInstances());
 
-		asynchExecuteOperationWaitForRefresh(cloudServer.getBehaviour().operations().instancesUpdate(appModule, 2),
-				prefix, CloudServerEvent.EVENT_INSTANCES_UPDATED);
+		cloudServer.getBehaviour().operations().instancesUpdate(appModule, 2).run(new NullProgressMonitor());
 
 		// Get updated module
-		appModule = cloudServer.getExistingCloudModule(expectedAppName);
+		appModule = cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
+				new NullProgressMonitor());
 
 		assertEquals(2, appModule.getApplicationStats().getRecords().size());
 		assertEquals(2, appModule.getInstanceCount());
@@ -84,24 +83,21 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 		assertEquals(2, actualApp.getInstances());
 	}
 
-	public void testAsynchMemoryUpdate() throws Exception {
-		// Test asynchronous app memory update and that it triggers
-		// a module refresh event
-		String prefix = "testAsynchMemoryUpdate";
+	public void testMemoryUpdate() throws Exception {
 
-		String expectedAppName = harness.getDefaultWebAppName(prefix);
+		String prefix = "testMemoryUpdate";
 
 		createWebApplicationProject();
-		CloudFoundryApplicationModule appModule = deployAndWaitForDeploymentEvent(prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
 
 		final int changedMemory = 678;
 
-		asynchExecuteOperationWaitForRefresh(
-				cloudServer.getBehaviour().operations().memoryUpdate(appModule, changedMemory), prefix,
-				CloudServerEvent.EVENT_APPLICATION_REFRESHED);
+		cloudServer.getBehaviour().operations().memoryUpdate(appModule, changedMemory).run(new NullProgressMonitor());
 
 		// Get updated module
-		appModule = cloudServer.getExistingCloudModule(expectedAppName);
+		appModule = cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
+				new NullProgressMonitor());
 		// Verify that the same module has been updated
 		assertEquals(changedMemory, appModule.getDeploymentInfo().getMemory());
 		assertEquals(changedMemory, appModule.getApplication().getMemory());
@@ -109,15 +105,15 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 		assertEquals(changedMemory, appModule.getApplication().getMemory());
 	}
 
-	public void testAsynchEnvVarUpdate() throws Exception {
-		// Test asynchronous app memory update and that it triggers
-		// a module refresh event
-		String prefix = "testAsynchEnvVarUpdate";
+	public void testEnvVarUpdate() throws Exception {
+
+		String prefix = "testEnvVarUpdate";
 
 		String expectedAppName = harness.getDefaultWebAppName(prefix);
 
 		createWebApplicationProject();
-		CloudFoundryApplicationModule appModule = deployAndWaitForDeploymentEvent(prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
 
 		EnvironmentVariable variable = new EnvironmentVariable();
 		variable.setVariable("JAVA_OPTS");
@@ -128,14 +124,12 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 		cp.setEnvVariables(vars);
 		cp.save();
 
-		asynchExecuteOperationWaitForRefresh(
-				cloudServer.getBehaviour().operations().environmentVariablesUpdate(appModule.getLocalModule(),
-						appModule.getDeployedApplicationName(), cp.getEnvVariables()),
-				prefix, CloudServerEvent.EVENT_APPLICATION_REFRESHED);
+		cloudServer.getBehaviour().operations().environmentVariablesUpdate(appModule.getLocalModule(),
+				appModule.getDeployedApplicationName(), cp.getEnvVariables()).run(new NullProgressMonitor());
 
 		// Get updated module
-		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
-
+		appModule = cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
+				new NullProgressMonitor());
 		Map<String, String> actualVars = getUpdatedApplication(expectedAppName).getEnvAsMap();
 		assertEquals(vars.size(), actualVars.size());
 		Map<String, String> expectedAsMap = new HashMap<String, String>();
@@ -157,72 +151,70 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 		}
 	}
 
-	public void testAsynchAppURLUpdate() throws Exception {
-		// Test asynchronous URL update of an application and that it triggers
-		// a module refresh event
-		String prefix = "testAsynchAppURLUpdate";
+	public void testAppURLUpdate() throws Exception {
+
+		String prefix = "testAppURLUpdate";
 		final String expectedAppName = harness.getDefaultWebAppName(prefix);
 
 		createWebApplicationProject();
-		CloudFoundryApplicationModule appModule = deployAndWaitForDeploymentEvent(prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
 
 		String expectedURL = harness.getExpectedDefaultURL(prefix);
 		assertEquals(expectedURL, appModule.getDeploymentInfo().getUris().get(0));
 
-		String changedURL = harness.getExpectedDefaultURL("changedURtestCloudModuleRefreshURLUpdate");
+		String changedURL = harness.getExpectedDefaultURL("changedtestAppURLUpdate");
 		final List<String> expectedUrls = new ArrayList<String>();
 		expectedUrls.add(changedURL);
 
-		asynchExecuteOperationWaitForRefresh(
-				cloudServer.getBehaviour().operations().mappedUrlsUpdate(expectedAppName, expectedUrls), prefix,
-				CloudServerEvent.EVENT_APPLICATION_REFRESHED);
+		cloudServer.getBehaviour().operations().mappedUrlsUpdate(expectedAppName, expectedUrls)
+				.run(new NullProgressMonitor());
 
 		// Get updated module
-		appModule = cloudServer.getExistingCloudModule(expectedAppName);
+		appModule = cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
+				new NullProgressMonitor());
 		assertEquals(expectedUrls, appModule.getDeploymentInfo().getUris());
 		assertEquals(expectedUrls, appModule.getApplication().getUris());
 	}
 
-	public void testAsynchStopApplication() throws Exception {
-		// Test asynchronous application stop and that it triggers
-		// a module refresh event
-		String prefix = "testAsynchStopApplication";
+	public void testStopApplication() throws Exception {
+		String prefix = "testStopApplication";
 
 		createWebApplicationProject();
 		// Deploy and start the app without the refresh listener
-		CloudFoundryApplicationModule appModule = deployAndWaitForAppStart(prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
 
-		asynchExecuteOperationWaitForRefresh(
-				cloudServer.getBehaviour().operations().applicationDeployment(appModule, ApplicationAction.STOP),
-				prefix, CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
+		assertTrue("Expected application to be started",
+				appModule.getApplication().getState().equals(AppState.STARTED));
+		assertTrue("Expected application to be started", appModule.getState() == Server.STATE_STARTED);
+
+		// Stop the app
+		cloudServer.getBehaviour().operations().applicationDeployment(appModule, ApplicationAction.STOP)
+				.run(new NullProgressMonitor());
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
-		boolean stopped = new WaitForApplicationToStopOp(cloudServer, appModule).run(new NullProgressMonitor());
-		assertTrue("Expected application to be stopped", stopped);
 		assertTrue("Expected application to be stopped",
 				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
 
 	}
 
-	public void testAsynchStartApplication() throws Exception {
-		// Test asynchronous application stop and that it triggers
-		// a module refresh event
-		String prefix = "testAsynchStartApplication";
+	public void testStartApplication() throws Exception {
+
+		String prefix = "testStartApplication";
 
 		createWebApplicationProject();
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, true);
+		boolean startApplication = false;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApplication);
 
 		assertTrue("Expected application to be stopped",
 				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
 
-		asynchExecuteOperationWaitForRefresh(
-				cloudServer.getBehaviour().operations().applicationDeployment(appModule, ApplicationAction.START),
-				prefix, CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
-
-		waitForApplicationToStart(appModule.getLocalModule(), prefix);
+		cloudServer.getBehaviour().operations().applicationDeployment(appModule, ApplicationAction.START)
+				.run(new NullProgressMonitor());
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
@@ -240,22 +232,20 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 
 	}
 
-	public void testAsychRestartApplication() throws Exception {
+	public void testRestartApplication() throws Exception {
 
-		String prefix = "testAsychRestartApplication";
+		String prefix = "testRestartApplication";
 
 		createWebApplicationProject();
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, true);
+		boolean startApp = false;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
 
 		assertTrue("Expected application to be stopped",
 				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
 
-		asynchExecuteOperationWaitForRefresh(
-				cloudServer.getBehaviour().operations().applicationDeployment(appModule, ApplicationAction.RESTART),
-				prefix, CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
-
-		waitForApplicationToStart(appModule.getLocalModule(), prefix);
+		cloudServer.getBehaviour().operations().applicationDeployment(appModule, ApplicationAction.RESTART)
+				.run(new NullProgressMonitor());
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
@@ -273,21 +263,21 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 
 	}
 
-	public void testAsynchUpdateRestartApplication() throws Exception {
+	public void testUpdateRestartApplication() throws Exception {
 
-		String prefix = "testAsynchUpdateRestartApplication";
+		String prefix = "testUpdateRestartApplication";
 
 		createWebApplicationProject();
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, true);
+
+		boolean startApplication = false;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApplication);
 
 		assertTrue("Expected application to be stopped",
 				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
 
-		asynchExecuteOperationWaitForRefresh(cloudServer.getBehaviour().operations().applicationDeployment(appModule,
-				ApplicationAction.UPDATE_RESTART), prefix, CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
-
-		waitForApplicationToStart(appModule.getLocalModule(), prefix);
+		cloudServer.getBehaviour().operations().applicationDeployment(appModule, ApplicationAction.UPDATE_RESTART)
+				.run(new NullProgressMonitor());
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
@@ -304,12 +294,14 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 		assertEquals("Expected instance stats for running app", 1, appModule.getApplicationStats().getRecords().size());
 	}
 
-	public void testAsynchPushApplicationStopMode() throws Exception {
+	public void testPushApplicationStopMode() throws Exception {
 
-		String prefix = "testAsynchPushApplicationStopMode";
+		String prefix = "testPushApplicationStopMode";
 		String expectedAppName = harness.getDefaultWebAppName(prefix);
 		IProject project = createWebApplicationProject();
-		getTestFixture().configureForApplicationDeployment(expectedAppName, CloudUtil.DEFAULT_MEMORY, true);
+		boolean startApp = false;
+		getTestFixture().configureForApplicationDeployment(expectedAppName,
+				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp);
 
 		IModule module = getModule(project.getName());
 
@@ -323,13 +315,15 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
 	}
 
-	public void testAsynchPushApplicationStartMode() throws Exception {
+	public void testPushApplicationStartMode() throws Exception {
 
-		String prefix = "testAsynchPushApplicationStartMode";
+		String prefix = "testPushApplicationStartMode";
 
 		String expectedAppName = harness.getDefaultWebAppName(prefix);
 		IProject project = createWebApplicationProject();
-		getTestFixture().configureForApplicationDeployment(expectedAppName, CloudUtil.DEFAULT_MEMORY, false);
+		boolean startApp = true;
+
+		getTestFixture().configureForApplicationDeployment(expectedAppName, startApp);
 
 		IModule module = getModule(project.getName());
 
@@ -337,10 +331,6 @@ public class BehaviourOperationsTest extends AbstractRefreshCloudTest {
 				.run(new NullProgressMonitor());
 
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(expectedAppName);
-
-		waitForApplicationToStart(appModule.getLocalModule(), prefix);
-
-		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
 		assertTrue("Expected application to be started",
 				appModule.getApplication().getState().equals(AppState.STARTED));

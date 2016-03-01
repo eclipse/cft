@@ -36,9 +36,9 @@ import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
+import org.eclipse.cft.server.tests.util.CloudFoundryTestUtil;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
@@ -87,9 +87,9 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		createWebApplicationProject();
 
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, CloudUtil.DEFAULT_MEMORY, false, vars,
-				servicesToBind);
-		waitForApplicationToStart(appModule.getLocalModule(), prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix,
+				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, vars, servicesToBind);
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
@@ -115,7 +115,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		assertEquals(expectedUrl, info.getUris().get(0));
 
 		assertEquals(actualApp.getMemory(), info.getMemory());
-		assertEquals(CloudUtil.DEFAULT_MEMORY, info.getMemory());
+		assertEquals(CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, info.getMemory());
 
 		assertEquals("JAVA_OPTS", appModule.getDeploymentInfo().getEnvVariables().get(0).getVariable());
 		assertEquals("-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n",
@@ -141,7 +141,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		// This step is a substitute for the Application deployment wizard
 		String projectName = harness.getDefaultWebAppProjectName();
 		String expectedAppName = harness.getDefaultWebAppName(appPrefix);
-		getTestFixture().configureForApplicationDeployment(expectedAppName, CloudUtil.DEFAULT_MEMORY, false);
+		getTestFixture().configureForApplicationDeployment(expectedAppName,
+				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, false);
 
 		IModule module = getModule(projectName);
 
@@ -173,7 +174,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		// This step is a substitute for the Application deployment wizard
 		String projectName = harness.getDefaultWebAppProjectName();
 		String expectedAppName = harness.getDefaultWebAppName(appPrefix);
-		getTestFixture().configureForApplicationDeployment(expectedAppName, CloudUtil.DEFAULT_MEMORY, false);
+		getTestFixture().configureForApplicationDeployment(expectedAppName,
+				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, false);
 
 		IModule module = getModule(projectName);
 
@@ -192,24 +194,22 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 	}
 
-	public void testCreateDeployAppHelpersStartMode() throws Exception {
+	public void testModuleStartStateInServer() throws Exception {
 		// Tests whether the helper method to deploy and start an app matches
 		// expected
 		// app state.
-		String prefix = "testCreateDeployAppHelpersStartMode";
+		String prefix = "testModuleStartStateInServer";
 		createWebApplicationProject();
 
-		// Invoke the helper method
-		deployAndWaitForAppStart(prefix);
+		boolean startApp = true;
+
+		deployApplication(prefix, startApp);
 
 		// Verify it is deployed
 		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(prefix);
 		assertNotNull("Expected non-null Cloud Foundry application module", appModule);
 
 		IModule module = getModule(harness.getDefaultWebAppProjectName());
-
-		// Verify the app is running
-		waitForApplicationToStart(module, prefix);
 
 		// Now CHECK that the expected conditions in the helper method assert to
 		// expected values
@@ -232,9 +232,9 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		String prefix = "testCreateDeployAppHelpersStopMode";
 		createWebApplicationProject();
 
-		boolean stopMode = true;
+		boolean startApp = false;
 
-		deployApplication(prefix, stopMode);
+		deployApplication(prefix, startApp);
 
 		// Invoke the helper method
 		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(prefix);
@@ -269,27 +269,30 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		// Tests WST overridden method in Cloud behaviour to stop modules
 		String prefix = "testWSTBehaviourStopModule";
 		createWebApplicationProject();
-		CloudFoundryApplicationModule appModule = deployAndWaitForAppStart(prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+
+		assertTrue("Expected application to be started",
+				appModule.getApplication().getState().equals(AppState.STARTED));
 
 		serverBehavior.stopModule(new IModule[] { appModule.getLocalModule() }, new NullProgressMonitor());
 
-		waitForAppToStop(appModule);
-
-		// Check the helper method assertions have correct values
+		// Check stop values are correct both in the CloudApplication and the
+		// Cloud module wrapper
 		assertTrue("Expected application to be stopped",
 				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == IServer.STATE_STOPPED);
 	}
 
-	public void testWSTBehaviourStartStop() throws Exception {
-		// Tests WST overridden methods in the Cloud behaviour
-		String prefix = "testWSTBehaviourStartStop";
+	public void testStartAndStopModule() throws Exception {
+		String prefix = "testStartAndStopModule";
 		createWebApplicationProject();
-		CloudFoundryApplicationModule appModule = deployAndWaitForAppStart(prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+
+		assertTrue("Expected application to be started", appModule.getState() == IServer.STATE_STARTED);
 
 		serverBehavior.stopModule(new IModule[] { appModule.getLocalModule() }, new NullProgressMonitor());
-
-		waitForAppToStop(appModule);
 
 		assertTrue("Expected application to be stopped",
 				appModule.getApplication().getState().equals(AppState.STOPPED));
@@ -297,23 +300,23 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		serverBehavior.startModule(new IModule[] { appModule.getLocalModule() }, new NullProgressMonitor());
 
-		waitApplicationStarted(appModule, 0);
-
 		assertEquals(IServer.STATE_STARTED, appModule.getState());
 		assertEquals(AppState.STARTED, appModule.getApplication().getState());
 	}
 
-	public void testApplicationInstanceRunningTracker() throws Exception {
+	public void testApplicationStartedInstanceRunningTracker() throws Exception {
 		// Tests the server behaviour API that checks if the application is
 		// running
 		String prefix = "testApplicationInstanceRunningTracker";
 		createWebApplicationProject();
 
-		CloudFoundryApplicationModule appModule = deployAndWaitForAppStart(prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
 
+		// The tracker should detect the application is started
 		int state = new ApplicationInstanceRunningTracker(appModule, cloudServer).track(new NullProgressMonitor());
 
-		assertTrue("Expected application to be started, but server behaviour indicated it is stopped",
+		assertTrue("Expected application to be started, but instance tracker indicated it is stopped",
 				state == IServer.STATE_STARTED);
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
@@ -333,13 +336,35 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		assertEquals(InstanceState.RUNNING, stats.get(0).getState());
 	}
 
+	public void testApplicationStoppedInstanceRunningTracker() throws Exception {
+
+		String prefix = "testApplicationStoppedInstanceRunningTracker";
+		createWebApplicationProject();
+
+		// Ensure app is deployed in STOP mode
+		boolean startApp = false;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+
+		// The tracker should detect the application is started
+		int state = new ApplicationInstanceRunningTracker(appModule, cloudServer).track(new NullProgressMonitor());
+
+		assertTrue("Expected application to be stopped, but instance tracker indicates it is started",
+				state == IServer.STATE_STOPPED);
+
+		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
+
+		// Verify start states in the module are correct
+		assertTrue(appModule.getState() == IServer.STATE_STOPPED);
+		assertTrue(appModule.getApplication().getState() == AppState.STOPPED);
+	}
+
 	public void testApplicationModuleRunningState() throws Exception {
-		// Tests the server behaviour API that checks if the application is
-		// running
+
 		String prefix = "testApplicationModuleRunningState";
 		createWebApplicationProject();
 
-		CloudFoundryApplicationModule appModule = deployAndWaitForAppStart(prefix);
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
 
 		// The following are the expected conditions for the server behaviour to
 		// determine that the app is running
@@ -369,7 +394,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 			CloudCredentials credentials = new CloudCredentials(userName, "invalid-password");
 			connectClient(credentials);
 
-			deployAndWaitForAppStart(prefix);
+			boolean startApp = true;
+			deployApplication(prefix, startApp);
 
 			fail("Expected CoreException due to invalid password");
 		}
@@ -380,8 +406,9 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		connectClient();
 
 		// Should now deploy without errors
-		deployAndWaitForAppStart(prefix);
-
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		assertTrue(appModule.getState() == IServer.STATE_STARTED);
 	}
 
 	public void testStartModuleInvalidUsername() throws Exception {
@@ -396,7 +423,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 			CloudCredentials credentials = new CloudCredentials("invalidusername", cloudServer.getPassword());
 			connectClient(credentials);
 
-			deployAndWaitForAppStart(prefix);
+			boolean startApp = true;
+			deployApplication(prefix, startApp);
 
 			fail("Expected CoreException due to invalid password");
 		}
@@ -407,8 +435,9 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		connectClient();
 
 		// Should now deploy without errors
-		deployAndWaitForAppStart(prefix);
-
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		assertTrue(appModule.getState() == IServer.STATE_STARTED);
 	}
 
 	/*
@@ -423,7 +452,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		String appName = harness.getDefaultWebAppName(prefix);
 		createWebApplicationProject();
 
-		deployAndWaitForAppStart(prefix);
+		boolean startApp = true;
+		deployApplication(prefix, startApp);
 
 		List<CloudApplication> applications = serverBehavior.getApplications(new NullProgressMonitor());
 		boolean found = false;
@@ -463,7 +493,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		String appPrefix = "testCloudModulesClearedOnDisconnect";
 		createWebApplicationProject();
-		deployAndWaitForAppStart(appPrefix);
+		boolean startApp = true;
+		deployApplication(appPrefix, startApp);
 
 		// Cloud module should have been created.
 		Collection<CloudFoundryApplicationModule> appModules = cloudServer.getExistingCloudModules();

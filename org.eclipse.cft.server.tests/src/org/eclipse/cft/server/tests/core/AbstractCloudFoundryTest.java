@@ -20,32 +20,28 @@
  ********************************************************************************/
 package org.eclipse.cft.server.tests.core;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
-import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.tests.server.TestServlet;
 import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture;
 import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture.Harness;
-import org.eclipse.cft.server.tests.util.WaitForApplicationToStopOp;
+import org.eclipse.cft.server.tests.util.CloudFoundryTestUtil;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
-import org.eclipse.wst.server.core.internal.Server;
 
 import junit.framework.TestCase;
 
@@ -140,50 +136,6 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 		harness.dispose();
 	}
 
-	protected void waitForApplicationToStart(IModule module, String prefix) throws Exception {
-
-		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
-
-		waitApplicationStarted(appModule, 0);
-		// Verify that the Application URL is set
-		List<String> uris = appModule.getApplication().getUris();
-		assertEquals(Collections.singletonList(harness.getExpectedDefaultURL(prefix)), uris);
-	}
-
-	protected void waitApplicationStarted(CloudFoundryApplicationModule appModule, int instance) throws Exception {
-
-		long timeout = getTestFixture().getAppStartingTimeout();
-		long waitTime = 2000;
-
-		CloudFoundryApplicationModule startedModule = cloudServer.getBehaviour()
-				.updateModuleWithAllCloudInfo(appModule.getDeployedApplicationName(), new NullProgressMonitor());
-
-		while (startedModule.getState() != IServer.STATE_STARTED && timeout > 0) {
-			try {
-				Thread.sleep(waitTime);
-			}
-			catch (InterruptedException e) {
-
-			}
-			timeout -= waitTime;
-
-			startedModule = cloudServer.getBehaviour()
-					.updateModuleWithAllCloudInfo(appModule.getDeployedApplicationName(), new NullProgressMonitor());
-
-		}
-
-		assertEquals("Timed out waiting for application " + appModule.getDeployedApplicationName() + " to start",
-				IServer.STATE_STARTED, startedModule.getState());
-
-		// Check that the desired application state is also STARTED.
-		assertEquals(AppState.STARTED, appModule.getApplication().getState());
-
-		// Check that the instance is indeed running
-		assertEquals("Expected running application instance: " + instance, InstanceState.RUNNING,
-				appModule.getApplicationStats().getRecords().get(instance).getState());
-
-	}
-
 	/**
 	 *
 	 * Creates an application project based on the default project name defined
@@ -217,16 +169,6 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 		assertNotNull(module);
 		assertTrue(module.getName().equals(projectName));
 		return project;
-
-	}
-
-	protected void waitForAppToStop(CloudFoundryApplicationModule appModule) throws Exception {
-
-		boolean stopped = new WaitForApplicationToStopOp(cloudServer, appModule).run(new NullProgressMonitor());
-		assertTrue("Expected application to be stopped", stopped);
-		assertTrue("Expected application to be stopped",
-				appModule.getApplication().getState().equals(AppState.STOPPED));
-		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
 
 	}
 
@@ -298,31 +240,17 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 	}
 
 	/**
-	 * Deploys application and starts it in the CF server. Verifies the
-	 * application is running.
-	 * @param appPrefix
-	 * @return deployed app.
-	 * @throws Exception
-	 */
-	protected CloudFoundryApplicationModule deployAndWaitForAppStart(String appPrefix) throws Exception {
-		CloudFoundryApplicationModule appModule = deployApplication(appPrefix, false);
-		waitForApplicationToStart(appModule.getLocalModule(), appPrefix);
-		return appModule;
-	}
-
-	/**
 	 * Deploys an app with the given prefix name and asserts it is deployed
 	 * @param appPrefix
 	 * @param deployStopped if the app is to be deployed in stopped mode.
 	 * @return
 	 * @throws Exception
 	 */
-	protected CloudFoundryApplicationModule deployApplication(String appPrefix, boolean deployStopped)
-			throws Exception {
-		return deployApplication(appPrefix, CloudUtil.DEFAULT_MEMORY, deployStopped, null, null);
+	protected CloudFoundryApplicationModule deployApplication(String appPrefix, boolean startApp) throws Exception {
+		return deployApplication(appPrefix, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, null, null);
 	}
 
-	protected CloudFoundryApplicationModule deployApplication(String appPrefix, int memory, boolean deployStopped,
+	protected CloudFoundryApplicationModule deployApplication(String appPrefix, int memory, boolean startApp,
 			List<EnvironmentVariable> variables, List<CloudService> services) throws Exception {
 
 		String projectName = harness.getDefaultWebAppProjectName();
@@ -331,13 +259,21 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 		// Configure the test fixture for deployment.
 		// This step is a substitute for the Application deployment wizard
-		getTestFixture().configureForApplicationDeployment(expectedAppName, memory, deployStopped, variables, services);
+		getTestFixture().configureForApplicationDeployment(expectedAppName, memory, startApp, variables, services);
 
 		IModule module = getModule(projectName);
 
 		assertNotNull("Expected non-null IModule when deploying application", module);
 
-		serverBehavior.publish(IServer.PUBLISH_INCREMENTAL, new NullProgressMonitor());
+		// Do not test the WTP publish path as errors do not propagate to the
+		// test case and failures will not correctly be shown in test results.
+		// serverBehavior.publish(IServer.PUBLISH_INCREMENTAL, new
+		// NullProgressMonitor());
+
+		IStatus status = serverBehavior.publishAdd(module.getName(), new NullProgressMonitor());
+		if (!status.isOK()) {
+			throw new CoreException(status);
+		}
 
 		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(appPrefix);
 
