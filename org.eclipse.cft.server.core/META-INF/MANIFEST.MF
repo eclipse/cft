@@ -64,9 +64,6 @@ Export-Package: org.cloudfoundry.client.lib,
  org.eclipse.cft.server.core.internal.jrebel,
  org.eclipse.cft.server.core.internal.log,
  org.eclipse.cft.server.core.internal.pivotal,
- org.eclipse.cft.server.core.internal.spaces,
- org.springframework.security.oauth2.client.resource,
- org.springframework.security.oauth2.common,
- org.springframework.web.client
+ org.eclipse.cft.server.core.internal.spaces
 Import-Package: com.sun.jdi.connect,
  org.eclipse.jface.operation

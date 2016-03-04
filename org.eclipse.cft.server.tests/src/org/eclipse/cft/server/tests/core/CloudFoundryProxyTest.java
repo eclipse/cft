@@ -40,7 +40,6 @@ import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
-import org.springframework.web.client.ResourceAccessException;
 
 public class CloudFoundryProxyTest extends AbstractAsynchCloudTest {
 
@@ -58,6 +57,7 @@ public class CloudFoundryProxyTest extends AbstractAsynchCloudTest {
 
 				// Create app. Should fail
 				CloudFoundryOperations client = null;
+				Exception error = null;
 				try {
 					List<String> uris = new ArrayList<String>();
 					uris.add("test-proxy-upload.cloudfoundry.com");
@@ -68,10 +68,12 @@ public class CloudFoundryProxyTest extends AbstractAsynchCloudTest {
 					fail("Expected ResourceAccessException due to invalid proxy configuration");
 				}
 				catch (Exception e) {
-					assertTrue("Expected ResourceAccessException, got: " + e, e instanceof ResourceAccessException);
-					assertTrue(e.getCause().getMessage().contains("invalid.proxy.test"));
 					ran[0] = true;
+					error = e;
 				}
+
+				assertNotNull("Expected access exception ", error);
+				assertTrue(error.getCause().getMessage().contains("invalid.proxy.test"));
 
 				assertNull("Expected no client due to invalid proxy", client);
 			}

@@ -29,8 +29,6 @@ import org.eclipse.cft.server.core.internal.CloudFoundryLoginHandler;
 import org.eclipse.cft.server.tests.AllCloudFoundryTests;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
 /**
  * This tests possible token access errors. Since it may not run consistently,
@@ -43,9 +41,7 @@ public class CloudAccessTokenTest extends AbstractCloudFoundryTest {
 		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		CloudFoundryLoginHandler handler = new CloudFoundryLoginHandler(client);
 
-		OAuth2AccessToken token = handler.login(new NullProgressMonitor());
-		assertNotNull(token);
-		assertFalse(token.isExpired());
+		handler.login(new NullProgressMonitor());
 
 		List<CloudApplication> apps = client.getApplications();
 		assertNotNull(apps);
@@ -65,14 +61,7 @@ public class CloudAccessTokenTest extends AbstractCloudFoundryTest {
 				error);
 		assertTrue("Expected access or auth exception from handler", handler.shouldAttemptClientLogin(error));
 
-		OAuth2AccessDeniedException oauthError = error instanceof OAuth2AccessDeniedException
-				? (OAuth2AccessDeniedException) error : (OAuth2AccessDeniedException) error.getCause();
-
-		assertNotNull("Expected OAuth2AccessDeniedException", oauthError);
-
-		token = handler.login(new NullProgressMonitor(), 3, 2000);
-		assertNotNull(token);
-		assertFalse(token.isExpired());
+		handler.login(new NullProgressMonitor(), 3, 2000);
 
 		apps = client.getApplications();
 		assertNotNull(apps);

@@ -322,6 +322,23 @@ public class CloudErrorUtil {
 	}
 
 	/**
+	 * Checks if it is a {@link SSLPeerUnverifiedException} and returns a
+	 * wrapped CoreException around the {@link SSLPeerUnverifiedException}
+	 * @param ce
+	 * @return CoreException (either original or wrapper if the original
+	 * contains {@link SSLPeerUnverifiedException})
+	 */
+	public static CoreException checkSSLPeerUnverifiedException(CoreException ce) {
+		if (ce.getCause() instanceof ResourceAccessException
+				&& ce.getCause().getCause() instanceof javax.net.ssl.SSLPeerUnverifiedException) {
+			return toCoreException(ce.getCause().getCause());
+		}
+		else {
+			return ce;
+		}
+	}
+
+	/**
 	 * check 403 error due to invalid credentials
 	 * @param t
 	 * @return true if 403. False otherwise

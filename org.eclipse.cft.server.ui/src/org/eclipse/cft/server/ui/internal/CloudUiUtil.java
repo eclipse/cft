@@ -39,9 +39,9 @@ import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint;
+import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint.CloudServerURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint.CloudServerURL;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
 import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
@@ -78,7 +78,6 @@ import org.eclipse.ui.internal.browser.WebBrowserPreference;
 import org.eclipse.ui.internal.browser.WorkbenchBrowserSupport;
 import org.eclipse.ui.views.IViewDescriptor;
 import org.eclipse.ui.views.IViewRegistry;
-import org.springframework.web.client.ResourceAccessException;
 
 /**
  * @author Steffen Pingel
@@ -267,17 +266,8 @@ public class CloudUiUtil {
 			}
 		}
 		catch (CoreException ce) {
-			if (ce.getCause() instanceof ResourceAccessException
-					&& ce.getCause().getCause() instanceof javax.net.ssl.SSLPeerUnverifiedException) {
-				// Self-signed error. Re-throw as it will involve a client
-				// change
-				throw CloudErrorUtil.toCoreException(ce.getCause().getCause());
-			}
-			else {
-				throw ce;
-			}
+			throw CloudErrorUtil.checkSSLPeerUnverifiedException(ce);
 		}
-
 	}
 
 	/**
