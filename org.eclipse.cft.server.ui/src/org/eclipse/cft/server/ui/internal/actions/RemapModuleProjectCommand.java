@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. and IBM Corporation 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
+import org.eclipse.cft.server.ui.internal.Messages;
 
 public class RemapModuleProjectCommand extends UpdateMappingCommand {
 
@@ -35,5 +36,10 @@ public class RemapModuleProjectCommand extends UpdateMappingCommand {
 			return new MapToProjectOperation(appModule, cloudServer, partSite.getShell());
 		}
 		return null;
+	}
+
+	@Override
+	protected String getJobNameString() {
+		return Messages.UPDATE_PROJECT_MAPPING;
 	}
 }
