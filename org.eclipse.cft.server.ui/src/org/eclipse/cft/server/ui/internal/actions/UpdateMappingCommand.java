@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. and IBM Corporation 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
-import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -32,12 +31,14 @@ import org.eclipse.osgi.util.NLS;
 
 public abstract class UpdateMappingCommand extends ModuleCommand {
 
+	protected abstract String getJobNameString();
+	
 	@Override
 	protected void run(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer) {
 		final ICloudFoundryOperation op = getCloudOperation(appModule, cloudServer);
 
 		if (op != null) {
-			Job job = new Job(NLS.bind(Messages.UPDATE_PROJECT_MAPPING, appModule.getDeployedApplicationName())) {
+			Job job = new Job(NLS.bind(getJobNameString(), appModule.getDeployedApplicationName())) {
 				protected IStatus run(IProgressMonitor monitor) {
 					try {
 						op.run(monitor);
