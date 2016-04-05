@@ -42,6 +42,7 @@ import org.eclipse.jface.action.Action;
  */
 public class RefreshEditorAction extends Action {
 
+
 	private final CloudFoundryApplicationsEditorPage editorPage;
 
 	public RefreshEditorAction(CloudFoundryApplicationsEditorPage editorPage) {
