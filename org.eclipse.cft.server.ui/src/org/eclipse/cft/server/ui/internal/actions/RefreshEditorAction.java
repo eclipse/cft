@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and IBM Corporation.
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,10 @@ import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.actions.EditorAction.RefreshArea;
 import org.eclipse.cft.server.ui.internal.editor.CloudFoundryApplicationsEditorPage;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.action.Action;
 
 /**
@@ -67,7 +71,21 @@ public class RefreshEditorAction extends Action {
 
 	@Override
 	public void run() {
-		CloudFoundryServerBehaviour behaviour = editorPage.getCloudServer().getBehaviour();
-		behaviour.getOperationsScheduler().updateAll();
+		Job j = new Job(Messages.RefreshApplicationEditorAction_TEXT_JOB) {
+
+			@Override
+			protected IStatus run(IProgressMonitor arg0) {
+				// Initialize the server and initiate server update scheduler
+				CloudFoundryServerBehaviour behaviour = editorPage.getCloudServer().getBehaviour();
+				behaviour.getOperationsScheduler().updateAll();
+				
+				return Status.OK_STATUS;
+			}
+			
+		};
+
+		j.setPriority(Job.SHORT);
+	
+		j.schedule();
 	}
 }
