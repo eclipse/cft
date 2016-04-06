@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and IBM Corporation. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -41,6 +42,9 @@ import org.eclipse.osgi.util.NLS;
  */
 public class ApplicationUrlLookupService {
 
+	/** Synchronize on this object when accessing domainsPerActiveSpace */
+	private final Object domainsPerActiveSpaceLock = new Object();
+	
 	private final CloudFoundryServer cloudServer;
 
 	private List<CloudDomain> domainsPerActiveSpace;
@@ -53,7 +57,11 @@ public class ApplicationUrlLookupService {
 	}
 
 	public void refreshDomains(IProgressMonitor monitor) throws CoreException {
-		domainsPerActiveSpace = cloudServer.getBehaviour().getDomainsForSpace(monitor);
+		synchronized(domainsPerActiveSpaceLock) {
+			if(domainsPerActiveSpace == null) {
+				domainsPerActiveSpace = cloudServer.getBehaviour().getDomainsForSpace(monitor);
+			}
+		}
 	}
 
 	/**
@@ -62,6 +70,17 @@ public class ApplicationUrlLookupService {
 	 * @return
 	 */
 	public List<CloudDomain> getDomains() {
+		synchronized(domainsPerActiveSpaceLock) {
+			if(domainsPerActiveSpace == null) {
+				try {
+					refreshDomains(new NullProgressMonitor());
+				}
+				catch (CoreException e) {
+					// Convert to unchecked exception. 
+					throw new RuntimeException(e);
+				}
+			}
+		}
 		return domainsPerActiveSpace;
 	}
 
@@ -122,8 +141,10 @@ public class ApplicationUrlLookupService {
 		if (!isValidStatus.isOK()) {
 			throw new CoreException(isValidStatus);
 		}
+		
+		List<CloudDomain> domains = getDomains();
 
-		if (domainsPerActiveSpace == null || domainsPerActiveSpace.isEmpty()) {
+		if (domains == null || domains.isEmpty()) {
 			throw new CoreException(
 					CloudFoundryPlugin
 							.getErrorStatus(Messages.ApplicationUrlLookupService_ERROR_GET_CLOUD_URL));
@@ -143,7 +164,7 @@ public class ApplicationUrlLookupService {
 		String parsedDomainName = null;
 		String parsedSubdomainName = null;
 		if (authority != null) {
-			for (CloudDomain domain : domainsPerActiveSpace) {
+			for (CloudDomain domain : domains) {
 				// Be sure to check for last segment rather than last String
 				// value
 				// otherwise: Example: "validdomain" is a valid domain:
