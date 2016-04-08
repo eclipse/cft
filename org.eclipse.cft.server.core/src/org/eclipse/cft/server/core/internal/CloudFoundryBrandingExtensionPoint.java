@@ -411,24 +411,14 @@ public class CloudFoundryBrandingExtensionPoint {
 					String serverId = config.getAttribute(ATTR_SERVER_TYPE_ID);
 					String name = config.getAttribute(ATTR_NAME);
 					if (serverId != null && serverId.trim().length() > 0 && name != null && name.trim().length() > 0) {
-						// Either having statically provided default / cloud urls (burned in the
-						// contribution), or an Url provider class means this server type 
-						// should be considered as valid
-						IConfigurationElement[] defaultUrl = config.getChildren(ELEM_DEFAULT_URL);
-						IConfigurationElement[] cloudUrls = config.getChildren(ELEM_CLOUD_URL);
-						String urlProviderClass = config.getAttribute(ATTR_URL_PROVIDER_CLASS);
-						
-						if ((defaultUrl != null && defaultUrl.length > 0) ||
-								(cloudUrls != null && cloudUrls.length > 0) ||
-								urlProviderClass != null) {
-							brandingDefinitions.put(serverId, config);
-							brandingServerTypeIds.add(serverId);
-						}
+						// For the vendor neutral branding extension, the default / cloud urls / url provider class
+						// is not needed anymore.
+						brandingDefinitions.put(serverId, config);
+						brandingServerTypeIds.add(serverId);
 					}
 				}
 			}
 		}
-
 		read = true;
 	}
 
