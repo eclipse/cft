@@ -27,16 +27,6 @@
 <unit id="org.eclipse.xsd.feature.group" version="2.7.1.v20120130-0943"/>
 <unit id="org.eclipse.xsd.edit.feature.group" version="2.7.0.v20120130-0943"/>
 <unit id="org.eclipse.sdk.ide" version="3.7.2.M20120208-0800"/>
-<unit id="org.eclipse.datatools.connectivity.feature.feature.group" version="1.9.2.v201109161655-7C7e92Et1axl2OkbmSVP6fJgCpG"/>
-<unit id="org.eclipse.datatools.enablement.feature.feature.group" version="1.9.2.v201109161655-7J9B7UBWx_Q7338QL5SxTUtFvz0X"/>
-<unit id="org.eclipse.datatools.enablement.jdbc.feature.feature.group" version="1.9.2.v201109161655-4-29oB5885QBB8HKW"/>
-<unit id="org.eclipse.datatools.enablement.mysql.feature.feature.group" version="1.9.2.v201109161655-546AkF7AJ7d8JEOFC"/>
-<unit id="org.eclipse.datatools.enablement.postgresql.feature.feature.group" version="1.9.2.v201109161655-552AkF7AJ9KAT9SFN"/>
-<unit id="org.eclipse.datatools.enablement.jdt.feature.feature.group" version="1.9.2.v201109161655-2-07w312218332612"/>
-<unit id="org.eclipse.datatools.modelbase.feature.feature.group" version="1.9.2.v201109161655-7707CCcNBHIEQJXHUNf"/>
-<unit id="org.eclipse.datatools.sqldevtools.feature.feature.group" version="1.9.2.v201109161655-7N847OFDsn3ivl-o7D-5qe3gjF1Q"/>
-<unit id="org.eclipse.datatools.sqldevtools.parsers.feature.feature.group" version="1.9.2.v201109161655-623BgJ9EE9ZJRDZKE"/>
-<unit id="org.eclipse.datatools.sqldevtools.sqlbuilder.feature.feature.group" version="1.9.2.v201109161655-79-77EVVFNOGjRgKtVa"/>
 <repository location="http://download.eclipse.org/releases/indigo"/>
 </location>
 <location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
