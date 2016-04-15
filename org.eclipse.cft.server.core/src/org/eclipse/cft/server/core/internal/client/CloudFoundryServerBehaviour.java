@@ -1769,6 +1769,10 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			CloudFoundryApplicationModule appModule) throws CoreException {
 		return new ApplicationInstanceRunningTracker(appModule, getCloudFoundryServer());
 	}
+
+	public List<String> getBuildpacks(IProgressMonitor monitor) throws CoreException {
+		return getRequestFactory().getBuildpacks().run(monitor);
+	}
 }
 
 

@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.domain.CloudService;
+import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
@@ -51,25 +52,21 @@ public class TestCallback extends CloudFoundryCallback {
 
 	private final boolean startApp;
 
-	private List<EnvironmentVariable> variables;
+	private final List<EnvironmentVariable> variables;
 
-	private List<CloudService> services;
+	private final List<CloudService> services;
+
+	private final String buildpack;
 
 	public TestCallback(String appName, int memory, boolean startApp, List<EnvironmentVariable> variables,
-			List<CloudService> services) {
+			List<CloudService> services, String buildpack) {
 		this.appName = appName;
 		this.url = null;
 		this.startApp = startApp;
 		this.memory = memory;
 		this.variables = variables;
 		this.services = services;
-	}
-
-	public TestCallback(String appName, String url, int memory) {
-		this.appName = appName;
-		this.url = url;
-		startApp = true;
-		this.memory = memory;
+		this.buildpack = buildpack;
 	}
 
 	@Override
@@ -115,6 +112,9 @@ public class TestCallback extends CloudFoundryCallback {
 		}
 		if (services != null) {
 			copy.setServices(services);
+		}
+		if (buildpack != null) {
+			copy.setStaging(new Staging(null, buildpack));
 		}
 
 		if (url != null) {

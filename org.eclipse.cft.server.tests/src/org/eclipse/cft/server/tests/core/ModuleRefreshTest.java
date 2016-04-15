@@ -555,7 +555,7 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 		createWebApplicationProject();
 
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApp(prefix, startApp);
+		deployApplicationWithModuleRefresh(prefix, startApp, harness.getDefaultBuildpack());
 
 		// Test the server-wide refresh of all modules without specifying a
 		// selected module.
@@ -587,7 +587,8 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 		createWebApplicationProject();
 
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApp(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplicationWithModuleRefresh(prefix, startApp,
+				harness.getDefaultBuildpack());
 
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(
 				appModule.getDeployedApplicationName(), cloudServer, CloudServerEvent.EVENT_APPLICATION_REFRESHED);
@@ -603,7 +604,7 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 		createWebApplicationProject();
 
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApp(prefix, startApp);
+		deployApplicationWithModuleRefresh(prefix, startApp, harness.getDefaultBuildpack());
 
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
 				CloudServerEvent.EVENT_SERVER_REFRESHED);
@@ -619,7 +620,8 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 		createWebApplicationProject();
 
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApp(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplicationWithModuleRefresh(prefix, startApp,
+				harness.getDefaultBuildpack());
 
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
 				CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
@@ -638,7 +640,7 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 		String expectedAppName = harness.getDefaultWebAppName(prefix);
 
 		boolean startApp = true;
-		deployApp(prefix, startApp);
+		deployApplicationWithModuleRefresh(prefix, startApp, harness.getDefaultBuildpack());
 
 		final IModule module = cloudServer.getExistingCloudModule(expectedAppName).getLocalModule();
 
@@ -663,7 +665,7 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 		createWebApplicationProject();
 
 		boolean startApp = true;
-		deployApp(appPrefix, startApp);
+		deployApplicationWithModuleRefresh(appPrefix, startApp, harness.getDefaultBuildpack());
 
 		// Cloud module should have been created.
 		Collection<CloudFoundryApplicationModule> appModules = cloudServer.getExistingCloudModules();
@@ -711,7 +713,7 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 		// schedule the second listener to
 		// listen to the expected refresh event
 		boolean startApp = true;
-		deployApp(appPrefix, startApp);
+		deployApplicationWithModuleRefresh(appPrefix, startApp, harness.getDefaultBuildpack());
 
 		// Cloud module should have been created.
 		Collection<CloudFoundryApplicationModule> appModules = cloudServer.getExistingCloudModules();

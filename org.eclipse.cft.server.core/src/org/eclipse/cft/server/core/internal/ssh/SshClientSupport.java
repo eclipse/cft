@@ -12,7 +12,6 @@
  *******************************************************************************/
 package org.eclipse.cft.server.core.internal.ssh;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -29,16 +28,12 @@ import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.AuthorizationHeaderProvider;
+import org.eclipse.cft.server.core.internal.client.V1ClientSupport;
 import org.eclipse.cft.server.core.internal.client.v2.CloudInfoV2;
-import org.eclipse.cft.server.core.internal.client.v2.RestUtils;
 import org.eclipse.core.runtime.CoreException;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.ClientHttpRequest;
-import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
-import org.springframework.web.client.RestTemplate;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -48,40 +43,14 @@ import com.jcraft.jsch.UserInfo;
 /**
  * @author Kris De Volder
  */
-public class SshClientSupport {
-
-	private AuthorizationHeaderProvider oauth;
-
-	private RestTemplate restTemplate;
-
-	private CloudInfoV2 cloudInfo;
-
-	private String authorizationUrl;
+public class SshClientSupport extends V1ClientSupport {
 
 	private String sshClientId;
 
 	public SshClientSupport(AuthorizationHeaderProvider oauth, CloudInfoV2 cloudInfo, boolean trustSelfSigned,
 			HttpProxyConfiguration httpProxyConfiguration) {
-		this.cloudInfo = cloudInfo;
-		this.oauth = oauth;
-
-		this.restTemplate = RestUtils.createRestTemplate(httpProxyConfiguration, trustSelfSigned, true);
-		ClientHttpRequestFactory requestFactory = restTemplate.getRequestFactory();
-		restTemplate.setRequestFactory(authorize(requestFactory));
-
-		this.authorizationUrl = cloudInfo.getAuthorizationUrl();
+		super(oauth, cloudInfo, trustSelfSigned, httpProxyConfiguration);
 		this.sshClientId = cloudInfo.getSshClientId();
-	}
-
-	private ClientHttpRequestFactory authorize(final ClientHttpRequestFactory delegate) {
-		return new ClientHttpRequestFactory() {
-
-			public ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod) throws IOException {
-				ClientHttpRequest request = delegate.createRequest(uri, httpMethod);
-				request.getHeaders().add("Authorization", oauth.getAuthorizationHeader()); //$NON-NLS-1$
-				return request;
-			}
-		};
 	}
 
 	public String getSshCode() {
@@ -162,7 +131,7 @@ public class SshClientSupport {
 		}
 		catch (JSchException e) {
 			throw CloudErrorUtil.asCoreException("SSH connection error " + e.getMessage() //$NON-NLS-1$
-			, e, false);
+					, e, false);
 		}
 	}
 

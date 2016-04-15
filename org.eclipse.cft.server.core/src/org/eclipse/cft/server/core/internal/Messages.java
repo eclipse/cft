@@ -134,6 +134,8 @@ public class Messages extends NLS {
 	public static String ClientRequest_TOKEN_EXPIRED;
 
 	public static String ClientRequest_NO_TOKEN;
+	
+	public static String ClientRequestFactory_BUILDPACKS;
 
 	public static String CloudBehaviourOperations_REFRESHING_APPS_AND_SERVICES;
 

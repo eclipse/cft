@@ -75,6 +75,10 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 	protected CloudFoundryTestFixture testFixture;
 
+	protected void debug(String message) {
+		System.out.println(message);
+	}
+
 	@Override
 	protected void setUp() throws Exception {
 
@@ -246,20 +250,27 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 	 * @return
 	 * @throws Exception
 	 */
-	protected CloudFoundryApplicationModule deployApplication(String appPrefix, boolean startApp) throws Exception {
-		return deployApplication(appPrefix, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, null, null);
+	protected CloudFoundryApplicationModule deployApplication(String appPrefix, boolean startApp, String buildpack)
+			throws Exception {
+		return deployApplication(appPrefix, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, null, null,
+				buildpack);
 	}
 
 	protected CloudFoundryApplicationModule deployApplication(String appPrefix, int memory, boolean startApp,
-			List<EnvironmentVariable> variables, List<CloudService> services) throws Exception {
+			List<EnvironmentVariable> variables, List<CloudService> services, String buildpack) throws Exception {
 
 		String projectName = harness.getDefaultWebAppProjectName();
 
 		String expectedAppName = harness.getDefaultWebAppName(appPrefix);
 
+		if (buildpack != null) {
+			debug("Using buildpack: " + buildpack + " for app " + expectedAppName);
+		}
+
 		// Configure the test fixture for deployment.
 		// This step is a substitute for the Application deployment wizard
-		getTestFixture().configureForApplicationDeployment(expectedAppName, memory, startApp, variables, services);
+		getTestFixture().configureForApplicationDeployment(expectedAppName, memory, startApp, variables, services,
+				buildpack);
 
 		IModule module = getModule(projectName);
 

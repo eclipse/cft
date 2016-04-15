@@ -96,6 +96,8 @@ public class CloudFoundryTestFixture {
 
 	public static final String URL_PROPERTY = "url";
 
+	public static final String BUILDPACK_PROPERTY = "buildpack";
+
 	public static final String SELF_SIGNED_CERTIFICATE_PROPERTY = "selfsigned";
 
 	public static final String CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY = "test.credentials";
@@ -149,11 +151,11 @@ public class CloudFoundryTestFixture {
 		// if the tests are run within short intervals of one another.
 		private int randomPrefix = 0;
 
-		private final CloudFoundryTestFixture fixture;
+		private final String defaultBuildpack;
 
-		public Harness(String serverUrl, CloudFoundryTestFixture fixture) {
+		public Harness(String serverUrl, String defaultBuildpack) {
 			this.serverUrl = serverUrl;
-			this.fixture = fixture;
+			this.defaultBuildpack = defaultBuildpack;
 		}
 
 		/**
@@ -169,6 +171,10 @@ public class CloudFoundryTestFixture {
 			projectCreated = true;
 			addModule(project);
 			return project;
+		}
+
+		public String getDefaultBuildpack() throws CoreException {
+			return this.defaultBuildpack;
 		}
 
 		protected String getDomain() throws CoreException {
@@ -417,8 +423,11 @@ public class CloudFoundryTestFixture {
 	 */
 	public static CloudFoundryTestFixture getSafeTestFixture() throws Exception {
 		if (current == null) {
-			CredentialProperties credentials = getCredentialsFromProperties(getDefaultCloudTargetDomain());
-			current = new CloudFoundryTestFixture(credentials);
+			Properties properties = loadProperties();
+
+			CredentialProperties credentials = getCredentialsFromProperties(properties, getDefaultCloudTargetDomain());
+			String buildpack = getBuildpack(properties);
+			current = new CloudFoundryTestFixture(credentials, buildpack);
 		}
 		return current;
 	}
@@ -462,7 +471,10 @@ public class CloudFoundryTestFixture {
 	 */
 	public void configureForApplicationDeployment(String fullApplicationName, int memory, boolean startApp)
 			throws Exception {
-		configureForApplicationDeployment(fullApplicationName, memory, startApp, null, null);
+		List<EnvironmentVariable> vars = null;
+		List<CloudService> services = null;
+		String buildpack = null;
+		configureForApplicationDeployment(fullApplicationName, memory, startApp, vars, services, buildpack);
 	}
 
 	public void configureForApplicationDeployment(String fullApplicationName, boolean startApp) throws Exception {
@@ -470,13 +482,16 @@ public class CloudFoundryTestFixture {
 	}
 
 	public void configureForApplicationDeployment(String fullApplicationName, int memory, boolean startApp,
-			List<EnvironmentVariable> variables, List<CloudService> services) throws Exception {
-		CloudFoundryPlugin.setCallback(new TestCallback(fullApplicationName, memory, startApp, variables, services));
+			List<EnvironmentVariable> variables, List<CloudService> services, String buildpack) throws Exception {
+		CloudFoundryPlugin
+				.setCallback(new TestCallback(fullApplicationName, memory, startApp, variables, services, buildpack));
 	}
 
 	private final ServerHandler handler;
 
 	private final CredentialProperties credentials;
+
+	private final String defaultBuildpack;
 
 	/**
 	 * This will create a Cloud server instances based either on the URL in a
@@ -486,8 +501,9 @@ public class CloudFoundryTestFixture {
 	 * instead
 	 * @param serverDomain default domain to use for the Cloud space.
 	 */
-	public CloudFoundryTestFixture(CredentialProperties credentials) {
+	public CloudFoundryTestFixture(CredentialProperties credentials, String defaultBuildpack) {
 		this.credentials = credentials;
+		this.defaultBuildpack = defaultBuildpack;
 
 		ServerDescriptor descriptor = new ServerDescriptor("server") {
 			{
@@ -537,7 +553,7 @@ public class CloudFoundryTestFixture {
 	 * @return new Harness. Never null
 	 */
 	public Harness createHarness() {
-		return new Harness(getCredentialProperties().url, this);
+		return new Harness(getCredentialProperties().url, this.defaultBuildpack);
 	}
 
 	public long getAppStartingTimeout() {
@@ -570,22 +586,9 @@ public class CloudFoundryTestFixture {
 
 	}
 
-	/**
-	 * Reads properties to connect to a CF target (e.g API URL, org, space,
-	 * username, password). If the properties does not include a API URL, the
-	 * passed defaultDomain will be used to construct a API URL Returns non-null
-	 * credentials, although values of the credentials may be empty if failed to
-	 * read credentials
-	 * @return
-	 */
-	private static CredentialProperties getCredentialsFromProperties(String defaultDomain) throws CoreException {
+	private static Properties loadProperties() throws Exception {
 		String propertiesLocation = System.getProperty(CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY);
-		String userEmail = null;
-		String password = null;
-		String org = null;
-		String space = null;
-		String url = null;
-		boolean selfSignedCertificate = false;
+
 		if (propertiesLocation != null) {
 
 			File propertiesFile = new File(propertiesLocation);
@@ -596,14 +599,7 @@ public class CloudFoundryTestFixture {
 					fileInputStream = new FileInputStream(propertiesFile);
 					Properties properties = new Properties();
 					properties.load(fileInputStream);
-					userEmail = properties.getProperty(USEREMAIL_PROPERTY);
-					password = properties.getProperty(PASSWORD_PROPERTY);
-					org = properties.getProperty(ORG_PROPERTY);
-					space = properties.getProperty(SPACE_PROPERTY);
-					url = properties.getProperty(URL_PROPERTY);
-					String selfSignedVal = properties.getProperty(SELF_SIGNED_CERTIFICATE_PROPERTY);
-
-					selfSignedCertificate = "true".equals(selfSignedVal) || "TRUE".equals(selfSignedVal);
+					return properties;
 				}
 			}
 			catch (FileNotFoundException e) {
@@ -624,6 +620,34 @@ public class CloudFoundryTestFixture {
 			}
 		}
 
+		return null;
+	}
+
+	private static String getBuildpack(Properties properties) {
+		return properties.getProperty(BUILDPACK_PROPERTY);
+	}
+
+	/**
+	 * Reads properties to connect to a CF target (e.g API URL, org, space,
+	 * username, password). If the properties does not include a API URL, the
+	 * passed defaultDomain will be used to construct a API URL Returns non-null
+	 * credentials, although values of the credentials may be empty if failed to
+	 * read credentials
+	 * @return
+	 */
+	private static CredentialProperties getCredentialsFromProperties(Properties properties, String defaultDomain)
+			throws CoreException {
+
+		String selfSignedVal = properties.getProperty(SELF_SIGNED_CERTIFICATE_PROPERTY);
+
+		String org = properties.getProperty(ORG_PROPERTY);
+		String space = properties.getProperty(SPACE_PROPERTY);
+		String password = properties.getProperty(PASSWORD_PROPERTY);
+		String username = properties.getProperty(USEREMAIL_PROPERTY);
+		String url = properties.getProperty(URL_PROPERTY);
+
+		boolean selfSignedCertificate = "true".equals(selfSignedVal) || "TRUE".equals(selfSignedVal);
+
 		if (url == null) {
 			url = "http://api." + defaultDomain;
 		}
@@ -631,7 +655,7 @@ public class CloudFoundryTestFixture {
 			url = "http://" + url;
 		}
 
-		CredentialProperties cred = new CredentialProperties(url, userEmail, password, org, space,
+		CredentialProperties cred = new CredentialProperties(url, username, password, org, space,
 				selfSignedCertificate);
 		StsTestUtil.validateCredentials(cred);
 		return cred;

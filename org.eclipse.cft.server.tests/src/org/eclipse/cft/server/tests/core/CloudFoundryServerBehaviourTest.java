@@ -89,7 +89,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		boolean startApp = true;
 		CloudFoundryApplicationModule appModule = deployApplication(prefix,
-				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, vars, servicesToBind);
+				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, vars, servicesToBind,
+				harness.getDefaultBuildpack());
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
@@ -203,7 +204,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		boolean startApp = true;
 
-		deployApplication(prefix, startApp);
+		deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		// Verify it is deployed
 		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(prefix);
@@ -234,7 +235,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		boolean startApp = false;
 
-		deployApplication(prefix, startApp);
+		deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		// Invoke the helper method
 		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(prefix);
@@ -270,7 +271,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		String prefix = "testWSTBehaviourStopModule";
 		createWebApplicationProject();
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		assertTrue("Expected application to be started",
 				appModule.getApplication().getState().equals(AppState.STARTED));
@@ -288,7 +289,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		String prefix = "testStartAndStopModule";
 		createWebApplicationProject();
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		assertTrue("Expected application to be started", appModule.getState() == IServer.STATE_STARTED);
 
@@ -311,7 +312,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		createWebApplicationProject();
 
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		// The tracker should detect the application is started
 		int state = new ApplicationInstanceRunningTracker(appModule, cloudServer).track(new NullProgressMonitor());
@@ -343,7 +344,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		// Ensure app is deployed in STOP mode
 		boolean startApp = false;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		// The tracker should detect the application is started
 		int state = new ApplicationInstanceRunningTracker(appModule, cloudServer).track(new NullProgressMonitor());
@@ -364,7 +365,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		createWebApplicationProject();
 
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		// The following are the expected conditions for the server behaviour to
 		// determine that the app is running
@@ -395,7 +396,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 			connectClient(credentials);
 
 			boolean startApp = true;
-			deployApplication(prefix, startApp);
+			deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 			fail("Expected CoreException due to invalid password");
 		}
@@ -407,7 +408,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		// Should now deploy without errors
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 		assertTrue(appModule.getState() == IServer.STATE_STARTED);
 	}
 
@@ -424,7 +425,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 			connectClient(credentials);
 
 			boolean startApp = true;
-			deployApplication(prefix, startApp);
+			deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 			fail("Expected CoreException due to invalid password");
 		}
@@ -436,7 +437,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		// Should now deploy without errors
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 		assertTrue(appModule.getState() == IServer.STATE_STARTED);
 	}
 
@@ -453,7 +454,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		createWebApplicationProject();
 
 		boolean startApp = true;
-		deployApplication(prefix, startApp);
+		deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		List<CloudApplication> applications = serverBehavior.getApplications(new NullProgressMonitor());
 		boolean found = false;
@@ -494,7 +495,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		String appPrefix = "testCloudModulesClearedOnDisconnect";
 		createWebApplicationProject();
 		boolean startApp = true;
-		deployApplication(appPrefix, startApp);
+		deployApplication(appPrefix, startApp, harness.getDefaultBuildpack());
 
 		// Cloud module should have been created.
 		Collection<CloudFoundryApplicationModule> appModules = cloudServer.getExistingCloudModules();
@@ -507,4 +508,10 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		assertTrue("Expected empty list of cloud application modules after server disconnect", appModules.isEmpty());
 	}
+
+	public void testBuildpacks() throws Exception {
+		List<String> buildpacks = serverBehavior.getBuildpacks(new NullProgressMonitor());
+		assertTrue("Expected at least one buildpack in the server", buildpacks.size() > 0);
+	}
+
 }

@@ -62,7 +62,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		createWebApplicationProject();
 
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		CloudApplication app = appModule.getApplication();
 
@@ -84,7 +84,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		String prefix = "testServiceBindingUnbindingAppStarted";
 		createWebApplicationProject();
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		getBindServiceOp(appModule, service).run(new NullProgressMonitor());
 
@@ -111,7 +111,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		createWebApplicationProject();
 
 		boolean startApp = false;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		getBindServiceOp(appModule, service).run(new NullProgressMonitor());
 

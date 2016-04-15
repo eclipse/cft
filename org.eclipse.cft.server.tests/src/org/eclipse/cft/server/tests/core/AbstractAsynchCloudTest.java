@@ -143,12 +143,13 @@ public abstract class AbstractAsynchCloudTest extends AbstractCloudFoundryTest {
 		refreshHandler.dispose();
 	}
 
-	protected CloudFoundryApplicationModule deployApp(String appPrefix, boolean startApp) throws Exception {
+	protected CloudFoundryApplicationModule deployApplicationWithModuleRefresh(String appPrefix, boolean startApp,
+			String buildpack) throws Exception {
 
 		String appName = harness.getDefaultWebAppName(appPrefix);
 		ModulesRefreshListener listener = ModulesRefreshListener.getListener(appName, cloudServer,
 				CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
-		CloudFoundryApplicationModule appModule = deployApplication(appPrefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(appPrefix, startApp, buildpack);
 
 		assertModuleRefreshedAndDispose(listener, CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
 		return appModule;

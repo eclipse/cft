@@ -60,7 +60,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
 		createWebApplicationProject();
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		assertEquals(1, appModule.getApplicationStats().getRecords().size());
 		assertEquals(1, appModule.getInstanceCount());
@@ -89,7 +89,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
 		createWebApplicationProject();
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		final int changedMemory = 678;
 
@@ -113,7 +113,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
 		createWebApplicationProject();
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		EnvironmentVariable variable = new EnvironmentVariable();
 		variable.setVariable("JAVA_OPTS");
@@ -158,7 +158,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
 		createWebApplicationProject();
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		String expectedURL = harness.getExpectedDefaultURL(prefix);
 		assertEquals(expectedURL, appModule.getDeploymentInfo().getUris().get(0));
@@ -183,7 +183,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 		createWebApplicationProject();
 		// Deploy and start the app without the refresh listener
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		assertTrue("Expected application to be started",
 				appModule.getApplication().getState().equals(AppState.STARTED));
@@ -207,7 +207,8 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
 		createWebApplicationProject();
 		boolean startApplication = false;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApplication);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApplication,
+				harness.getDefaultBuildpack());
 
 		assertTrue("Expected application to be stopped",
 				appModule.getApplication().getState().equals(AppState.STOPPED));
@@ -238,7 +239,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
 		createWebApplicationProject();
 		boolean startApp = false;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		assertTrue("Expected application to be stopped",
 				appModule.getApplication().getState().equals(AppState.STOPPED));
@@ -270,7 +271,8 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 		createWebApplicationProject();
 
 		boolean startApplication = false;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApplication);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApplication,
+				harness.getDefaultBuildpack());
 
 		assertTrue("Expected application to be stopped",
 				appModule.getApplication().getState().equals(AppState.STOPPED));

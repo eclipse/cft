@@ -98,7 +98,7 @@ public class CloudFoundryProxyTest extends AbstractAsynchCloudTest {
 		createWebApplicationProject();
 
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp);
+		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		final String appName = appModule.getDeployedApplicationName();
 
