@@ -23,7 +23,7 @@ Require-Bundle: org.eclipse.core.runtime,
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,
- lib/cloudfoundry-client-lib-1.1.4.20160125.jar,
+ lib/cloudfoundry-client-lib-1.1.4.20160316.jar,
  lib/commons-io-2.1.jar,
  lib/jackson-core-asl-1.9.13.jar,
  lib/jackson-mapper-asl-1.9.13.jar,
