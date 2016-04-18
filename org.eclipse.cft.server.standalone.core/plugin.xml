@@ -74,7 +74,7 @@
           point="org.eclipse.cft.server.core.application">
        <applicationDelegate
              class="org.eclipse.cft.server.standalone.core.internal.application.StandaloneApplicationDelegate"
-             priority="Medium"
+             priority="Low"
              providerID="org.eclipse.cft.server.application.standalone">
           <moduleID
                 id="cloudfoundry.standalone.app">

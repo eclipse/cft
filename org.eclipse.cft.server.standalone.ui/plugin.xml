@@ -40,6 +40,14 @@
              providerID="org.eclipse.cft.server.application.standalone">
        </applicationWizardDelegate>
     </extension>
+    
+    <extension
+          point="org.eclipse.cft.server.ui.applicationWizard">
+       <applicationWizardDelegate
+             class="org.eclipse.cft.server.standalone.ui.internal.StandaloneApplicationWizardDelegate"
+             providerID="org.eclipse.cft.server.application.standalone.pivotal">
+       </applicationWizardDelegate>
+    </extension>
 
     <extension
           point="org.eclipse.cft.server.standalone.core.archiverDelegate">
