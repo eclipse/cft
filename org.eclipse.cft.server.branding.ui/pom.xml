@@ -10,7 +10,7 @@
   </parent>
   <artifactId>org.eclipse.cft.server.branding.ui</artifactId>
   <packaging>eclipse-plugin</packaging>
-
+  <version>1.0.100-SNAPSHOT</version>
   <build>
     <plugins>
       <plugin>
