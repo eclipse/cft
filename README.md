@@ -28,7 +28,8 @@
   
 ## CLA and Third-Party Pull Requests
   
-  All third-party contributors are required to sign an Eclipse CLA before Pull Requests are merged in the repository, pending review and acceptance of the submitted Pull Request.
+  All third-party contributors are required to sign an Eclipse CLA before Pull Requests are merged into the repository, 
+  pending review and acceptance of the submitted Pull Request.
   
   https://wiki.eclipse.org/CLA
   
@@ -52,7 +53,7 @@
   You can also install from the Eclipse Marketplace. In Eclipse, go to Help -> Eclipse Marketplace 
   and search for "Cloud Foundry".
   
-  The page in the marketplace is:
+  The marketplace page is:
   http://marketplace.eclipse.org/content/cloud-foundry-integration-eclipse
   
 ## Raising Bugs, Feature Requests, Mailing List
@@ -86,6 +87,23 @@
   Zips for the update sites can be found under "Downloads" here:
   
   [Update Sites Zips](https://projects.eclipse.org/projects/ecd.cft/downloads)
+  
+## Cloud Foundry Java Client Library
+   
+   CFT 1.0 uses a customized, unpublished version of the v1 Java Cloud Foundry client library. The library is Apache 2.0 license, 
+   and we maintain that library outside of Eclipse here:
+   
+   https://github.com/nierajsingh/cf-java-client/tree/cft-1.0.0-java-client-1.1.4-patch
+      
+   We plan to move to v2 client sometime after Neon release (June 23, 2016). Please subscribe to our mailing lists to
+   get updates on progress towards v2, as well as check bugzilla under "CFT" product.
+   
+   Once we move to v2, we will no longer support v1.
+   
+   More information on the v2 client is available here:
+   
+   https://github.com/cloudfoundry/cf-java-client
+    
 
 ## Getting started
 
@@ -109,7 +127,7 @@
 
   mvn -Pe43 package
   
-  Check the parent pom in master branch for additional profiles under <profiles>. We build against the latest Eclipse, so you 
+  Check the parent pom in master branch for additional profiles under "profiles". We build against the latest Eclipse, so you 
   should be able to find a profile for the latest Eclipse that you can pass to mvn:
   
   https://github.com/eclipse/cft/blob/master/pom.xml
