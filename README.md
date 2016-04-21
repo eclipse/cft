@@ -13,6 +13,10 @@
   
   CFT integrates into and requires Eclipse [Web Tools Platform (WTP)](http://eclipse.org/webtools).
   
+  CFT is also part of the Eclipse Simultaneous Release, and we follow the Eclipse Simultaneous Release cycle.
+  
+  https://wiki.eclipse.org/Simultaneous_Release  
+  
 ## IMPORTANT NOTE: Breaking Bundle and Extension Point Changes
   
   All bundle names and extension point IDs have been renamed, therefore new versions of CFT are NOT backward compatible with any older versions 
@@ -24,21 +28,45 @@
   
 ## CLA and Third-Party Pull Requests
   
-  All third-party contributors will be required to sign a CLA before Pull Requests are merged in the new repository, pending review and acceptance of the submitted Pull Request.
+  All third-party contributors are required to sign an Eclipse CLA before Pull Requests are merged in the repository, pending review and acceptance of the submitted Pull Request.
+  
+  https://wiki.eclipse.org/CLA
+  
+  In addition to signing the Eclipse CLA, your Pull Request must not have merge conflicts with the master branch, so please be sure to
+  synchronize with master branch before creating your Pull Request.
   
 ## Update Sites
   
-  CFT has not yet been released, therefore only nightly drivers can be installed using this URL:
+  The nightly CFT driver can be installed using this URL:
     
   http://download.eclipse.org/cft/nightly/
   
   (place this URL into the "Install New Software" dialog of your Eclipse)
   
-## Raising Bugs and Feature Requests
-
-  Bugs and feature requests should be raised via bugzilla:
+  It contains our latest changes and is not guaranteed to be fully stable.
   
-  https://bugs.eclipse.org/bugs
+  To install stable milestones or releases, please refer to the list of sites under "Update Sites":
+  
+  https://projects.eclipse.org/projects/ecd.cft/downloads
+  
+  You can also install from the Eclipse Marketplace. In Eclipse, go to Help -> Eclipse Marketplace 
+  and search for "Cloud Foundry".
+  
+  The page in the marketplace is:
+  http://marketplace.eclipse.org/content/cloud-foundry-integration-eclipse
+  
+## Raising Bugs, Feature Requests, Mailing List
+
+  Bugs and feature requests should be raised via bugzilla under product "CFT":
+  
+  https://bugs.eclipse.org/bugs/enter_bug.cgi?product=CFT
+  
+  We also encourage you to subscribe to our cft-dev mailing list, as we frequently post updates on CFT there, including milestone 
+  and release information.
+  
+  It's also a good place to ask questions to the devs.
+  
+  https://dev.eclipse.org/mailman/listinfo/cft-dev
 
 ## Installation
 
@@ -55,9 +83,9 @@
   
   Browse to the location of the zip file, and installation should complete in offline mode.
   
-  Zips for the update sites can be found here:
+  Zips for the update sites can be found under "Downloads" here:
   
-  [Update Sites Zips](updatesites.md)
+  [Update Sites Zips](https://projects.eclipse.org/projects/ecd.cft/downloads)
 
 ## Getting started
 
@@ -68,9 +96,20 @@
   Note that this description is targeted at users of Spring Tool Suite, but similar steps apply for
   other Eclipse JEE users.
   
+## Hudson Builds
+
+  We build CFT nightly, milestones, and releases using Hudson:
+  
+  https://hudson.eclipse.org/cft/
+  
 ## Building the project
   
   The CFT uses Maven Tycho to do continuous integration builds and
   to produce p2 repos and update sites. To build the tooling yourself, you can execute:
 
   mvn -Pe43 package
+  
+  Check the parent pom in master branch for additional profiles under <profiles>. We build against the latest Eclipse, so you 
+  should be able to find a profile for the latest Eclipse that you can pass to mvn:
+  
+  https://github.com/eclipse/cft/blob/master/pom.xml
