@@ -95,7 +95,7 @@
    
    https://github.com/nierajsingh/cf-java-client/tree/cft-1.0.0-java-client-1.1.4-patch
       
-   We plan to move to v2 client sometime after Neon release (June 23, 2016). Please subscribe to our mailing lists to
+   We plan to move to v2 client sometime after Neon release (June 23, 2016). Please subscribe to our mailing list to
    get updates on progress towards v2, as well as check bugzilla under "CFT" product.
    
    Once we move to v2, we will no longer support v1.
