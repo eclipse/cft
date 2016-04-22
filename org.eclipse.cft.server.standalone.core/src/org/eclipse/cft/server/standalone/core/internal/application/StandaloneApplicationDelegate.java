@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@ import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.model.IModuleResource;
 
 /**
@@ -71,16 +72,15 @@ public class StandaloneApplicationDelegate extends ModuleResourceApplicationDele
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.eclipse.cft.server.core.internal.application.
-	 * AbstractApplicationDelegate
-	 * #getApplicationArchive(org.eclipse.cft.internal
-	 * .server.core.client.CloudFoundryApplicationModule,
+	 * @see org.eclipse.cft.server.core.AbstractApplicationDelegate#
+	 * getApplicationArchive(org.eclipse.wst.server.core.IModule,
 	 * org.eclipse.cft.server.core.internal.CloudFoundryServer,
-	 * org.eclipse.wst.server.core.model.IModuleResource[])
+	 * org.eclipse.wst.server.core.model.IModuleResource[],
+	 * org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	public ApplicationArchive getApplicationArchive(CloudFoundryApplicationModule appModule,
-			CloudFoundryServer cloudServer, IModuleResource[] moduleResources, IProgressMonitor monitor)
-					throws CoreException {
+	public ApplicationArchive getApplicationArchive(IModule module, CloudFoundryServer cloudServer,
+			IModuleResource[] moduleResources, IProgressMonitor monitor) throws CoreException {
+		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, cloudServer);
 		ICloudFoundryArchiver archiver = CloudFoundryArchiverRegistry.INSTANCE.createArchiver(appModule, cloudServer);
 		return archiver.getApplicationArchive(monitor);
 	}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -319,7 +319,7 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 	public synchronized IStatus validateDeploymentInfo() {
 		AbstractApplicationDelegate delegate = ApplicationRegistry.getApplicationDelegate(getLocalModule());
 		if (delegate == null) {
-			return AbstractApplicationDelegate.basicValidateDeploymentInfo(deploymentInfo);
+			return CloudUtil.basicValidateDeploymentInfo(deploymentInfo);
 		}
 		IStatus status = delegate.validateDeploymentInfo(deploymentInfo);
 		setStatus(status);
@@ -536,12 +536,17 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		CloudFoundryServer cloudServer = getCloudFoundryServer();
 
 		if (delegate != null) {
-			info = delegate.resolveApplicationDeploymentInfo(this, cloudServer);
+			try {
+				info = delegate.getExistingApplicationDeploymentInfo(this, cloudServer);
+			}
+			catch (CoreException e) {
+				CloudFoundryPlugin.logError(e);
+			}
 		}
 
 		// If no info has been resolved yet, use a default parser
 		if (info == null) {
-			info = AbstractApplicationDelegate.parseApplicationDeploymentInfo(application);
+			info = CloudUtil.parseApplicationDeploymentInfo(application);
 		}
 
 		return info;
@@ -584,7 +589,12 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		ApplicationDeploymentInfo defaultInfo = null;
 
 		if (delegate != null) {
-			defaultInfo = delegate.getDefaultApplicationDeploymentInfo(this, getCloudFoundryServer(), monitor);
+			try {
+				defaultInfo = delegate.getDefaultApplicationDeploymentInfo(this, getCloudFoundryServer(), monitor);
+			}
+			catch (CoreException e) {
+				CloudFoundryPlugin.logError(e);
+			}
 		}
 
 		if (defaultInfo == null) {

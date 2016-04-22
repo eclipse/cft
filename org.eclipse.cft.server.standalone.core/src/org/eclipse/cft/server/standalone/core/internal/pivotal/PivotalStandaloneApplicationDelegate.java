@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import org.eclipse.cft.server.core.internal.pivotal.PivotalConstants;
 import org.eclipse.cft.server.standalone.core.internal.application.StandaloneApplicationDelegate;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.wst.server.core.IModule;
 
 /**
  * 
@@ -44,9 +45,9 @@ public class PivotalStandaloneApplicationDelegate extends StandaloneApplicationD
 	}
 
 	@Override
-	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(CloudFoundryApplicationModule appModule,
-			CloudFoundryServer cloudServer, IProgressMonitor monitor) throws CoreException {
-
+	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(IModule module, CloudFoundryServer cloudServer,
+			IProgressMonitor monitor) throws CoreException {
+		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, cloudServer);
 		// Set default values.
 		String appName = appModule.getDeployedApplicationName();
 		ApplicationDeploymentInfo deploymentInfo = new ApplicationDeploymentInfo(appName);

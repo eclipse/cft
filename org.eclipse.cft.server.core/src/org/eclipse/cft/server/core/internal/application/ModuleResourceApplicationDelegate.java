@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,9 +23,10 @@ package org.eclipse.cft.server.core.internal.application;
 import java.util.Arrays;
 
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
-import org.eclipse.cft.server.core.AbstractApplicationDelegate;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.model.IModuleResource;
 
@@ -35,7 +36,7 @@ import org.eclipse.wst.server.core.model.IModuleResource;
  * the resources that are to be pushed to the Cloud Foundry server.
  * 
  */
-public abstract class ModuleResourceApplicationDelegate extends AbstractApplicationDelegate {
+public abstract class ModuleResourceApplicationDelegate extends ApplicationDelegate {
 
 	public ModuleResourceApplicationDelegate() {
 
@@ -45,10 +46,9 @@ public abstract class ModuleResourceApplicationDelegate extends AbstractApplicat
 		return true;
 	}
 
-
-	
 	/**
-	 * NOTE: For INTERNAL use only. API may change. Framework adopters should not override or invoke.
+	 * NOTE: For INTERNAL use only. API may change. Framework adopters should
+	 * not override or invoke.
 	 * @param appModule
 	 * @return true if default URL should be set. False otherwise
 	 */
@@ -59,14 +59,15 @@ public abstract class ModuleResourceApplicationDelegate extends AbstractApplicat
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.eclipse.cft.server.core.internal.application.
-	 * AbstractApplicationDelegate
-	 * #getApplicationArchive(org.eclipse.cft.internal
-	 * .server.core.client.CloudFoundryApplicationModule,
-	 * org.eclipse.wst.server.core.model.IModuleResource[])
+	 * @see org.eclipse.cft.server.core.AbstractApplicationDelegate#
+	 * getApplicationArchive(org.eclipse.wst.server.core.IModule,
+	 * org.eclipse.cft.server.core.internal.CloudFoundryServer,
+	 * org.eclipse.wst.server.core.model.IModuleResource[],
+	 * org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	public ApplicationArchive getApplicationArchive(CloudFoundryApplicationModule module,
-			IModuleResource[] moduleResources) throws CoreException {
-		return new ModuleResourceApplicationArchive(module.getLocalModule(), Arrays.asList(moduleResources));
+	@Override
+	public ApplicationArchive getApplicationArchive(IModule module, CloudFoundryServer cloudFoundryServer,
+			IModuleResource[] moduleResources, IProgressMonitor monitor) throws CoreException {
+		return new ModuleResourceApplicationArchive(module, Arrays.asList(moduleResources));
 	}
 }

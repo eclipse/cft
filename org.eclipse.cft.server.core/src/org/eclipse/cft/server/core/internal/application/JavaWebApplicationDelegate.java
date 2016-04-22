@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,19 +24,14 @@ package org.eclipse.cft.server.core.internal.application;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
-import org.eclipse.cft.server.core.AbstractApplicationDelegate;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
-import org.eclipse.cft.server.core.internal.CloudFoundryConstants;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -51,11 +46,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jdt.core.IClasspathContainer;
-import org.eclipse.jdt.core.IClasspathEntry;
-import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.internal.Server;
@@ -67,113 +57,10 @@ import org.eclipse.wst.server.core.model.IModuleResource;
  * <p/>
  * This application delegate supports the above Java Web frameworks.
  */
-public class JavaWebApplicationDelegate extends AbstractApplicationDelegate {
+public class JavaWebApplicationDelegate extends ApplicationDelegate {
 
 	public JavaWebApplicationDelegate() {
 
-	}
-
-	/**
-	 * 
-	 * @deprecated No longer used for v2 CF servers. Kept only as a reference
-	 * for legacy v1 CF servers.
-	 */
-	protected static Map<String, String> getJavaWebSupportedFrameworks() {
-		Map<String, String> valuesByLabel = new LinkedHashMap<String, String>();
-		valuesByLabel.put(CloudFoundryConstants.SPRING, "Spring"); //$NON-NLS-1$
-		valuesByLabel.put(CloudFoundryConstants.GRAILS, "Grails"); //$NON-NLS-1$
-		valuesByLabel.put(CloudFoundryConstants.LIFT, "Lift"); //$NON-NLS-1$
-		valuesByLabel.put(CloudFoundryConstants.JAVA_WEB, "Java Web"); //$NON-NLS-1$
-		return valuesByLabel;
-	}
-
-	/**
-	 * Attempts to determine the framework based on the contents and nature of
-	 * the project. Returns null if no framework was determined.
-	 * @param project
-	 * @return Framework type or null if framework was not determined.
-	 * @deprecated kept for reference as to how application type was being
-	 * determined from a Java project for legacy v1 CF servers. v2 Servers no
-	 * longer require a framework for an application, as frameworks have been
-	 * replaced with buildpacks.
-	 */
-	protected String getFramework(IProject project) {
-		if (project != null) {
-			IJavaProject javaProject = CloudFoundryProjectUtil.getJavaProject(project);
-			if (javaProject != null) {
-				if (CloudFoundryProjectUtil.hasNature(project, CloudFoundryConstants.GRAILS_NATURE)) {
-					return CloudFoundryConstants.GRAILS;
-				}
-
-				// in case user has Grails projects without the nature
-				// attached
-				if (project.isAccessible() && project.getFolder("grails-app").exists() //$NON-NLS-1$
-						&& project.getFile("application.properties").exists()) { //$NON-NLS-1$
-					return CloudFoundryConstants.GRAILS;
-				}
-
-				IClasspathEntry[] entries;
-				boolean foundSpringLibrary = false;
-				try {
-					entries = javaProject.getRawClasspath();
-					for (IClasspathEntry entry : entries) {
-						if (entry.getEntryKind() == IClasspathEntry.CPE_LIBRARY) {
-							if (isLiftLibrary(entry)) {
-								return CloudFoundryConstants.LIFT;
-							}
-							if (isSpringLibrary(entry)) {
-								foundSpringLibrary = true;
-							}
-						}
-						else if (entry.getEntryKind() == IClasspathEntry.CPE_CONTAINER) {
-							IClasspathContainer container = JavaCore
-									.getClasspathContainer(entry.getPath(), javaProject);
-							if (container != null) {
-								for (IClasspathEntry childEntry : container.getClasspathEntries()) {
-									if (isLiftLibrary(childEntry)) {
-										return CloudFoundryConstants.LIFT;
-									}
-									if (isSpringLibrary(childEntry)) {
-										foundSpringLibrary = true;
-									}
-								}
-							}
-						}
-					}
-				}
-				catch (JavaModelException e) {
-					// Log the error but don't throw it again as there may be
-					// other ways to detect the framework
-					CloudFoundryPlugin.log(new Status(IStatus.WARNING, CloudFoundryPlugin.PLUGIN_ID,
-							"Unexpected error during auto detection of application type", e)); //$NON-NLS-1$
-				}
-
-				if (CloudFoundryProjectUtil.isSpringProject(project)) {
-					return CloudFoundryConstants.SPRING;
-				}
-
-				if (foundSpringLibrary) {
-					return CloudFoundryConstants.SPRING;
-				}
-			}
-		}
-		return null;
-	}
-
-	private boolean isLiftLibrary(IClasspathEntry entry) {
-		if (entry.getPath() != null) {
-			String name = entry.getPath().lastSegment();
-			return Pattern.matches("lift-webkit.*\\.jar", name); //$NON-NLS-1$
-		}
-		return false;
-	}
-
-	private boolean isSpringLibrary(IClasspathEntry entry) {
-		if (entry.getPath() != null) {
-			String name = entry.getPath().lastSegment();
-			return Pattern.matches(".*spring.*\\.jar", name); //$NON-NLS-1$
-		}
-		return false;
 	}
 
 	public boolean requiresURL() {
@@ -197,16 +84,17 @@ public class JavaWebApplicationDelegate extends AbstractApplicationDelegate {
 	 * org.eclipse.wst.server.core.model.IModuleResource[],
 	 * org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	public ApplicationArchive getApplicationArchive(CloudFoundryApplicationModule module,
+	public ApplicationArchive getApplicationArchive(IModule module,
 			CloudFoundryServer cloudServer, IModuleResource[] moduleResources, IProgressMonitor monitor)
 			throws CoreException {
 
-		ApplicationArchive manifestArchive = getArchiveFromManifest(module, cloudServer);
+		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, cloudServer);
+		ApplicationArchive manifestArchive = getArchiveFromManifest(appModule, cloudServer);
 		if (manifestArchive != null) {
 			return manifestArchive;
 		}
 		try {
-			File warFile = CloudUtil.createWarFile(new IModule[] { module.getLocalModule() },
+			File warFile = CloudUtil.createWarFile(new IModule[] { appModule.getLocalModule() },
 					(Server) cloudServer.getServer(), monitor);
 
 			CloudFoundryPlugin.trace("War file " + warFile.getName() + " created"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -216,9 +104,10 @@ public class JavaWebApplicationDelegate extends AbstractApplicationDelegate {
 		catch (Exception e) {
 			throw new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID,
 					"Failed to create war file. " + //$NON-NLS-1$
-							"\nApplication: " + module.getApplication().getName() + //$NON-NLS-1$
-							"\nModule: " + module.getName() + //$NON-NLS-1$
-							"\nException: " + e.getMessage(), e)); //$NON-NLS-1$
+							"\nApplication: " + appModule.getApplication().getName() + //$NON-NLS-1$
+							"\nModule: " + appModule.getName() + //$NON-NLS-1$
+							"\nException: " + e.getMessage(), //$NON-NLS-1$
+					e));
 		}
 	}
 
@@ -238,16 +127,16 @@ public class JavaWebApplicationDelegate extends AbstractApplicationDelegate {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.eclipse.cft.server.core.internal.application.
-	 * ApplicationDelegate
-	 * #getDefaultApplicationDeploymentInfo(org.eclipse.cf.server.core.internal.client.CloudFoundryApplicationModule,
+	 * @see
+	 * org.eclipse.cft.server.core.internal.application.ApplicationDelegate#
+	 * getDefaultApplicationDeploymentInfo(org.eclipse.wst.server.core.IModule,
 	 * org.eclipse.cft.server.core.internal.CloudFoundryServer,
 	 * org.eclipse.core.runtime.IProgressMonitor)
 	 */
 	@Override
-	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(CloudFoundryApplicationModule appModule,
-			CloudFoundryServer cloudServer, IProgressMonitor monitor) throws CoreException {
-		ApplicationDeploymentInfo info = super.getDefaultApplicationDeploymentInfo(appModule, cloudServer, monitor);
+	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(IModule module, CloudFoundryServer cloudServer,
+			IProgressMonitor monitor) throws CoreException {
+		ApplicationDeploymentInfo info = super.getDefaultApplicationDeploymentInfo(module, cloudServer, monitor);
 
 		// Set a default URL for the application.
 		if ((info.getUris() == null || info.getUris().isEmpty()) && info.getDeploymentName() != null) {

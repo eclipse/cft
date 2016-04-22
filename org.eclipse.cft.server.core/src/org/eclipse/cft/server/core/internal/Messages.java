@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2014, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,6 +32,8 @@ public class Messages extends NLS {
 	public static String AbstractApplicationDelegate_ERROR_MISSING_MEM;
 	
 	public static String AbstractPublishApplicationOperation_OPERATION_CANCELED;
+	
+	public static String ApplicationDelegate_NO_CLOUD_MODULE_FOUND;
 	
 	public static String ApplicationInstanceStartingTracker_STARTING_TRACKING;
 	

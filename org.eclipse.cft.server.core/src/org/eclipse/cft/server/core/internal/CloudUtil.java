@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -29,11 +29,17 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudService;
+import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
+import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
+import org.eclipse.cft.server.core.internal.client.LocalCloudService;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
@@ -410,5 +416,81 @@ public class CloudUtil {
 		for (int i = 0; i < size; i++) {
 			result.add(status[i]);
 		}
+	}
+	
+	public static IStatus basicValidateDeploymentInfo(ApplicationDeploymentInfo deploymentInfo) {
+		IStatus status = Status.OK_STATUS;
+
+		String errorMessage = null;
+
+		if (deploymentInfo == null) {
+			errorMessage = Messages.AbstractApplicationDelegate_ERROR_MISSING_DEPLOY_INFO;
+		}
+		else if (ValueValidationUtil.isEmpty(deploymentInfo.getDeploymentName())) {
+			errorMessage = Messages.AbstractApplicationDelegate_ERROR_MISSING_APPNAME;
+		}
+		else if (deploymentInfo.getMemory() <= 0) {
+			errorMessage = Messages.AbstractApplicationDelegate_ERROR_MISSING_MEM;
+		}
+
+		if (errorMessage != null) {
+			status = CloudFoundryPlugin.getErrorStatus(errorMessage);
+		}
+
+		return status;
+	}
+	
+	/**
+	 * Parses deployment information from a deployed Cloud Application. Returns
+	 * null if the cloud application is null.
+	 * @param cloudApplication deployed in a CF server
+	 * @return Parsed deployment information, or null if Cloud Application is
+	 * null.
+	 */
+	public static ApplicationDeploymentInfo parseApplicationDeploymentInfo(CloudApplication cloudApplication) {
+
+		if (cloudApplication != null) {
+
+			String deploymentName = cloudApplication.getName();
+			ApplicationDeploymentInfo deploymentInfo = new ApplicationDeploymentInfo(deploymentName);
+
+			deploymentInfo.setInstances(cloudApplication.getInstances());
+			deploymentInfo.setStaging(cloudApplication.getStaging());
+			deploymentInfo.setMemory(cloudApplication.getMemory());
+
+			List<String> boundServiceNames = cloudApplication.getServices();
+			if (boundServiceNames != null) {
+				List<CloudService> services = new ArrayList<CloudService>();
+				for (String name : boundServiceNames) {
+					if (name != null) {
+						services.add(new LocalCloudService(name));
+					}
+				}
+				deploymentInfo.setServices(services);
+			}
+
+			if (cloudApplication.getUris() != null) {
+				deploymentInfo.setUris(new ArrayList<String>(cloudApplication.getUris()));
+			}
+
+			Map<String, String> envMap = cloudApplication.getEnvAsMap();
+
+			if (envMap != null) {
+				List<EnvironmentVariable> variables = new ArrayList<EnvironmentVariable>();
+				for (Entry<String, String> entry : envMap.entrySet()) {
+					String varName = entry.getKey();
+					if (varName != null) {
+						EnvironmentVariable variable = new EnvironmentVariable();
+						variable.setVariable(varName);
+						variable.setValue(entry.getValue());
+						variables.add(variable);
+					}
+				}
+				deploymentInfo.setEnvVariables(variables);
+			}
+			return deploymentInfo;
+
+		}
+		return null;
 	}
 }

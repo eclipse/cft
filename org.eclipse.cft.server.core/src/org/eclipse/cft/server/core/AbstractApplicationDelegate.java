@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,26 +21,11 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
-import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudService;
-import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.CloudUtil;
-import org.eclipse.cft.server.core.internal.Messages;
-import org.eclipse.cft.server.core.internal.ValueValidationUtil;
-import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
-import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.core.internal.client.LocalCloudService;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.model.IModuleResource;
 
@@ -130,9 +115,8 @@ public abstract class AbstractApplicationDelegate {
 	 * @throws CoreException if the application delegate provides an application
 	 * archive but it failed to create one.
 	 */
-	public abstract ApplicationArchive getApplicationArchive(CloudFoundryApplicationModule module,
-			CloudFoundryServer cloudServer, IModuleResource[] moduleResources, IProgressMonitor monitor)
-			throws CoreException;
+	public abstract ApplicationArchive getApplicationArchive(IModule module, CloudFoundryServer cloudServer,
+			IModuleResource[] moduleResources, IProgressMonitor monitor) throws CoreException;
 
 	/**
 	 * {@link IStatus#OK} If the deployment information is valid. Otherwise
@@ -140,128 +124,31 @@ public abstract class AbstractApplicationDelegate {
 	 * @param deploymentInfo
 	 * @return non-null status.
 	 */
-	public IStatus validateDeploymentInfo(ApplicationDeploymentInfo deploymentInfo) {
-		return basicValidateDeploymentInfo(deploymentInfo);
-	}
+	public abstract IStatus validateDeploymentInfo(ApplicationDeploymentInfo deploymentInfo);
 
 	/**
-	 * Resolve an application deployment for the given application. Return null
-	 * if it cannot be resolved. If returning non-null value, it should always
+	 * Resolve an application deployment for an existing application. Return null
+	 * if it cannot be resolved or application no longer exists. If returning non-null value, it should always
 	 * be a new copy of a deployment info.
-	 * @param Cloud server where application exists.
 	 * @param module application that already exists in the server
+	 * @param Cloud server where application exists.
 	 * @return A new copy of the deployment information for an existing
 	 * application, or null if it cannot be resolved.
 	 */
-	public ApplicationDeploymentInfo resolveApplicationDeploymentInfo(CloudFoundryApplicationModule appModule,
-			CloudFoundryServer cloudServer) {
-		return parseApplicationDeploymentInfo(appModule.getApplication());
-	}
+	public abstract ApplicationDeploymentInfo getExistingApplicationDeploymentInfo(IModule appModule,
+			CloudFoundryServer cloudServer) throws CoreException;
+	
 
 	/**
 	 * Get a default application deployment information, regardless of whether
-	 * the application is deployed or not. It should contain default settings
+	 * the application exists or not. It should contain default settings
 	 * for this type of application (e.g. memory, default URL, if necessary,
 	 * etc..). Should not be null.
-	 * @param appModule
+	 * @param module
 	 * @param cloudServer
 	 * @return Non-null application deployment information with default values.
+	 * @throws CoreException if failed to resolve a default application deployment info
 	 */
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.cft.server.core.internal.application.
-	 * AbstractApplicationDelegate
-	 * #getDefaultApplicationDeploymentInfo(org.cloudfoundry.
-	 * ide.eclipse.internal.server.core.client.CloudFoundryApplicationModule,
-	 * org.eclipse.cft.server.core.internal.CloudFoundryServer,
-	 * org.eclipse.core.runtime.IProgressMonitor)
-	 */
-	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(CloudFoundryApplicationModule appModule,
-			CloudFoundryServer cloudServer, IProgressMonitor monitor) throws CoreException {
-
-		// Set default values.
-		String appName = appModule.getDeployedApplicationName();
-		ApplicationDeploymentInfo deploymentInfo = new ApplicationDeploymentInfo(appName);
-		deploymentInfo.setMemory(CloudUtil.DEFAULT_MEMORY);
-
-		return deploymentInfo;
-	}
-
-	public static IStatus basicValidateDeploymentInfo(ApplicationDeploymentInfo deploymentInfo) {
-		IStatus status = Status.OK_STATUS;
-
-		String errorMessage = null;
-
-		if (deploymentInfo == null) {
-			errorMessage = Messages.AbstractApplicationDelegate_ERROR_MISSING_DEPLOY_INFO;
-		}
-		else if (ValueValidationUtil.isEmpty(deploymentInfo.getDeploymentName())) {
-			errorMessage = Messages.AbstractApplicationDelegate_ERROR_MISSING_APPNAME;
-		}
-		else if (deploymentInfo.getMemory() <= 0) {
-			errorMessage = Messages.AbstractApplicationDelegate_ERROR_MISSING_MEM;
-		}
-
-		if (errorMessage != null) {
-			status = CloudFoundryPlugin.getErrorStatus(errorMessage);
-		}
-
-		return status;
-	}
-
-	/**
-	 * Parses deployment information from a deployed Cloud Application. Returns
-	 * null if the cloud application is null.
-	 * @param cloudApplication deployed in a CF server
-	 * @return Parsed deployment information, or null if Cloud Application is
-	 * null.
-	 */
-	public static ApplicationDeploymentInfo parseApplicationDeploymentInfo(CloudApplication cloudApplication) {
-
-		if (cloudApplication != null) {
-
-			String deploymentName = cloudApplication.getName();
-			ApplicationDeploymentInfo deploymentInfo = new ApplicationDeploymentInfo(deploymentName);
-
-			deploymentInfo.setInstances(cloudApplication.getInstances());
-			deploymentInfo.setStaging(cloudApplication.getStaging());
-			deploymentInfo.setMemory(cloudApplication.getMemory());
-			
-			List<String> boundServiceNames = cloudApplication.getServices();
-			if (boundServiceNames != null) {
-				List<CloudService> services = new ArrayList<CloudService>();
-				for (String name : boundServiceNames) {
-					if (name != null) {
-						services.add(new LocalCloudService(name));
-					}
-				}
-				deploymentInfo.setServices(services);
-			}
-
-			if (cloudApplication.getUris() != null) {
-				deploymentInfo.setUris(new ArrayList<String>(cloudApplication.getUris()));
-			}
-
-			Map<String, String> envMap = cloudApplication.getEnvAsMap();
-
-			if (envMap != null) {
-				List<EnvironmentVariable> variables = new ArrayList<EnvironmentVariable>();
-				for (Entry<String, String> entry : envMap.entrySet()) {
-					String varName = entry.getKey();
-					if (varName != null) {
-						EnvironmentVariable variable = new EnvironmentVariable();
-						variable.setVariable(varName);
-						variable.setValue(entry.getValue());
-						variables.add(variable);
-					}
-				}
-				deploymentInfo.setEnvVariables(variables);
-			}
-			return deploymentInfo;
-
-		}
-		return null;
-	}
-
+	public abstract ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(IModule module,
+			CloudFoundryServer cloudServer, IProgressMonitor monitor) throws CoreException;
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 IBM Corporation and others
+ * Copyright (c) 2014, 2016 IBM Corporation and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -109,19 +109,20 @@ public abstract class AbstractConsoleMonitorAppStateTracker extends AbstractAppS
 	    }
 	}
 	
-	protected ConsolePatternMatchListener createPatternMatchListener(ICloudFoundryApplicationModule appModule) {
-		return new ConsolePatternMatchListener(((IModule)appModule).getName());
+	protected ConsolePatternMatchListener createPatternMatchListener(IModule module) {
+		return new ConsolePatternMatchListener(module.getName());
 	}
 	
 	/**
 	 * Find the message console that corresponds to the server and a given module. If there are multiple instances
 	 * of the application, only the first one will get returned.
 	 * @param server the server for that console
-	 * @param appModule the app for that console
+	 * @param module the app for that console
 	 * @return the message console. Null if no corresponding console is found.
 	 */
-	protected MessageConsole findCloudFoundryConsole(IServer server, CloudFoundryApplicationModule appModule) {
+	protected MessageConsole findCloudFoundryConsole(IServer server, IModule module) {
 		CloudFoundryServer cfServer = (CloudFoundryServer)server.getAdapter(CloudFoundryServer.class);
+		CloudFoundryApplicationModule appModule = cfServer.getExistingCloudModule(module);
 		return ConsoleManagerRegistry.getConsoleManager(cfServer).findCloudFoundryConsole(server, appModule);
 	}
 	
@@ -141,30 +142,30 @@ public abstract class AbstractConsoleMonitorAppStateTracker extends AbstractAppS
     protected abstract String getAppStartedPattern();
 
 	@Override
-	public void startTracking(CloudFoundryApplicationModule appModule) {
-		if (server == null || appModule == null) {
+	public void startTracking(IModule module) {
+		if (server == null || module == null) {
 			return;
 		}
 
-		MessageConsole console = findCloudFoundryConsole(server, appModule);
+		MessageConsole console = findCloudFoundryConsole(server, module);
 		if (console != null) {
 			if (Logger.INFO) {
-				 Logger.println(Logger.INFO_LEVEL, this, "isApplicationStarted", "Start app state tracking: " + ((IModule)appModule).getName()); //$NON-NLS-1$ //$NON-NLS-2$
+				 Logger.println(Logger.INFO_LEVEL, this, "isApplicationStarted", "Start app state tracking: " + module.getName()); //$NON-NLS-1$ //$NON-NLS-2$
 			}
-			consoleMonitor = createPatternMatchListener(appModule);
+			consoleMonitor = createPatternMatchListener(module);
 			console.addPatternMatchListener(consoleMonitor);
 		}
 	}
 
 	@Override
-	public void stopTracking(CloudFoundryApplicationModule appModule) {
-		if (server == null || consoleMonitor == null || appModule == null) {
+	public void stopTracking(IModule module) {
+		if (server == null || consoleMonitor == null || module == null) {
 			return;
 		}
 		if (Logger.INFO) {
-			 Logger.println(Logger.INFO_LEVEL, this, "stopTracking", "Stop app state tracking: " + ((IModule)appModule).getName()); //$NON-NLS-1$ //$NON-NLS-2$
+			 Logger.println(Logger.INFO_LEVEL, this, "stopTracking", "Stop app state tracking: " + module.getName()); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		MessageConsole console = findCloudFoundryConsole(server, appModule);
+		MessageConsole console = findCloudFoundryConsole(server, module);
 		if (console != null) {
 			console.removePatternMatchListener(consoleMonitor);
 		}

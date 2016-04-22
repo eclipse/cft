@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -133,6 +133,9 @@ public class ApplicationLogConsoleManager extends CloudConsoleManager {
 
 	protected synchronized ApplicationLogConsole getApplicationLogConsole(CloudFoundryServer server,
 			CloudFoundryApplicationModule appModule) {
+		if (server == null || appModule == null) {
+			return null;
+		}
 
 		String appUrl = getConsoleId(server.getServer(), appModule);
 		ApplicationLogConsole serverLogTail = consoleByUri.get(appUrl);
@@ -145,14 +148,6 @@ public class ApplicationLogConsoleManager extends CloudConsoleManager {
 		}
 		return serverLogTail;
 	}
-
-	// public String getConsoleName() {
-	// CloudApplication cloudApp = app != null ? app.getApplication() : null;
-	// String name = (cloudApp != null && cloudApp.getUris() != null &&
-	// cloudApp.getUris().size() > 0) ? cloudApp
-	// .getUris().get(0) : app.getDeployedApplicationName();
-	// return name;
-	// }
 
 	@Override
 	public MessageConsole findCloudFoundryConsole(IServer server, CloudFoundryApplicationModule appModule) {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -29,9 +29,9 @@ import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.application.ICloudFoundryServerApplicationDelegate;
 import org.eclipse.cft.server.core.internal.application.JavaWebApplicationDelegate;
-import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.wst.server.core.IModule;
 
 /**
  * Java Web applications are the standard type of applications supported on
@@ -50,16 +50,15 @@ public class PivotalJavaWebApplicationDelegate extends JavaWebApplicationDelegat
 	 * (non-Javadoc)
 	 * 
 	 * @see org.eclipse.cft.server.core.internal.application.
-	 * ApplicationDelegate
-	 * #getDefaultApplicationDeploymentInfo(org.eclipse.cf.server.core.internal.
-	 * client.CloudFoundryApplicationModule,
+	 * JavaWebApplicationDelegate#getDefaultApplicationDeploymentInfo(org.
+	 * eclipse.wst.server.core.IModule,
 	 * org.eclipse.cft.server.core.internal.CloudFoundryServer,
 	 * org.eclipse.core.runtime.IProgressMonitor)
 	 */
 	@Override
-	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(CloudFoundryApplicationModule appModule,
-			CloudFoundryServer cloudServer, IProgressMonitor monitor) throws CoreException {
-		ApplicationDeploymentInfo info = super.getDefaultApplicationDeploymentInfo(appModule, cloudServer, monitor);
+	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(IModule module, CloudFoundryServer cloudServer,
+			IProgressMonitor monitor) throws CoreException {
+		ApplicationDeploymentInfo info = super.getDefaultApplicationDeploymentInfo(module, cloudServer, monitor);
 
 		info.setStaging(new Staging(null, PivotalConstants.PIVOTAL_WEB_SERVICES_JAVA_BUILDPACK));
 		info.setMemory(PivotalConstants.PIVOTAL_DEFAULT_MEMORY);
