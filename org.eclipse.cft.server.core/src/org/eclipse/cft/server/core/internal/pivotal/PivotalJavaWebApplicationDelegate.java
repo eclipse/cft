@@ -22,7 +22,6 @@ package org.eclipse.cft.server.core.internal.pivotal;
 
 import java.util.Arrays;
 
-import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
@@ -60,7 +59,6 @@ public class PivotalJavaWebApplicationDelegate extends JavaWebApplicationDelegat
 			IProgressMonitor monitor) throws CoreException {
 		ApplicationDeploymentInfo info = super.getDefaultApplicationDeploymentInfo(module, cloudServer, monitor);
 
-		info.setStaging(new Staging(null, PivotalConstants.PIVOTAL_WEB_SERVICES_JAVA_BUILDPACK));
 		info.setMemory(PivotalConstants.PIVOTAL_DEFAULT_MEMORY);
 		// Set a default URL for the application.
 		if ((info.getUris() == null || info.getUris().isEmpty()) && info.getDeploymentName() != null) {
