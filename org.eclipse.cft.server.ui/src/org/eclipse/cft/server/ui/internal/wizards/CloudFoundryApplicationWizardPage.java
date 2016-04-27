@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -149,8 +149,7 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 
 	protected void init() {
 		appName = descriptor.getDeploymentInfo().getDeploymentName();
-		buildpack = descriptor.getDeploymentInfo().getStaging() != null
-				? descriptor.getDeploymentInfo().getStaging().getBuildpackUrl() : null;
+		buildpack = descriptor.getDeploymentInfo().getBuildpack();
 	}
 
 	protected CloudFoundryApplicationWizard getApplicationWizard() {

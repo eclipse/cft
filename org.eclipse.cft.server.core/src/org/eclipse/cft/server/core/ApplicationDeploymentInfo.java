@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,9 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Observable;
 
-import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudService;
-import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 
 /**
@@ -34,16 +32,13 @@ import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
  * exists in a server.
  * <p/>
  * This is the primary model of an application's metadata, and includes the
- * application's name, staging, URIs, and list of bound services. It mirrors a
- * {@link CloudApplication} , but unlike the latter, it is available for
- * applications that are not yet deployed. Note that properties that are NOT
- * part of an application deployment manifest (e.g. that are transient and only
- * applicable when an operation is being performed on the application, like
- * selecting its deployment mode) should not be defined here).
+ * application's name, staging, URIs, and list of bound services.Note that
+ * properties that are NOT part of an application deployment manifest (e.g. that
+ * are transient and only applicable when an operation is being performed on the
+ * application, like selecting its deployment mode) should not be defined here).
  */
-public class ApplicationDeploymentInfo extends Observable{
+public class ApplicationDeploymentInfo extends Observable {
 
-	private Staging staging;
 
 	private List<EnvironmentVariable> envVars = new ArrayList<EnvironmentVariable>();
 
@@ -58,6 +53,8 @@ public class ApplicationDeploymentInfo extends Observable{
 	private int memory;
 
 	private String archive;
+
+	private String buildpack;
 
 	public ApplicationDeploymentInfo(String appName) {
 		setDeploymentName(appName);
@@ -85,12 +82,12 @@ public class ApplicationDeploymentInfo extends Observable{
 		this.instances = instances;
 	}
 
-	public Staging getStaging() {
-		return staging;
+	public String getBuildpack() {
+		return buildpack;
 	}
 
-	public void setStaging(Staging staging) {
-		this.staging = staging;
+	public void setBuildpack(String buildpack) {
+		this.buildpack = buildpack;
 	}
 
 	public String getDeploymentName() {
@@ -162,7 +159,7 @@ public class ApplicationDeploymentInfo extends Observable{
 		}
 		setDeploymentName(info.getDeploymentName());
 		setMemory(info.getMemory());
-		setStaging(info.getStaging());
+		setBuildpack(info.getBuildpack());
 		setInstances(info.getInstances());
 		setArchive(info.getArchive());
 
@@ -199,7 +196,7 @@ public class ApplicationDeploymentInfo extends Observable{
 		ApplicationDeploymentInfo info = new ApplicationDeploymentInfo(getDeploymentName());
 
 		info.setMemory(getMemory());
-		info.setStaging(getStaging());
+		info.setBuildpack(getBuildpack());
 		info.setInstances(getInstances());
 		info.setArchive(getArchive());
 

@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.domain.CloudService;
-import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
@@ -114,7 +113,7 @@ public class TestCallback extends CloudFoundryCallback {
 			copy.setServices(services);
 		}
 		if (buildpack != null) {
-			copy.setStaging(new Staging(null, buildpack));
+			copy.setBuildpack(buildpack);
 		}
 
 		if (url != null) {

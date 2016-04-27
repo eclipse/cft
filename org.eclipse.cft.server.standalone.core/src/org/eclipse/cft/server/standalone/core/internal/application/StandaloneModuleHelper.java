@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -50,24 +50,8 @@ public class StandaloneModuleHelper {
 		}
 
 		boolean isStandalone = module != null
-				&& StandaloneFacetHandler.ID_MODULE_STANDALONE.equals(module
-						.getModuleType().getId());
+				&& StandaloneFacetHandler.ID_MODULE_STANDALONE.equals(module.getModuleType().getId());
 
 		return isStandalone;
 	}
-
-	public Staging getStaging() {
-		if (appModule == null) {
-			return null;
-		}
-		Staging staging = appModule.getDeploymentInfo() != null  ? appModule.getDeploymentInfo().getStaging() : null;
-		if (staging == null) {
-			CloudApplication cloudApp = appModule.getApplication();
-			if (cloudApp != null) {
-				staging = cloudApp.getStaging();
-			}
-		}
-		return staging;
-	}
-
 }

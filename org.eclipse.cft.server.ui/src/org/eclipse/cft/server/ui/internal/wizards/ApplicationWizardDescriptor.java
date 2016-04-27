@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ package org.eclipse.cft.server.ui.internal.wizards;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.domain.CloudService;
-import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.core.runtime.Assert;
@@ -58,19 +57,8 @@ public class ApplicationWizardDescriptor {
 		this.deploymentInfo = deploymentInfo;
 	}
 
-	public void setStartCommand(String startCommand) {
-		Staging staging = deploymentInfo.getStaging();
-		String buildpackUrl = staging != null ? staging.getBuildpackUrl() : null;
-		staging = new Staging(startCommand, buildpackUrl);
-		deploymentInfo.setStaging(staging);
-	}
-
 	public void setBuildpack(String buildpack) {
-		Staging staging = deploymentInfo.getStaging();
-
-		String existingStartCommand = staging != null ? staging.getCommand() : null;
-		staging = new Staging(existingStartCommand, buildpack);
-		deploymentInfo.setStaging(staging);
+		deploymentInfo.setBuildpack(buildpack);
 	}
 
 	/**

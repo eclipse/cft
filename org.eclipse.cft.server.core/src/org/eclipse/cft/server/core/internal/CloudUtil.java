@@ -455,7 +455,9 @@ public class CloudUtil {
 			ApplicationDeploymentInfo deploymentInfo = new ApplicationDeploymentInfo(deploymentName);
 
 			deploymentInfo.setInstances(cloudApplication.getInstances());
-			deploymentInfo.setStaging(cloudApplication.getStaging());
+			if (cloudApplication.getStaging() != null) {
+				deploymentInfo.setBuildpack(cloudApplication.getStaging().getBuildpackUrl());
+			}
 			deploymentInfo.setMemory(cloudApplication.getMemory());
 
 			List<String> boundServiceNames = cloudApplication.getServices();

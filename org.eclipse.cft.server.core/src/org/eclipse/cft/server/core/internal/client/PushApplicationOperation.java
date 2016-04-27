@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -155,17 +155,15 @@ public class PushApplicationOperation extends StartOperation {
 			// but before other properties are updated like environment
 			// variables
 			// and instances
-			Staging staging = appModule.getDeploymentInfo().getStaging();
+			String buildpack = appModule.getDeploymentInfo().getBuildpack();
 			List<String> uris = appModule.getDeploymentInfo().getUris() != null
 					? appModule.getDeploymentInfo().getUris() : new ArrayList<String>(0);
 			List<String> services = appModule.getDeploymentInfo().asServiceBindingList();
 			List<EnvironmentVariable> variables = appModule.getDeploymentInfo().getEnvVariables();
 			int instances = appModule.getDeploymentInfo().getInstances();
 
-			if (staging == null) {
-				// For v2, a non-null staging is required.
-				staging = new Staging();
-			}
+			Staging staging = new Staging(null /* no command */, buildpack);
+			
 			CoreException cloudAppCreationClientError = null;
 
 			// Guard against host taken errors and other errors that may

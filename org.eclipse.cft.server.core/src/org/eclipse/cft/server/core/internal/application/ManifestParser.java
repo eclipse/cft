@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,7 +33,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.cloudfoundry.client.lib.domain.CloudService;
-import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
@@ -317,8 +316,7 @@ public class ManifestParser {
 
 			String buildpackurl = getStringValue(application, BUILDPACK_PROP);
 			if (buildpackurl != null) {
-				Staging staging = new Staging(null, buildpackurl);
-				workingCopy.setStaging(staging);
+				workingCopy.setBuildpack(buildpackurl);
 			}
 
 			readEnvars(workingCopy, application);
@@ -740,12 +738,12 @@ public class ManifestParser {
 				application.remove(ENV_PROP);
 			}
 
-			Staging staging = deploymentInfo.getStaging();
-
+			String buildpack = deploymentInfo.getBuildpack();
+			
 			// Only overwrite the buildpack URL if it can be resolved
 			// Otherwise retain any old value from before
-			if (staging != null && staging.getBuildpackUrl() != null) {
-				application.put(BUILDPACK_PROP, staging.getBuildpackUrl());
+			if (buildpack != null) {
+				application.put(BUILDPACK_PROP, buildpack);
 			}
 
 			// Only overwrite the archive path if present, but do not
