@@ -22,11 +22,11 @@
 package org.eclipse.cft.server.core;
 
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 import org.eclipse.wst.server.core.model.IModuleResource;
 
 /**
@@ -104,7 +104,7 @@ public abstract class AbstractApplicationDelegate {
 	 * to be used and the framework .war file generation should be used instead.
 	 * 
 	 * @param module for the application that needs to be published.
-	 * @param cloudServer server where application should be deployed (or where
+	 * @param server server where application should be deployed (or where
 	 * it is currently deployed, and app resources need to be updated).
 	 * @param moduleResources corresponding module resources for the module that
 	 * needs to be published. These module resources are typically used to
@@ -115,7 +115,7 @@ public abstract class AbstractApplicationDelegate {
 	 * @throws CoreException if the application delegate provides an application
 	 * archive but it failed to create one.
 	 */
-	public abstract ApplicationArchive getApplicationArchive(IModule module, CloudFoundryServer cloudServer,
+	public abstract ApplicationArchive getApplicationArchive(IModule module, IServer server,
 			IModuleResource[] moduleResources, IProgressMonitor monitor) throws CoreException;
 
 	/**
@@ -131,12 +131,12 @@ public abstract class AbstractApplicationDelegate {
 	 * if it cannot be resolved or application no longer exists. If returning non-null value, it should always
 	 * be a new copy of a deployment info.
 	 * @param module application that already exists in the server
-	 * @param Cloud server where application exists.
+	 * @param server where application exists.
 	 * @return A new copy of the deployment information for an existing
 	 * application, or null if it cannot be resolved.
 	 */
 	public abstract ApplicationDeploymentInfo getExistingApplicationDeploymentInfo(IModule appModule,
-			CloudFoundryServer cloudServer) throws CoreException;
+			IServer server) throws CoreException;
 	
 
 	/**
@@ -145,10 +145,10 @@ public abstract class AbstractApplicationDelegate {
 	 * for this type of application (e.g. memory, default URL, if necessary,
 	 * etc..). Should not be null.
 	 * @param module
-	 * @param cloudServer
+	 * @param server where application either exists or may be deployed to
 	 * @return Non-null application deployment information with default values.
 	 * @throws CoreException if failed to resolve a default application deployment info
 	 */
 	public abstract ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(IModule module,
-			CloudFoundryServer cloudServer, IProgressMonitor monitor) throws CoreException;
+			IServer server, IProgressMonitor monitor) throws CoreException;
 }

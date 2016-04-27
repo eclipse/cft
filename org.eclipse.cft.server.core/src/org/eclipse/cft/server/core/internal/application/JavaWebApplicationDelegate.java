@@ -48,6 +48,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 import org.eclipse.wst.server.core.internal.Server;
 import org.eclipse.wst.server.core.model.IModuleResource;
 
@@ -76,19 +77,19 @@ public class JavaWebApplicationDelegate extends ApplicationDelegate {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.eclipse.cft.server.core.internal.application.
-	 * AbstractApplicationDelegate
-	 * #getApplicationArchive(org.eclipse.cft.internal
-	 * .server.core.client.CloudFoundryApplicationModule,
-	 * org.eclipse.cft.server.core.internal.CloudFoundryServer,
+	 * @see org.eclipse.cft.server.core.AbstractApplicationDelegate#
+	 * getApplicationArchive(org.eclipse.wst.server.core.IModule,
+	 * org.eclipse.wst.server.core.IServer,
 	 * org.eclipse.wst.server.core.model.IModuleResource[],
 	 * org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	public ApplicationArchive getApplicationArchive(IModule module,
-			CloudFoundryServer cloudServer, IModuleResource[] moduleResources, IProgressMonitor monitor)
-			throws CoreException {
+	@Override
+	public ApplicationArchive getApplicationArchive(IModule module, IServer server, IModuleResource[] moduleResources,
+			IProgressMonitor monitor) throws CoreException {
 
-		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, cloudServer);
+		
+		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, server);
+		CloudFoundryServer cloudServer = getCloudServer(server);
 		ApplicationArchive manifestArchive = getArchiveFromManifest(appModule, cloudServer);
 		if (manifestArchive != null) {
 			return manifestArchive;
@@ -134,14 +135,14 @@ public class JavaWebApplicationDelegate extends ApplicationDelegate {
 	 * org.eclipse.core.runtime.IProgressMonitor)
 	 */
 	@Override
-	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(IModule module, CloudFoundryServer cloudServer,
+	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(IModule module, IServer server,
 			IProgressMonitor monitor) throws CoreException {
-		ApplicationDeploymentInfo info = super.getDefaultApplicationDeploymentInfo(module, cloudServer, monitor);
+		ApplicationDeploymentInfo info = super.getDefaultApplicationDeploymentInfo(module, server, monitor);
 
 		// Set a default URL for the application.
 		if ((info.getUris() == null || info.getUris().isEmpty()) && info.getDeploymentName() != null) {
 
-			CloudApplicationURL url = ApplicationUrlLookupService.update(cloudServer, monitor)
+			CloudApplicationURL url = ApplicationUrlLookupService.update(getCloudServer(server), monitor)
 					.getDefaultApplicationURL(info.getDeploymentName());
 			info.setUris(Arrays.asList(url.getUrl()));
 		}

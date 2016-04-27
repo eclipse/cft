@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,11 +23,11 @@ package org.eclipse.cft.server.ui.internal.wizards;
 import java.util.List;
 
 import org.eclipse.cft.server.core.AbstractApplicationDelegate;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.application.FrameworkProvider;
-import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.jface.wizard.IWizardPage;
+import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 
 /**
  * 
@@ -98,9 +98,9 @@ public class ApplicationWizardProvider {
 			setApplicationDelegate(coreDelegate);
 		}
 
-		public List<IWizardPage> getWizardPages(ApplicationWizardDescriptor descriptor, CloudFoundryServer cloudServer,
-				CloudFoundryApplicationModule applicationModule) {
-			return actualDelegate.getWizardPages(descriptor, cloudServer, applicationModule);
+		public List<IWizardPage> getWizardPages(ApplicationWizardDescriptor descriptor, IServer server,
+				IModule module) {
+			return actualDelegate.getWizardPages(descriptor, server, module);
 		}
 
 	}

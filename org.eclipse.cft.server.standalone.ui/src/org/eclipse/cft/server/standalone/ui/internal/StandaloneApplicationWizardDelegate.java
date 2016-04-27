@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2015 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,39 +20,38 @@
  ********************************************************************************/
 package org.eclipse.cft.server.standalone.ui.internal;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.CloudServerUtil;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.ui.internal.wizards.ApplicationWizardDelegate;
+import org.eclipse.cft.server.ui.DefaultApplicationWizardDelegate;
 import org.eclipse.cft.server.ui.internal.wizards.ApplicationWizardDescriptor;
 import org.eclipse.cft.server.ui.internal.wizards.CloudFoundryApplicationEnvVarWizardPage;
 import org.eclipse.cft.server.ui.internal.wizards.CloudFoundryApplicationServicesWizardPage;
 import org.eclipse.cft.server.ui.internal.wizards.CloudFoundryApplicationWizardPage;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.wizard.IWizardPage;
+import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 
-public class StandaloneApplicationWizardDelegate extends
-		ApplicationWizardDelegate {
+public class StandaloneApplicationWizardDelegate extends DefaultApplicationWizardDelegate {
 
 	public StandaloneApplicationWizardDelegate() {
 	}
 
-	public List<IWizardPage> getWizardPages(
-			ApplicationWizardDescriptor descriptor,
-			CloudFoundryServer cloudServer,
-			CloudFoundryApplicationModule applicationModule) {
-		List<IWizardPage> defaultPages = new ArrayList<IWizardPage>();
+	protected void createPages(ApplicationWizardDescriptor descriptor, IServer server, IModule module,
+			List<IWizardPage> defaultPages) throws CoreException {
+		CloudFoundryServer cloudServer = CloudServerUtil.getCloudServer(server);
+		CloudFoundryApplicationModule applicationModule = cloudServer.getExistingCloudModule(module);
+		ApplicationUrlLookupService urllookup = ApplicationUrlLookupService.getCurrentLookup(cloudServer);
 
-		ApplicationUrlLookupService urllookup = ApplicationUrlLookupService
-				.getCurrentLookup(cloudServer);
+		StandaloneDeploymentWizardPage deploymentPage = new StandaloneDeploymentWizardPage(cloudServer,
+				applicationModule, descriptor, urllookup, this);
 
-		StandaloneDeploymentWizardPage deploymentPage = new StandaloneDeploymentWizardPage(
-				cloudServer, applicationModule, descriptor, urllookup, this);
-
-		CloudFoundryApplicationWizardPage applicationNamePage = new CloudFoundryApplicationWizardPage(
-				cloudServer, applicationModule, descriptor);
+		CloudFoundryApplicationWizardPage applicationNamePage = new CloudFoundryApplicationWizardPage(cloudServer,
+				applicationModule, descriptor);
 
 		defaultPages.add(applicationNamePage);
 
@@ -63,9 +62,7 @@ public class StandaloneApplicationWizardDelegate extends
 
 		defaultPages.add(servicesPage);
 
-		defaultPages.add(new CloudFoundryApplicationEnvVarWizardPage(
-				cloudServer, descriptor.getDeploymentInfo()));
-		return defaultPages;
-
+		defaultPages.add(new CloudFoundryApplicationEnvVarWizardPage(cloudServer, descriptor.getDeploymentInfo()));
 	}
+
 }

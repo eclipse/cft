@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IServer;
 import org.eclipse.wst.server.core.IServerType;
 import org.eclipse.wst.server.core.ServerCore;
@@ -84,6 +86,22 @@ public class CloudServerUtil {
 	}
 
 	/**
+	 * 
+	 * @param server that associates to a {@link CloudFoundryServer}
+	 * @return non-null {@link CloudFoundryServer}
+	 * @throws CoreException if server is not a {@link CloudFoundryServer} or
+	 * error occurred while resolving Cloud server
+	 */
+	public static CloudFoundryServer getCloudServer(IServer server) throws CoreException {
+		CloudFoundryServer cfServer = (CloudFoundryServer) server.getAdapter(CloudFoundryServer.class);
+		if (cfServer == null) {
+			throw CloudErrorUtil.toCoreException(
+					NLS.bind(Messages.CloudServerUtil_NOT_CLOUD_SERVER_ERROR, server.getName(), server.getId()));
+		}
+		return cfServer;
+	}
+
+	/**
 	 * Check if the server is a Cloud Foundry-based server
 	 * @param server
 	 * @return true if it is a Cloud Foundry server
@@ -94,7 +112,7 @@ public class CloudServerUtil {
 		}
 		return false;
 	}
-	
+
 	/**
 	 * Check if the server type is a Cloud Foundry-based server type
 	 * @param serverType

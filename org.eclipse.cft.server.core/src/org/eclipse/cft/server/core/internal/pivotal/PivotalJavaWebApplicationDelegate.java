@@ -31,6 +31,7 @@ import org.eclipse.cft.server.core.internal.application.JavaWebApplicationDelega
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 
 /**
  * Java Web applications are the standard type of applications supported on
@@ -50,19 +51,18 @@ public class PivotalJavaWebApplicationDelegate extends JavaWebApplicationDelegat
 	 * 
 	 * @see org.eclipse.cft.server.core.internal.application.
 	 * JavaWebApplicationDelegate#getDefaultApplicationDeploymentInfo(org.
-	 * eclipse.wst.server.core.IModule,
-	 * org.eclipse.cft.server.core.internal.CloudFoundryServer,
+	 * eclipse.wst.server.core.IModule, org.eclipse.wst.server.core.IServer,
 	 * org.eclipse.core.runtime.IProgressMonitor)
 	 */
 	@Override
-	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(IModule module, CloudFoundryServer cloudServer,
+	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(IModule module, IServer server,
 			IProgressMonitor monitor) throws CoreException {
-		ApplicationDeploymentInfo info = super.getDefaultApplicationDeploymentInfo(module, cloudServer, monitor);
+		ApplicationDeploymentInfo info = super.getDefaultApplicationDeploymentInfo(module, server, monitor);
 
 		info.setMemory(PivotalConstants.PIVOTAL_DEFAULT_MEMORY);
 		// Set a default URL for the application.
 		if ((info.getUris() == null || info.getUris().isEmpty()) && info.getDeploymentName() != null) {
-
+			CloudFoundryServer cloudServer = getCloudServer(server);
 			CloudApplicationURL url = ApplicationUrlLookupService.update(cloudServer, monitor)
 					.getDefaultApplicationURL(info.getDeploymentName());
 			info.setUris(Arrays.asList(url.getUrl()));

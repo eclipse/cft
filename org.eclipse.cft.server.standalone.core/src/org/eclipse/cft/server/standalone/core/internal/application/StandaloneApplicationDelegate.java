@@ -32,6 +32,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 import org.eclipse.wst.server.core.model.IModuleResource;
 
 /**
@@ -72,15 +73,16 @@ public class StandaloneApplicationDelegate extends ModuleResourceApplicationDele
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.eclipse.cft.server.core.AbstractApplicationDelegate#
-	 * getApplicationArchive(org.eclipse.wst.server.core.IModule,
-	 * org.eclipse.cft.server.core.internal.CloudFoundryServer,
+	 * @see org.eclipse.cft.server.core.internal.application.
+	 * ModuleResourceApplicationDelegate#getApplicationArchive(org.eclipse.wst.
+	 * server.core.IModule, org.eclipse.wst.server.core.IServer,
 	 * org.eclipse.wst.server.core.model.IModuleResource[],
 	 * org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	public ApplicationArchive getApplicationArchive(IModule module, CloudFoundryServer cloudServer,
-			IModuleResource[] moduleResources, IProgressMonitor monitor) throws CoreException {
-		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, cloudServer);
+	public ApplicationArchive getApplicationArchive(IModule module, IServer server, IModuleResource[] moduleResources,
+			IProgressMonitor monitor) throws CoreException {
+		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, server);
+		CloudFoundryServer cloudServer = getCloudServer(server);
 		ICloudFoundryArchiver archiver = CloudFoundryArchiverRegistry.INSTANCE.createArchiver(appModule, cloudServer);
 		return archiver.getApplicationArchive(monitor);
 	}

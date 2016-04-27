@@ -103,7 +103,7 @@ public class CloudFoundryApplicationWizard extends Wizard implements IReservedUR
 			wizardDelegate = ApplicationWizardRegistry.getDefaultJavaWebWizardDelegate();
 		}
 
-		applicationDeploymentPages = wizardDelegate.getWizardPages(applicationDescriptor, server, module);
+		applicationDeploymentPages = wizardDelegate.getWizardPages(applicationDescriptor, server.getServer(), module);
 
 		if (applicationDeploymentPages != null && !applicationDeploymentPages.isEmpty()) {
 			for (IWizardPage updatedPage : applicationDeploymentPages) {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2015 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -86,7 +86,7 @@ public class CloudFoundryUiCallback extends CloudFoundryCallback {
 			// output
 			boolean shouldClearConsole = false;
 
-			ConsoleManagerRegistry.getConsoleManager(cloudServer).startConsole(cloudServer,
+			ConsoleManagerRegistry.getConsoleManager(cloudServer.getServer()).startConsole(cloudServer,
 					StandardLogContentType.APPLICATION_LOG, cloudModule, i, i == showIndex, shouldClearConsole,
 					subMonitor.newChild(100));
 		}
@@ -95,14 +95,14 @@ public class CloudFoundryUiCallback extends CloudFoundryCallback {
 	@Override
 	public void showCloudFoundryLogs(CloudFoundryServer cloudServer, CloudFoundryApplicationModule cloudModule,
 			int showIndex, IProgressMonitor monitor) {
-		ConsoleManagerRegistry.getConsoleManager(cloudServer).showCloudFoundryLogs(cloudServer, cloudModule, showIndex,
+		ConsoleManagerRegistry.getConsoleManager(cloudServer.getServer()).showCloudFoundryLogs(cloudServer, cloudModule, showIndex,
 				false, monitor);
 	}
 
 	@Override
 	public void printToConsole(CloudFoundryServer cloudServer, CloudFoundryApplicationModule cloudModule,
 			String message, boolean clearConsole, boolean isError) {
-		ConsoleManagerRegistry.getConsoleManager(cloudServer).writeToStandardConsole(message, cloudServer, cloudModule,
+		ConsoleManagerRegistry.getConsoleManager(cloudServer.getServer()).writeToStandardConsole(message, cloudServer, cloudModule,
 				0, clearConsole, isError);
 	}
 
@@ -159,7 +159,7 @@ public class CloudFoundryUiCallback extends CloudFoundryCallback {
 		int totalInstances = cloudModule.isDeployed() ? cloudModule.getApplication().getInstances() : 0;
 		int instance = 0;
 		do {
-			ConsoleManagerRegistry.getConsoleManager(cloudServer).stopConsole(cloudServer.getServer(), cloudModule,
+			ConsoleManagerRegistry.getConsoleManager(cloudServer.getServer()).stopConsole(cloudServer.getServer(), cloudModule,
 					instance);
 			++instance;
 		} while (instance < totalInstances);
@@ -168,7 +168,7 @@ public class CloudFoundryUiCallback extends CloudFoundryCallback {
 
 	@Override
 	public void disconnecting(CloudFoundryServer cloudServer) {
-		ConsoleManagerRegistry.getConsoleManager(cloudServer).stopConsoles();
+		ConsoleManagerRegistry.getConsoleManager(cloudServer.getServer()).stopConsoles();
 	}
 
 	@Override

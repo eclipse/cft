@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and IBM Corporation 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc., IBM Corporation, and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -1627,7 +1627,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	private ApplicationArchive getApplicationArchive(CloudFoundryApplicationModule cloudModule,
 			IProgressMonitor monitor, AbstractApplicationDelegate delegate, IModuleResource[] resources)
 					throws CoreException {
-		return delegate.getApplicationArchive(cloudModule, getCloudFoundryServer(), resources, monitor);
+		return delegate.getApplicationArchive(cloudModule, getCloudFoundryServer().getServer(), resources, monitor);
 	}
 
 	/**

@@ -24,8 +24,6 @@ import java.util.regex.Pattern;
 
 import org.eclipse.cft.server.core.AbstractAppStateTracker;
 import org.eclipse.cft.server.core.ICloudFoundryApplicationModule;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.ui.internal.Logger;
 import org.eclipse.cft.server.ui.internal.console.ConsoleManagerRegistry;
 import org.eclipse.ui.console.IPatternMatchListener;
@@ -121,9 +119,7 @@ public abstract class AbstractConsoleMonitorAppStateTracker extends AbstractAppS
 	 * @return the message console. Null if no corresponding console is found.
 	 */
 	protected MessageConsole findCloudFoundryConsole(IServer server, IModule module) {
-		CloudFoundryServer cfServer = (CloudFoundryServer)server.getAdapter(CloudFoundryServer.class);
-		CloudFoundryApplicationModule appModule = cfServer.getExistingCloudModule(module);
-		return ConsoleManagerRegistry.getConsoleManager(cfServer).findCloudFoundryConsole(server, appModule);
+		return ConsoleManagerRegistry.getConsoleManager(server).findCloudFoundryConsole(server, module);
 	}
 	
 	@Override
