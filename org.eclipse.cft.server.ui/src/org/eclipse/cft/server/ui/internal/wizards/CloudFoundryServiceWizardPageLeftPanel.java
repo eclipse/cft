@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 Pivotal Software Inc and IBM Corporation. 
+ * Copyright (c) 2014, 2016 Pivotal Software Inc and IBM Corporation. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -1391,7 +1391,7 @@ class CFServiceWizardDynamicIconLoader extends Thread {
 			// Grab the image from the provider, if needed
 			if (result == null) {
 				Image img = null;
-				ImageDescriptor imageDesc = iconProvider.getServiceIcon(entry.getOffering(), server);
+				ImageDescriptor imageDesc = iconProvider.getServiceIcon(entry.getOffering(), server.getServer());
 				
 				if(imageDesc != null) {
 					try {
@@ -1409,7 +1409,7 @@ class CFServiceWizardDynamicIconLoader extends Thread {
 				if(img == null) {
 					// An error occurred while trying to create the image (for example, bad URL), 
 					// OR the getServiceIcon(...) call returned null, so request a replacement icon.
-					imageDesc = iconProvider.getDefaultServiceIcon(entry.getOffering(), server);
+					imageDesc = iconProvider.getDefaultServiceIcon(entry.getOffering(), server.getServer());
 					if (imageDesc != null) {
 						img = imageDesc.createImage();
 					}

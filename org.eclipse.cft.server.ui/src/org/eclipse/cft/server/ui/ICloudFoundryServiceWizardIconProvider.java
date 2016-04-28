@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 IBM Corporation and others
+ * Copyright (c) 2014, 2016 IBM Corporation and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,8 +22,8 @@
 package org.eclipse.cft.server.ui;
 
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.wst.server.core.IServer;
 
 /**
  * Concrete implementations of this class should be thread safe, allowing
@@ -55,7 +55,7 @@ public interface ICloudFoundryServiceWizardIconProvider {
 	 * @return An image descriptor which can be used to create an image for used
 	 * by the service wizard.
 	 */
-	public ImageDescriptor getServiceIcon(CloudServiceOffering offering, CloudFoundryServer server);
+	public ImageDescriptor getServiceIcon(CloudServiceOffering offering, IServer server);
 
 	/**
 	 * If an error occurs while calling createImage(...) on an ImageDescriptor
@@ -74,6 +74,6 @@ public interface ICloudFoundryServiceWizardIconProvider {
 	 * @return An image descriptor which can be used to create an image for used by the service wizard.
 	 * 
 	 */
-	public ImageDescriptor getDefaultServiceIcon(CloudServiceOffering offering, CloudFoundryServer server);
+	public ImageDescriptor getDefaultServiceIcon(CloudServiceOffering offering, IServer server);
 
 }
