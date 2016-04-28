@@ -22,9 +22,9 @@ package org.eclipse.cft.server.ui.internal.wizards;
 
 import java.util.List;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.core.runtime.Assert;
 
 /**
@@ -45,7 +45,7 @@ public class ApplicationWizardDescriptor {
 
 	private final ApplicationDeploymentInfo deploymentInfo;
 
-	private List<CloudService> createdCloudServices;
+	private List<CFServiceInstance> createdCloudServices;
 
 	private boolean persistDeploymentInfo;
 
@@ -67,11 +67,11 @@ public class ApplicationWizardDescriptor {
 	 * @return Optional list of created services, or null/empty list if no
 	 * services are to be created
 	 */
-	public List<CloudService> getCloudServicesToCreate() {
+	public List<CFServiceInstance> getCloudServicesToCreate() {
 		return createdCloudServices;
 	}
 
-	public void setCloudServicesToCreate(List<CloudService> createdCloudServices) {
+	public void setCloudServicesToCreate(List<CFServiceInstance> createdCloudServices) {
 		this.createdCloudServices = createdCloudServices;
 	}
 

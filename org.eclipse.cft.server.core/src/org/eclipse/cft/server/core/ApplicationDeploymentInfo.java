@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Observable;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 
 /**
  * Describes the application that is to be pushed to a CF server, or already
@@ -48,7 +48,7 @@ public class ApplicationDeploymentInfo extends Observable {
 
 	private List<String> uris;
 
-	private List<CloudService> services;
+	private List<CFServiceInstance> services;
 
 	private int memory;
 
@@ -109,7 +109,7 @@ public class ApplicationDeploymentInfo extends Observable {
 		return uris;
 	}
 
-	public List<CloudService> getServices() {
+	public List<CFServiceInstance> getServices() {
 		return services;
 	}
 
@@ -121,14 +121,14 @@ public class ApplicationDeploymentInfo extends Observable {
 		List<String> bindingList = new ArrayList<String>();
 
 		if (services != null && !services.isEmpty()) {
-			for (CloudService service : services) {
+			for (CFServiceInstance service : services) {
 				bindingList.add(service.getName());
 			}
 		}
 		return bindingList;
 	}
 
-	public void setServices(List<CloudService> services) {
+	public void setServices(List<CFServiceInstance> services) {
 		this.services = services;
 	}
 
@@ -164,7 +164,7 @@ public class ApplicationDeploymentInfo extends Observable {
 		setArchive(info.getArchive());
 
 		if (info.getServices() != null) {
-			setServices(new ArrayList<CloudService>(info.getServices()));
+			setServices(new ArrayList<CFServiceInstance>(info.getServices()));
 		}
 		else {
 			setServices(null);
@@ -201,7 +201,7 @@ public class ApplicationDeploymentInfo extends Observable {
 		info.setArchive(getArchive());
 
 		if (getServices() != null) {
-			info.setServices(new ArrayList<CloudService>(getServices()));
+			info.setServices(new ArrayList<CFServiceInstance>(getServices()));
 		}
 
 		if (getUris() != null) {

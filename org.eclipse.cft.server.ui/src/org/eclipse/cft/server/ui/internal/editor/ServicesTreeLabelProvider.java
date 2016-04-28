@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.editor;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
@@ -42,7 +42,7 @@ public class ServicesTreeLabelProvider extends LabelProvider implements ITableLa
 
 	@Override
 	public Image getImage(Object element) {
-		if (element instanceof CloudService) {
+		if (element instanceof CFServiceInstance) {
 			return CloudFoundryImages.getImage(CloudFoundryImages.OBJ_SERVICE);
 		}
 		return null;
@@ -50,8 +50,8 @@ public class ServicesTreeLabelProvider extends LabelProvider implements ITableLa
 
 	@Override
 	public String getText(Object element) {
-		if (element instanceof CloudService) {
-			CloudService service = (CloudService) element;
+		if (element instanceof CFServiceInstance) {
+			CFServiceInstance service = (CFServiceInstance) element;
 			return service.getName();
 		}
 		return super.getText(element);
@@ -66,22 +66,22 @@ public class ServicesTreeLabelProvider extends LabelProvider implements ITableLa
 			case Name:
 				return getImage(element);
 			default:
-				return getColumnImage((CloudService) element, (ServiceViewColumn) column.getData());
+				return getColumnImage((CFServiceInstance) element, (ServiceViewColumn) column.getData());
 			}
 		}
 
 		return null;
 	}
 
-	protected Image getColumnImage(CloudService service, ServiceViewColumn column) {
+	protected Image getColumnImage(CFServiceInstance service, ServiceViewColumn column) {
 		return null;
 	}
 
 	public String getColumnText(Object element, int columnIndex) {
 		String result = null;
 		TableColumn column = viewer.getTable().getColumn(columnIndex);
-		if (column != null && element instanceof CloudService) {
-			CloudService cloudService = (CloudService) element;
+		if (column != null && element instanceof CFServiceInstance) {
+			CFServiceInstance cloudService = (CFServiceInstance) element;
 			ServiceViewColumn serviceColumn = (ServiceViewColumn) column.getData();
 
 			if (serviceColumn != null) {
@@ -92,14 +92,11 @@ public class ServicesTreeLabelProvider extends LabelProvider implements ITableLa
 				case Version:
 					result = cloudService.getVersion();
 					break;
-				case Vendor:
-					result = cloudService.getLabel();
+				case Service:
+					result = cloudService.getService();
 					break;
 				case Plan:
 					result = cloudService.getPlan();
-					break;
-				case Provider:
-					result = cloudService.getProvider();
 					break;
 				}
 			}

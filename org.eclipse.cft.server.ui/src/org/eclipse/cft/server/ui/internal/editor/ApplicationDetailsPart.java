@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,6 @@ import java.util.List;
 
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.InstanceInfo;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
@@ -39,6 +38,7 @@ import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.ManifestParser;
 import org.eclipse.cft.server.core.internal.application.ModuleChangeEvent;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
@@ -119,7 +119,6 @@ import org.eclipse.ui.internal.progress.ProgressManager;
 import org.eclipse.ui.progress.UIJob;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
-import org.eclipse.wst.server.core.internal.Server;
 import org.eclipse.wst.server.ui.internal.ImageResource;
 
 /**
@@ -502,7 +501,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 			// null);
 
 			// Update the mapping of bound services in the application
-			List<CloudService> updatedServices = new ArrayList<CloudService>();
+			List<CFServiceInstance> updatedServices = new ArrayList<CFServiceInstance>();
 
 			DeploymentInfoWorkingCopy deploymentInfo = null;
 			List<String> serviceNames = null;
@@ -527,11 +526,11 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 				serviceNames = Collections.emptyList();
 			}
 
-			List<CloudService> allServices = editorPage.getServices();
+			List<CFServiceInstance> allServices = editorPage.getServices();
 
 			// Only show bound services that actually exist
 			if (allServices != null && !serviceNames.isEmpty()) {
-				for (CloudService service : allServices) {
+				for (CFServiceInstance service : allServices) {
 					if (serviceNames.contains(service.getName())) {
 						updatedServices.add(service);
 					}
@@ -543,7 +542,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 					deploymentInfo.save();
 				}
 			}
-			servicesViewer.setInput(updatedServices.toArray(new CloudService[updatedServices.size()]));
+			servicesViewer.setInput(updatedServices.toArray(new CFServiceInstance[updatedServices.size()]));
 
 			servicesDropListener.setModule(appModule);
 			servicesViewer.refresh(true);
@@ -1185,7 +1184,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		servicesViewer.setContentProvider(servicesContentProvider);
 		servicesViewer.setLabelProvider(labelProvider);
 		servicesViewer.setSorter(new CloudFoundryViewerSorter());
-		servicesViewer.setInput(new CloudService[0]);
+		servicesViewer.setInput(new CFServiceInstance[0]);
 
 		MenuManager menuManager = new MenuManager();
 		menuManager.setRemoveAllWhenShown(true);

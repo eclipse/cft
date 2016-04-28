@@ -44,7 +44,6 @@ import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
@@ -53,6 +52,7 @@ import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
+import org.eclipse.cft.server.core.internal.BehaviourOperationsScheduler;
 import org.eclipse.cft.server.core.internal.CachingApplicationArchive;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryLoginHandler;
@@ -62,7 +62,6 @@ import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ModuleResourceDeltaWrapper;
-import org.eclipse.cft.server.core.internal.BehaviourOperationsScheduler;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
@@ -237,17 +236,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			CloudFoundryPlugin.logError(e);
 		}
 		return ApplicationDebugLauncher.NO_DEBUG;
-	}
-
-	/**
-	 * Creates the given list of services
-	 * @deprecated Use {@link #operations()} instead.
-	 * @param services
-	 * @param monitor
-	 * @throws CoreException
-	 */
-	public void createService(final CloudService[] services, IProgressMonitor monitor) throws CoreException {
-		operations().createServices(services).run(monitor);
 	}
 
 	public synchronized List<CloudDomain> getDomainsFromOrgs(IProgressMonitor monitor) throws CoreException {
@@ -686,7 +674,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		getRequestFactory().deleteAllApplications().run(monitor);
 	}
 
-	public List<CloudService> getServices(IProgressMonitor monitor) throws CoreException {
+	public List<CFServiceInstance> getServices(IProgressMonitor monitor) throws CoreException {
 		return getRequestFactory().getServices().run(monitor);
 	}
 
@@ -922,21 +910,21 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public void refreshApplicationBoundServices(CloudFoundryApplicationModule appModule, IProgressMonitor monitor)
 			throws CoreException {
 		DeploymentInfoWorkingCopy copy = appModule.resolveDeploymentInfoWorkingCopy(monitor);
-		List<CloudService> boundServices = copy.getServices();
+		List<CFServiceInstance> boundServices = copy.getServices();
 		if (boundServices != null && !boundServices.isEmpty()) {
 
-			List<CloudService> allServices = getServices(monitor);
+			List<CFServiceInstance> allServices = getServices(monitor);
 			if (allServices != null) {
-				Map<String, CloudService> existingAsMap = new HashMap<String, CloudService>();
+				Map<String, CFServiceInstance> existingAsMap = new HashMap<String, CFServiceInstance>();
 
-				for (CloudService existingServices : allServices) {
+				for (CFServiceInstance existingServices : allServices) {
 					existingAsMap.put(existingServices.getName(), existingServices);
 				}
 
-				List<CloudService> updatedServices = new ArrayList<CloudService>();
+				List<CFServiceInstance> updatedServices = new ArrayList<CFServiceInstance>();
 
-				for (CloudService boundService : boundServices) {
-					CloudService updatedService = existingAsMap.get(boundService.getName());
+				for (CFServiceInstance boundService : boundServices) {
+					CFServiceInstance updatedService = existingAsMap.get(boundService.getName());
 					// Check if there is an updated mapping to an actual Cloud
 					// Service or retain the old one.
 					if (updatedService != null) {

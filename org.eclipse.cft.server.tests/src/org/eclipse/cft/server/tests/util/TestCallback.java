@@ -24,13 +24,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryCallback;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
@@ -53,12 +53,12 @@ public class TestCallback extends CloudFoundryCallback {
 
 	private final List<EnvironmentVariable> variables;
 
-	private final List<CloudService> services;
+	private final List<CFServiceInstance> services;
 
 	private final String buildpack;
 
 	public TestCallback(String appName, int memory, boolean startApp, List<EnvironmentVariable> variables,
-			List<CloudService> services, String buildpack) {
+			List<CFServiceInstance> services, String buildpack) {
 		this.appName = appName;
 		this.url = null;
 		this.startApp = startApp;

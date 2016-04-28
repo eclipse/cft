@@ -24,12 +24,12 @@ import java.util.List;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.tests.server.TestServlet;
@@ -257,7 +257,8 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 	}
 
 	protected CloudFoundryApplicationModule deployApplication(String appPrefix, int memory, boolean startApp,
-			List<EnvironmentVariable> variables, List<CloudService> services, String buildpack) throws Exception {
+			List<EnvironmentVariable> variables, List<CFServiceInstance> services, String buildpack)
+			throws Exception {
 
 		String projectName = harness.getDefaultWebAppProjectName();
 
@@ -325,12 +326,12 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 		return null;
 	}
 
-	protected CloudService getCloudServiceToCreate(String name, String label, String plan) throws CoreException {
+	protected CFServiceInstance getCloudServiceToCreate(String name, String label, String plan)
+			throws CoreException {
 		CloudServiceOffering serviceConfiguration = getServiceConfiguration(label);
 		if (serviceConfiguration != null) {
-			CloudService service = new CloudService();
-			service.setName(name);
-			service.setLabel(label);
+			CFServiceInstance service = new CFServiceInstance(name);
+			service.setService(label);
 			service.setVersion(serviceConfiguration.getVersion());
 
 			boolean planExists = false;

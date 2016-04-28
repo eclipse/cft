@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,7 @@
 package org.eclipse.cft.server.ui.internal.editor;
 
 public enum ServiceViewColumn {
-	Name(150), Version(100), Vendor(100), Tunnel(80), Plan(50), Provider(100);
+	Name(150), Version(100), Service(100), Plan(50);
 	private int width;
 
 	private ServiceViewColumn(int width) {
@@ -42,7 +42,7 @@ public enum ServiceViewColumn {
 		}
 
 		public ServiceViewColumn[] getServiceViewColumn() {
-			return new ServiceViewColumn[] { Name, Vendor, Provider, Version, Plan };
+			return new ServiceViewColumn[] { Name, Service, Plan, Version };
 		}
 
 	}

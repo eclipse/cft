@@ -24,9 +24,9 @@ package org.eclipse.cft.server.ui.internal.editor;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.debug.CloudFoundryProperties;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
@@ -147,7 +147,7 @@ public class ApplicationMasterPart extends SectionPart {
 
 	private void updateSections() {
 		if (provideServices) {
-			List<CloudService> services = editorPage.getServices();
+			List<CFServiceInstance> services = editorPage.getServices();
 			servicesViewer.setInput((services != null) ? services.toArray() : null);
 			if (servicesSection != null && !servicesSection.isExpanded()) {
 				// If collapsed, expand (e.g. section is collapsed and user adds
@@ -503,7 +503,7 @@ public class ApplicationMasterPart extends SectionPart {
 		servicesViewer.setLabelProvider(new ServicesTreeLabelProvider(servicesViewer));
 		servicesViewer.setSorter(new ServiceViewerSorter(servicesViewer));
 
-		servicesViewer.setInput(new CloudService[0]);
+		servicesViewer.setInput(new CFServiceInstance[0]);
 
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(servicesViewer.getControl());
 

@@ -36,10 +36,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
-import org.eclipse.cft.server.core.internal.client.LocalCloudService;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
@@ -75,7 +74,6 @@ import org.eclipse.wst.server.core.util.PublishHelper;
 @SuppressWarnings("restriction")
 public class CloudUtil {
 
-
 	public static final int DEFAULT_MEMORY = 512;
 
 	private static final IStatus[] EMPTY_STATUS = new IStatus[0];
@@ -105,7 +103,8 @@ public class CloudUtil {
 	 */
 	public static File createWarFile(List<IModuleResource> allResources, IModule module,
 			Set<IModuleResource> filterInResources, IProgressMonitor monitor) throws CoreException {
-		if (allResources == null || allResources.isEmpty() || filterInResources == null || filterInResources.isEmpty()) {
+		if (allResources == null || allResources.isEmpty() || filterInResources == null
+				|| filterInResources.isEmpty()) {
 			return null;
 		}
 		List<IStatus> result = new ArrayList<IStatus>();
@@ -145,8 +144,8 @@ public class CloudUtil {
 			targetFile.deleteOnExit();
 			PublishHelper helper = new PublishHelper(tempFile);
 
-			ArrayList<IModuleResource> resources = new ArrayList<IModuleResource>(Arrays.asList(server
-					.getResources(modules)));
+			ArrayList<IModuleResource> resources = new ArrayList<IModuleResource>(
+					Arrays.asList(server.getResources(modules)));
 
 			IWebModule webModule = getWebModule(modules);
 
@@ -246,8 +245,8 @@ public class CloudUtil {
 		if (status == null || status.size() == 0) {
 			return;
 		}
-		throw new CoreException(new MultiStatus(CloudFoundryPlugin.PLUGIN_ID, 0, status.toArray(new IStatus[0]),
-				message, null));
+		throw new CoreException(
+				new MultiStatus(CloudFoundryPlugin.PLUGIN_ID, 0, status.toArray(new IStatus[0]), message, null));
 	}
 
 	public static IStatus[] publishZip(List<IModuleResource> allResources, File tempFile,
@@ -267,8 +266,8 @@ public class CloudUtil {
 		}
 		catch (Exception e) {
 
-			return new Status[] { new Status(IStatus.ERROR, ServerPlugin.PLUGIN_ID, 0, NLS.bind(
-					Messages.ERROR_CREATE_ZIP, tempFile.getName(), e.getLocalizedMessage()), e) };
+			return new Status[] { new Status(IStatus.ERROR, ServerPlugin.PLUGIN_ID, 0,
+					NLS.bind(Messages.ERROR_CREATE_ZIP, tempFile.getName(), e.getLocalizedMessage()), e) };
 		}
 		finally {
 			if (tempFile != null && tempFile.exists())
@@ -370,15 +369,6 @@ public class CloudUtil {
 	}
 
 	/**
-	 * @param cloudService
-	 * @return
-	 */
-	public static String getServiceVendor(CloudService cloudService) {
-		// Handle both v1 and v2 services. For v2, vendors are "labels".
-		return cloudService.getLabel();
-	}
-
-	/**
 	 * Creates a temporary folder and file with the given names. It is the
 	 * responsibility of the caller to properly dispose the folder and file
 	 * after it is created
@@ -417,7 +407,7 @@ public class CloudUtil {
 			result.add(status[i]);
 		}
 	}
-	
+
 	public static IStatus basicValidateDeploymentInfo(ApplicationDeploymentInfo deploymentInfo) {
 		IStatus status = Status.OK_STATUS;
 
@@ -439,7 +429,7 @@ public class CloudUtil {
 
 		return status;
 	}
-	
+
 	/**
 	 * Parses deployment information from a deployed Cloud Application. Returns
 	 * null if the cloud application is null.
@@ -462,10 +452,10 @@ public class CloudUtil {
 
 			List<String> boundServiceNames = cloudApplication.getServices();
 			if (boundServiceNames != null) {
-				List<CloudService> services = new ArrayList<CloudService>();
+				List<CFServiceInstance> services = new ArrayList<CFServiceInstance>();
 				for (String name : boundServiceNames) {
 					if (name != null) {
-						services.add(new LocalCloudService(name));
+						services.add(new CFServiceInstance(name));
 					}
 				}
 				deploymentInfo.setServices(services);

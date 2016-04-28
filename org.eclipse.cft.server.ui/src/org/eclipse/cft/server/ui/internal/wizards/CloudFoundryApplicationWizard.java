@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,11 +24,11 @@ package org.eclipse.cft.server.ui.internal.wizards;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
@@ -128,7 +128,7 @@ public class CloudFoundryApplicationWizard extends Wizard implements IReservedUR
 	 * to the application. To see the actual list of services to be bound,
 	 * obtain the deployment descriptor: {@link #getDeploymentDescriptor()}
 	 */
-	public List<CloudService> getCloudServicesToCreate() {
+	public List<CFServiceInstance> getCloudServicesToCreate() {
 		return applicationDescriptor.getCloudServicesToCreate();
 	}
 

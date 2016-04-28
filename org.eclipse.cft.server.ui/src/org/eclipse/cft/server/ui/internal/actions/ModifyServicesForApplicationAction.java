@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,13 +23,12 @@ package org.eclipse.cft.server.ui.internal.actions;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
-import org.eclipse.cft.server.core.internal.client.LocalCloudService;
 import org.eclipse.cft.server.ui.internal.editor.CloudFoundryApplicationsEditorPage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -115,20 +114,20 @@ public abstract class ModifyServicesForApplicationAction extends EditorAction {
 		List<String> services = new ArrayList<String>();
 
 		for (Object object : objects) {
-			if (object instanceof CloudService) {
-				services.add(((CloudService) object).getName());
+			if (object instanceof CFServiceInstance) {
+				services.add(((CFServiceInstance) object).getName());
 			}
 		}
 		return services;
 	}
 
-	public static List<CloudService> getServices(IStructuredSelection selection) {
+	public static List<CFServiceInstance> getServices(IStructuredSelection selection) {
 		Object[] objects = selection.toArray();
-		List<CloudService> services = new ArrayList<CloudService>();
+		List<CFServiceInstance> services = new ArrayList<CFServiceInstance>();
 
 		for (Object object : objects) {
-			if (object instanceof CloudService) {
-				services.add(((CloudService) object));
+			if (object instanceof CFServiceInstance) {
+				services.add(((CFServiceInstance) object));
 			}
 		}
 		return services;
@@ -152,9 +151,9 @@ public abstract class ModifyServicesForApplicationAction extends EditorAction {
 		@Override
 		public void run(IProgressMonitor monitor) throws CoreException {
 			// Save the changes even if an app is not deployed
-			List<CloudService> boundServices = new ArrayList<CloudService>();
+			List<CFServiceInstance> boundServices = new ArrayList<CFServiceInstance>();
 			for (String serName : updatedServices) {
-				boundServices.add(new LocalCloudService(serName));
+				boundServices.add(new CFServiceInstance(serName));
 			}
 
 			if (appModule.getApplication() != null) {

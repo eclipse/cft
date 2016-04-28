@@ -57,7 +57,7 @@ public class CloudBehaviourOperations {
 	 * @param monitor
 	 * @throws CoreException if operation was not created
 	 */
-	public ICloudFoundryOperation createServices(final CloudService[] services) throws CoreException {
+	public ICloudFoundryOperation createServices(final CFServiceInstance[] services) throws CoreException {
 		return new UpdateServicesOperation(behaviour.getRequestFactory().getCreateServicesRequest(services), behaviour);
 	}
 

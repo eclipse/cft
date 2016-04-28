@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 Pivotal Software Inc and IBM Corporation. 
+ * Copyright (c) 2014, 2016 Pivotal Software Inc and IBM Corporation. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
-import org.eclipse.cft.server.core.internal.client.LocalCloudService;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.osgi.util.NLS;
@@ -711,13 +711,13 @@ class ServiceInstance {
 	}
 
 	/** Convert to local service, for the purpose of creation. */
-	public LocalCloudService convertToLocalService() {
-		final LocalCloudService localService = new LocalCloudService(""); //$NON-NLS-1$
+	public CFServiceInstance convertToLocalService() {
+		final CFServiceInstance localService = new CFServiceInstance(""); //$NON-NLS-1$
 		localService.setName(getUserDefinedName());
 		localService.setVersion(offering.getVersion());
-		localService.setLabel(offering.getLabel());
-		localService.setProvider(offering.getProvider());
+		localService.setService(offering.getLabel());
 		localService.setPlan(planNames[getSelectedPlan()]);
+		localService.setIsLocal(true);
 		return localService;
 	}
 }

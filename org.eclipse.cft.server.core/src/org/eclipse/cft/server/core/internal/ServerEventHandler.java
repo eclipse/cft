@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +23,8 @@ package org.eclipse.cft.server.core.internal;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.application.ModuleChangeEvent;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudRefreshEvent;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -58,7 +58,7 @@ public class ServerEventHandler {
 		applicationListeners.remove(listener);
 	}
 
-	public void fireServicesUpdated(CloudFoundryServer server, List<CloudService> services) {
+	public void fireServicesUpdated(CloudFoundryServer server, List<CFServiceInstance> services) {
 		fireServerEvent(new CloudRefreshEvent(server, null, CloudServerEvent.EVENT_UPDATE_SERVICES, services));
 	}
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,7 @@ package org.eclipse.cft.server.ui.internal.editor;
 
 public enum ApplicationInstanceServiceColumn {
 
-	Name(125), Service(100), Vendor(100), Plan(75), Version(75);
+	Name(125), Service(100), Plan(75), Version(75);
 
 	private int width;
 

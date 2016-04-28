@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 Pivotal Software Inc and IBM Corporation. 
+ * Copyright (c) 2014, 2016 Pivotal Software Inc and IBM Corporation. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,9 +27,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Logger;
 import org.eclipse.cft.server.ui.internal.Messages;
@@ -202,9 +202,9 @@ public class CloudFoundryServiceWizardPage extends WizardPage {
 		setControl(main);
 	}
 	
-	public List<CloudService> getServices() {
+	public List<CFServiceInstance> getServices() {
 		
-		List<CloudService> result = new ArrayList<CloudService>();
+		List<CFServiceInstance> result = new ArrayList<CFServiceInstance>();
 		
 		List<List<ServiceInstance>> newServices = rightPanel.getServiceInstances();
 		if(newServices != null) {
@@ -283,9 +283,9 @@ public class CloudFoundryServiceWizardPage extends WizardPage {
 				serviceOfferingResult.addAll(serviceOfferings);
 				
 				// Retrieve the names of existing services in the space
-				List<CloudService> allServices = cloudServer.getBehaviour().getServices(monitor);
+				List<CFServiceInstance> allServices = cloudServer.getBehaviour().getServices(monitor);
 				if(allServices != null) {
-					for(CloudService existingService : allServices) {
+					for(CFServiceInstance existingService : allServices) {
 						String name = existingService.getName().toLowerCase();
 						
 						if(!existingCloudServiceNames.contains(name)) {

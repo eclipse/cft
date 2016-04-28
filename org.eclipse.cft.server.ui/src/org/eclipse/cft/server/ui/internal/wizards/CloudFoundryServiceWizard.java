@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. and IBM Corporation
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and IBM Corporation
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,9 +23,9 @@ package org.eclipse.cft.server.ui.internal.wizards;
 
 import java.util.List;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -53,7 +53,7 @@ public class CloudFoundryServiceWizard extends Wizard {
 
 	private CloudFoundryServiceWizardPage page;
 
-	private List<CloudService> resultServices = null;
+	private List<CFServiceInstance> resultServices = null;
 
 	/**
 	 * Set true if service should not be added during wizard completion.
@@ -93,7 +93,7 @@ public class CloudFoundryServiceWizard extends Wizard {
 	@Override
 	public boolean performFinish() {
 
-		List<CloudService> localServices = page.getServices();
+		List<CFServiceInstance> localServices = page.getServices();
 
 		if (!deferServiceAddition && localServices != null) {
 			ServiceCreationJob job = new ServiceCreationJob(localServices, cloudServer);
@@ -115,7 +115,7 @@ public class CloudFoundryServiceWizard extends Wizard {
 	 * 
 	 * @return added service or null if nothing added at the time of the call
 	 */
-	public List<CloudService> getServices() {
+	public List<CFServiceInstance> getServices() {
 		if (resultServices != null) {
 			return resultServices;
 		}
@@ -128,9 +128,9 @@ public class CloudFoundryServiceWizard extends Wizard {
 
 		final CloudFoundryServer cloudServer;
 
-		final List<CloudService> servicesToCreate;
+		final List<CFServiceInstance> servicesToCreate;
 
-		public ServiceCreationJob(List<CloudService> servicesToCreate, CloudFoundryServer cloudServer) {
+		public ServiceCreationJob(List<CFServiceInstance> servicesToCreate, CloudFoundryServer cloudServer) {
 			super(Messages.CloudFoundryServiceWizard_JOB_TASK_CREATING_SERVICES);
 			this.servicesToCreate = servicesToCreate;
 			this.cloudServer = cloudServer;
@@ -145,24 +145,24 @@ public class CloudFoundryServiceWizard extends Wizard {
 
 			try {
 
-				for (CloudService cs : servicesToCreate) {
-					cloudServer.getBehaviour().operations().createServices((new CloudService[] { cs }))
+				for (CFServiceInstance cs : servicesToCreate) {
+					cloudServer.getBehaviour().operations().createServices((new CFServiceInstance[] { cs }))
 							.run(monitor.newChild(100));
 				}
 
 				monitor.subTask(Messages.CloudFoundryServiceWizard_JOB_SUBTASK_VERIFYING_SERVICES);
 
 				// Find the newly created services in the service list
-				List<CloudService> allServices = cloudServer.getBehaviour().getServices(monitor.newChild(100));
+				List<CFServiceInstance> allServices = cloudServer.getBehaviour().getServices(monitor.newChild(100));
 
 				if (allServices != null) {
 
 					// Locate the new services from the server's service
 					// instances
-					for (CloudService localService : servicesToCreate) {
+					for (CFServiceInstance localService : servicesToCreate) {
 
 						boolean matchFound = false;
-						for (CloudService existingService : allServices) {
+						for (CFServiceInstance existingService : allServices) {
 
 							if (existingService.getName().equals(localService.getName())) {
 								allServices.add(existingService);

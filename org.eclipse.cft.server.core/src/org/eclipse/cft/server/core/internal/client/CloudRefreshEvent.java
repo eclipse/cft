@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ package org.eclipse.cft.server.core.internal.client;
 
 import java.util.List;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.application.ModuleChangeEvent;
 import org.eclipse.wst.server.core.IModule;
@@ -34,14 +33,14 @@ public class CloudRefreshEvent extends ModuleChangeEvent {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	private final List<CloudService> services;
+	private final List<CFServiceInstance> services;
 
-	public CloudRefreshEvent(CloudFoundryServer server, IModule module, int type, List<CloudService> services) {
+	public CloudRefreshEvent(CloudFoundryServer server, IModule module, int type, List<CFServiceInstance> services) {
 		super(server, type, module, null);
 		this.services = services;
 	}
 
-	public List<CloudService> getServices() {
+	public List<CFServiceInstance> getServices() {
 		return services;
 	}
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -28,11 +28,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.client.LocalCloudService;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.core.databinding.DataBindingContext;
@@ -91,7 +90,7 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 	/**
 	 * The data model.
 	 */
-	protected LocalCloudService service;
+	protected CFServiceInstance service;
 
 	private Composite planDetailsComposite;
 
@@ -184,7 +183,7 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 		setControl(composite);
 	}
 
-	public LocalCloudService getService() {
+	public CFServiceInstance getService() {
 		return service;
 	}
 
@@ -405,16 +404,15 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 		return Messages.CloudFoundryServicePlanWizardPage_LABEL_PLAN;
 	}
 
-	protected void setCloudService(CloudService service, CloudServiceOffering offering) {
+	protected void setCloudService(CFServiceInstance service, CloudServiceOffering offering) {
 
 		service.setVersion(offering.getVersion());
-		service.setLabel(offering.getLabel());
-		service.setProvider(offering.getProvider());
+		service.setService(offering.getLabel());
 
 	}
 
-	protected LocalCloudService createService() {
-		LocalCloudService service = new LocalCloudService(""); //$NON-NLS-1$
+	protected CFServiceInstance createService() {
+		CFServiceInstance service = new CFServiceInstance(""); //$NON-NLS-1$
 		return service;
 	}
 
