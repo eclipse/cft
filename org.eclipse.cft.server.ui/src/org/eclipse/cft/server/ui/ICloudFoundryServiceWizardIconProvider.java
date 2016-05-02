@@ -21,7 +21,7 @@
 
 package org.eclipse.cft.server.ui;
 
-import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
+import org.eclipse.cft.server.core.internal.client.CFServiceOffering;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.wst.server.core.IServer;
 
@@ -34,8 +34,8 @@ import org.eclipse.wst.server.core.IServer;
  * Ownership of any returned ImageDescriptor are transferred to the calling
  * service wizard. The service wizard will handle image lifecycle/disposal.
  * 
- * If the width or height of the Image/ImageDescriptor smaller than or exceeds 
- * 32 pixels, the image will be resized as close to 32 as possible while 
+ * If the width or height of the Image/ImageDescriptor smaller than or exceeds
+ * 32 pixels, the image will be resized as close to 32 as possible while
  * preserving the aspect ratio.
  * 
  */
@@ -55,7 +55,7 @@ public interface ICloudFoundryServiceWizardIconProvider {
 	 * @return An image descriptor which can be used to create an image for used
 	 * by the service wizard.
 	 */
-	public ImageDescriptor getServiceIcon(CloudServiceOffering offering, IServer server);
+	public ImageDescriptor getServiceIcon(CFServiceOffering offering, IServer server);
 
 	/**
 	 * If an error occurs while calling createImage(...) on an ImageDescriptor
@@ -69,11 +69,13 @@ public interface ICloudFoundryServiceWizardIconProvider {
 	 * plugin, the local filesystem, or an alternate URL, otherwise the icon
 	 * will appear blank (empty space) in the icon wizard.
 	 * 
-	 * @param offering The specific service offering for which an icon is being requested
+	 * @param offering The specific service offering for which an icon is being
+	 * requested
 	 * @param server The specific server for which the request is being made
-	 * @return An image descriptor which can be used to create an image for used by the service wizard.
+	 * @return An image descriptor which can be used to create an image for used
+	 * by the service wizard.
 	 * 
 	 */
-	public ImageDescriptor getDefaultServiceIcon(CloudServiceOffering offering, IServer server);
+	public ImageDescriptor getDefaultServiceIcon(CFServiceOffering offering, IServer server);
 
 }

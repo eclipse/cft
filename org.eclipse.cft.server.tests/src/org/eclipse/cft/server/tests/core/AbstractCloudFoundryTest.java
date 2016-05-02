@@ -24,12 +24,12 @@ import java.util.List;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
-import org.cloudfoundry.client.lib.domain.CloudServicePlan;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
+import org.eclipse.cft.server.core.internal.client.CFServiceOffering;
+import org.eclipse.cft.server.core.internal.client.CFServicePlan;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.tests.server.TestServlet;
@@ -257,8 +257,7 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 	}
 
 	protected CloudFoundryApplicationModule deployApplication(String appPrefix, int memory, boolean startApp,
-			List<EnvironmentVariable> variables, List<CFServiceInstance> services, String buildpack)
-			throws Exception {
+			List<EnvironmentVariable> variables, List<CFServiceInstance> services, String buildpack) throws Exception {
 
 		String projectName = harness.getDefaultWebAppProjectName();
 
@@ -313,12 +312,11 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 		return null;
 	}
 
-	protected CloudServiceOffering getServiceConfiguration(String vendor) throws CoreException {
-		List<CloudServiceOffering> serviceConfigurations = serverBehavior
-				.getServiceOfferings(new NullProgressMonitor());
+	protected CFServiceOffering getServiceConfiguration(String vendor) throws CoreException {
+		List<CFServiceOffering> serviceConfigurations = serverBehavior.getServiceOfferings(new NullProgressMonitor());
 		if (serviceConfigurations != null) {
-			for (CloudServiceOffering serviceConfiguration : serviceConfigurations) {
-				if (vendor.equals(serviceConfiguration.getLabel())) {
+			for (CFServiceOffering serviceConfiguration : serviceConfigurations) {
+				if (vendor.equals(serviceConfiguration.getName())) {
 					return serviceConfiguration;
 				}
 			}
@@ -326,9 +324,8 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 		return null;
 	}
 
-	protected CFServiceInstance getCloudServiceToCreate(String name, String label, String plan)
-			throws CoreException {
-		CloudServiceOffering serviceConfiguration = getServiceConfiguration(label);
+	protected CFServiceInstance getCloudServiceToCreate(String name, String label, String plan) throws CoreException {
+		CFServiceOffering serviceConfiguration = getServiceConfiguration(label);
 		if (serviceConfiguration != null) {
 			CFServiceInstance service = new CFServiceInstance(name);
 			service.setService(label);
@@ -336,9 +333,9 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 			boolean planExists = false;
 
-			List<CloudServicePlan> plans = serviceConfiguration.getCloudServicePlans();
+			List<CFServicePlan> plans = serviceConfiguration.getServicePlans();
 
-			for (CloudServicePlan pln : plans) {
+			for (CFServicePlan pln : plans) {
 				if (plan.equals(pln.getName())) {
 					planExists = true;
 					break;

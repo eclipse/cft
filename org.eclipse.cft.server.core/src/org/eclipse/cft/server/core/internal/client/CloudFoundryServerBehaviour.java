@@ -44,7 +44,6 @@ import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
-import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.eclipse.cft.server.core.AbstractApplicationDelegate;
@@ -663,7 +662,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		return getRequestFactory().getFile(app, instanceIndex, path, isDir).run(monitor);
 	}
 
-	public List<CloudServiceOffering> getServiceOfferings(IProgressMonitor monitor) throws CoreException {
+	public List<CFServiceOffering> getServiceOfferings(IProgressMonitor monitor) throws CoreException {
 		return getRequestFactory().getServiceOfferings().run(monitor);
 	}
 

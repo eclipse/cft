@@ -38,7 +38,6 @@ import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
-import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
@@ -251,8 +250,7 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<List<CFServiceInstance>> getCreateServicesRequest(
-			final CFServiceInstance[] services) {
+	public BaseClientRequest<List<CFServiceInstance>> getCreateServicesRequest(final CFServiceInstance[] services) {
 		return new BehaviourRequest<List<CFServiceInstance>>(Messages.CloudFoundryServerBehaviour_CREATE_SERVICES,
 				behaviour) {
 			@Override
@@ -484,12 +482,12 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<List<CloudServiceOffering>> getServiceOfferings() throws CoreException {
-		return new BehaviourRequest<List<CloudServiceOffering>>("Getting available service options", behaviour) { //$NON-NLS-1$
+	public BaseClientRequest<List<CFServiceOffering>> getServiceOfferings() throws CoreException {
+		return new BehaviourRequest<List<CFServiceOffering>>("Getting available service options", behaviour) { //$NON-NLS-1$
 			@Override
-			protected List<CloudServiceOffering> doRun(CloudFoundryOperations client, SubMonitor progress)
+			protected List<CFServiceOffering> doRun(CloudFoundryOperations client, SubMonitor progress)
 					throws CoreException {
-				return client.getServiceOfferings();
+				return CloudServicesUtil.asServiceOfferings(client.getServiceOfferings());
 			}
 		};
 	}

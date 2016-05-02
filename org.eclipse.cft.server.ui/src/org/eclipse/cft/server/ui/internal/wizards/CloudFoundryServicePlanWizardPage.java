@@ -28,10 +28,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
-import org.cloudfoundry.client.lib.domain.CloudServicePlan;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
+import org.eclipse.cft.server.core.internal.client.CFServiceOffering;
+import org.eclipse.cft.server.core.internal.client.CFServicePlan;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.core.databinding.DataBindingContext;
@@ -81,7 +81,7 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 
 	private final CloudFoundryServer cloudServer;
 
-	private List<CloudServiceOffering> serviceOfferings;
+	private List<CFServiceOffering> serviceOfferings;
 
 	protected WritableMap map;
 
@@ -149,7 +149,7 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 			public void widgetSelected(SelectionEvent event) {
 				int index = typeCombo.getSelectionIndex();
 				if (index != -1) {
-					CloudServiceOffering configuration = serviceOfferings.get(index);
+					CFServiceOffering configuration = serviceOfferings.get(index);
 					setCloudService(service, configuration);
 				}
 				refreshPlan();
@@ -209,8 +209,8 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 	protected void refresh() {
 		if (updateConfiguration()) {
 			typeCombo.removeAll();
-			for (CloudServiceOffering offering : serviceOfferings) {
-				String label = offering.getLabel() != null ? offering.getLabel() + " - " //$NON-NLS-1$
+			for (CFServiceOffering offering : serviceOfferings) {
+				String label = offering.getName() != null ? offering.getName() + " - " //$NON-NLS-1$
 						+ offering.getDescription() : offering.getDescription();
 				typeCombo.add(label);
 			}
@@ -233,8 +233,8 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 			for (Control control : planGroup.getChildren()) {
 				control.dispose();
 			}
-			CloudServiceOffering configuration = serviceOfferings.get(index);
-			List<CloudServicePlan> servicePlans = getPlans(configuration);
+			CFServiceOffering configuration = serviceOfferings.get(index);
+			List<CFServicePlan> servicePlans = getPlans(configuration);
 
 			if (servicePlans.size() > 1) {
 				pageBook.showPage(planGroup);
@@ -242,7 +242,7 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 
 				Button defaultPlanControl = null;
 
-				for (CloudServicePlan plan : servicePlans) {
+				for (CFServicePlan plan : servicePlans) {
 
 					String planLabelText = plan.getName();
 
@@ -259,7 +259,7 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 						public void widgetSelected(SelectionEvent event) {
 							Button button = (Button) event.widget;
 							if (button.getSelection()) {
-								CloudServicePlan plan = (CloudServicePlan) button.getData();
+								CFServicePlan plan = (CFServicePlan) button.getData();
 								setPlan(plan);
 
 							}
@@ -274,14 +274,14 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 				// Set a default plan, if one exists
 				if (defaultPlanControl != null) {
 					defaultPlanControl.setSelection(true);
-					CloudServicePlan plan = (CloudServicePlan) defaultPlanControl.getData();
+					CFServicePlan plan = (CFServicePlan) defaultPlanControl.getData();
 					setPlan(plan);
 
 				}
 			}
 			else if (servicePlans.size() == 1) {
 				planGroup.setVisible(false);
-				CloudServicePlan plan = servicePlans.get(0);
+				CFServicePlan plan = servicePlans.get(0);
 				setPlan(plan);
 			}
 			else {
@@ -292,7 +292,7 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 
 	}
 
-	protected void setPlan(CloudServicePlan plan) {
+	protected void setPlan(CFServicePlan plan) {
 		getService().setPlan(plan.getName());
 		// re-validate
 		planObservable.setValue(plan);
@@ -304,8 +304,8 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 				public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
 					try {
 						serviceOfferings = cloudServer.getBehaviour().getServiceOfferings(monitor);
-						Collections.sort(serviceOfferings, new Comparator<CloudServiceOffering>() {
-							public int compare(CloudServiceOffering o1, CloudServiceOffering o2) {
+						Collections.sort(serviceOfferings, new Comparator<CFServiceOffering>() {
+							public int compare(CFServiceOffering o1, CFServiceOffering o2) {
 								return o1.getDescription().compareTo(o2.getDescription());
 							}
 						});
@@ -371,24 +371,24 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 
 	}
 
-	protected void sortServicePlans(List<CloudServiceOffering> configurations) {
+	protected void sortServicePlans(List<CFServiceOffering> configurations) {
 
-		for (CloudServiceOffering offering : configurations) {
-			Collections.sort(offering.getCloudServicePlans(), new Comparator<CloudServicePlan>() {
-				public int compare(CloudServicePlan o1, CloudServicePlan o2) {
+		for (CFServiceOffering offering : configurations) {
+			Collections.sort(offering.getServicePlans(), new Comparator<CFServicePlan>() {
+				public int compare(CFServicePlan o1, CFServicePlan o2) {
 					return o1.getName().compareTo(o2.getName());
 				}
 			});
 		}
 	}
 
-	protected List<CloudServicePlan> getPlans(CloudServiceOffering offering) {
-		List<CloudServicePlan> plans = new ArrayList<CloudServicePlan>();
+	protected List<CFServicePlan> getPlans(CFServiceOffering offering) {
+		List<CFServicePlan> plans = new ArrayList<CFServicePlan>();
 
-		List<CloudServicePlan> cloudPlans = offering.getCloudServicePlans();
+		List<CFServicePlan> cloudPlans = offering.getServicePlans();
 
 		if (cloudPlans != null) {
-			for (CloudServicePlan plan : cloudPlans) {
+			for (CFServicePlan plan : cloudPlans) {
 				plans.add(plan);
 			}
 		}
@@ -404,10 +404,10 @@ public class CloudFoundryServicePlanWizardPage extends WizardPage {
 		return Messages.CloudFoundryServicePlanWizardPage_LABEL_PLAN;
 	}
 
-	protected void setCloudService(CFServiceInstance service, CloudServiceOffering offering) {
+	protected void setCloudService(CFServiceInstance service, CFServiceOffering offering) {
 
 		service.setVersion(offering.getVersion());
-		service.setService(offering.getLabel());
+		service.setService(offering.getName());
 
 	}
 

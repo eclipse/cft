@@ -32,9 +32,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
-import org.cloudfoundry.client.lib.domain.CloudServicePlan;
+
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.client.CFServiceOffering;
+import org.eclipse.cft.server.core.internal.client.CFServicePlan;
 import org.eclipse.cft.server.ui.ICloudFoundryServiceWizardIconProvider;
 import org.eclipse.cft.server.ui.internal.Logger;
 import org.eclipse.cft.server.ui.internal.Messages;
@@ -641,7 +642,7 @@ public class CloudFoundryServiceWizardPageLeftPanel {
 	private void createNewServiceInstances(AvailableService[] services) {
 		for(AvailableService service : services) {
 			
-			List<CloudServicePlan> plans = service.getOffering().getCloudServicePlans();
+			List<CFServicePlan> plans = service.getOffering().getServicePlans();
 			
 			ServiceInstance si = new ServiceInstance(service.getName(), plans, service.getOffering());
 			si.setUserDefinedName(stripBadCharsFromServiceName(service.getName()));
@@ -1188,12 +1189,12 @@ class AvailableService {
 	private Label descLabel;
 	private Label imageLabel;
 	
-	final private CloudServiceOffering offering;
+	final private CFServiceOffering offering;
 
 	/** Position of the service in the unfiltered available services list */
 	private int listPosition = -1;
 	
-	public AvailableService(String name, String desc, int listPosition, CloudServiceOffering offering) {
+	public AvailableService(String name, String desc, int listPosition, CFServiceOffering offering) {
 		super();
 		this.name = name;
 		this.desc = desc;
@@ -1246,7 +1247,7 @@ class AvailableService {
 		return listPosition;
 	}
 	
-	public CloudServiceOffering getOffering() {
+	public CFServiceOffering getOffering() {
 		return offering;
 	}
 	
@@ -1279,7 +1280,7 @@ class CFServiceWizardDynamicIconLoader extends Thread {
 	/**
 	 * Add icon to the front of the list, for icons the user is currently viewing
 	 */
-	public void addIconToFrontOfRetrieveList(CloudServiceOffering offering, Label imageLabel) {
+	public void addIconToFrontOfRetrieveList(CFServiceOffering offering, Label imageLabel) {
 		synchronized (lock) {
 
 			// Add to front (this may create a duplicate; dupes are checked in IconRetrieveRunnable)
@@ -1290,7 +1291,7 @@ class CFServiceWizardDynamicIconLoader extends Thread {
 	}
 
 	/** Add icon to end of list */
-	public void addIconToRetrieveList(CloudServiceOffering offering, Label imageLabel) {
+	public void addIconToRetrieveList(CFServiceOffering offering, Label imageLabel) {
 		ServiceWizardMapEntry me = new ServiceWizardMapEntry(offering, imageLabel);
 		synchronized (lock) {
 			iconsToRetrieve.add(me);
@@ -1375,7 +1376,7 @@ class CFServiceWizardDynamicIconLoader extends Thread {
 
 		public void run() {
 
-			CloudServiceOffering cso = entry.getOffering();
+			CFServiceOffering cso = entry.getOffering();
 			final String mapId = "" + cso.getName() + "-" + cso.getProvider(); //$NON-NLS-1$ //$NON-NLS-2$
 
 			Image result = null;
@@ -1470,17 +1471,17 @@ class CFServiceWizardDynamicIconLoader extends Thread {
 	}
 
 	private static class ServiceWizardMapEntry {
-		private CloudServiceOffering offering;
+		private CFServiceOffering offering;
 
 		private Label imageLabel;
 
-		public ServiceWizardMapEntry(CloudServiceOffering offering, Label imageLabel) {
+		public ServiceWizardMapEntry(CFServiceOffering offering, Label imageLabel) {
 			super();
 			this.offering = offering;
 			this.imageLabel = imageLabel;
 		}
 
-		public CloudServiceOffering getOffering() {
+		public CFServiceOffering getOffering() {
 			return offering;
 		}
 
