@@ -981,6 +981,15 @@ public class Messages extends NLS {
 
 	public static String CloudFoundryServiceWizardPage_GETTING_AVAILABLE_SERVICES;
 
+	public static String TableColumn_NAME;
+	public static String TableColumn_SERVICE;
+	public static String TableColumn_VENDOR;
+	public static String TableColumn_PLAN;
+	public static String TableColumn_VERSION;
+
+	public static String TableColumn_VARIABLE;
+	public static String TableColumn_VALUE;
+
 	private static final String BUNDLE_NAME =  CloudFoundryServerUiPlugin.PLUGIN_ID + ".internal.Messages"; //$NON-NLS-1$
 
 	static {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,18 +20,30 @@
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.editor;
 
+import org.eclipse.cft.server.ui.internal.Messages;
 
 public enum ApplicationInstanceServiceColumn {
 
-	Name(125), Service(100), Vendor(100), Plan(75), Version(75);
+	Name(125, Messages.TableColumn_NAME), 
+	Service(100, Messages.TableColumn_SERVICE), 
+	Vendor(100,Messages.TableColumn_VENDOR), 
+	Plan(75, Messages.TableColumn_PLAN), 
+	Version(75, Messages.TableColumn_VERSION);
 
-	private int width;
+	private final int width;
 
-	private ApplicationInstanceServiceColumn(int width) {
+	private final String userFacingName;
+
+	private ApplicationInstanceServiceColumn(int width, String userFacingName) {
 		this.width = width;
+		this.userFacingName = userFacingName;
 	}
 
 	public int getWidth() {
 		return width;
+	}
+
+	public String getUserFacingName() {
+		return userFacingName;
 	}
 }
