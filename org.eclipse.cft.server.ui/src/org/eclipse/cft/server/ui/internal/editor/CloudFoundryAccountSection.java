@@ -28,7 +28,7 @@ import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudServerListener;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.ui.internal.CloudFoundryURLNavigation;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.actions.UpdatePasswordOperation;
 import org.eclipse.cft.server.ui.internal.wizards.OrgsAndSpacesWizard;
@@ -104,9 +104,9 @@ public class CloudFoundryAccountSection extends ServerEditorSection implements C
 		}
 		if (cfServer.getUrl() != null
 				&& urlText != null
-				&& !CloudUiUtil.getDisplayTextFromUrl(cfServer.getUrl(), cfServer.getServer().getServerType().getId())
+				&& !CFUiUtil.getDisplayTextFromUrl(cfServer.getUrl(), cfServer.getServer().getServerType().getId())
 						.equals(urlText.getText())) {
-			urlText.setText(CloudUiUtil.getDisplayTextFromUrl(cfServer.getUrl(), cfServer.getServer().getServerType()
+			urlText.setText(CFUiUtil.getDisplayTextFromUrl(cfServer.getUrl(), cfServer.getServer().getServerType()
 					.getId()));
 		}
 		if (cfServer.hasCloudSpace()) {
@@ -185,7 +185,7 @@ public class CloudFoundryAccountSection extends ServerEditorSection implements C
 		urlText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 		urlText.setData(FormToolkit.KEY_DRAW_BORDER, Boolean.FALSE);
 		if (cfServer.getUrl() != null) {
-			urlText.setText(CloudUiUtil.getDisplayTextFromUrl(cfServer.getUrl(), cfServer.getServer().getServerType()
+			urlText.setText(CFUiUtil.getDisplayTextFromUrl(cfServer.getUrl(), cfServer.getServer().getServerType()
 					.getId()));
 		}
 
@@ -286,7 +286,7 @@ public class CloudFoundryAccountSection extends ServerEditorSection implements C
 				final String org = orgText.getText();
 				final String space = spaceText.getText();
 				try {
-					CloudUiUtil.validateCredentials(userName, password, url, false,
+					CFUiUtil.validateCredentials(userName, password, url, false,
 							cfServer.getSelfSignedCertificate(), null);
 
 					if (org != null && space != null) {

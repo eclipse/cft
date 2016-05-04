@@ -219,7 +219,7 @@ public class CloudFoundryCredentialsPart extends UIPart implements IPartChangeLi
 
 		String url = urlWidget.getURLSelection();
 		if (url != null) {
-			cfServer.setUrl(CloudUiUtil.getUrlFromDisplayText(url));
+			cfServer.setUrl(CFUiUtil.getUrlFromDisplayText(url));
 		}
 
 		final Composite validateComposite = new Composite(composite, SWT.NONE);

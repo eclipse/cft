@@ -85,7 +85,7 @@ import org.eclipse.ui.views.IViewRegistry;
  * @author Terry Denney
  */
 @SuppressWarnings("restriction")
-public class CloudUiUtil {
+public class CFUiUtil {
 
 	public static final String SERVERS_VIEW_ID = "org.eclipse.wst.server.ui.ServersView"; //$NON-NLS-1$
 
@@ -111,12 +111,12 @@ public class CloudUiUtil {
 		catch (InvocationTargetException e) {
 			IStatus status;
 			if (e.getCause() instanceof CoreException) {
-				status = new Status(IStatus.ERROR, CloudFoundryServerUiPlugin.PLUGIN_ID, NLS.bind(
-						Messages.CloudUiUtil_ERROR_FORK_OP_FAILED, e.getCause().getMessage()), e);
+				status = new Status(IStatus.ERROR, CloudFoundryServerUiPlugin.PLUGIN_ID,
+						NLS.bind(Messages.CloudUiUtil_ERROR_FORK_OP_FAILED, e.getCause().getMessage()), e);
 			}
 			else {
-				status = new Status(IStatus.ERROR, CloudFoundryServerUiPlugin.PLUGIN_ID, NLS.bind(
-						Messages.CloudUiUtil_ERROR_FORK_UNEXPECTED, e.getMessage()), e);
+				status = new Status(IStatus.ERROR, CloudFoundryServerUiPlugin.PLUGIN_ID,
+						NLS.bind(Messages.CloudUiUtil_ERROR_FORK_UNEXPECTED, e.getMessage()), e);
 			}
 			CloudFoundryServerUiPlugin.getDefault().getLog().log(status);
 			IWizardPage page = wizard.getContainer().getCurrentPage();
@@ -130,79 +130,95 @@ public class CloudUiUtil {
 		}
 		return Status.OK_STATUS;
 	}
-	
-	private static CloudServerURL convertAbstractCloudFoundryUrlToCloudServerURL (AbstractCloudFoundryUrl abstractUrl) {
+
+	private static CloudServerURL convertAbstractCloudFoundryUrlToCloudServerURL(AbstractCloudFoundryUrl abstractUrl) {
 		CloudServerURL cloudUrl = null;
 		if (abstractUrl != null) {
-			// Nothing to do, this is already an old CloudServerURL, just return it
+			// Nothing to do, this is already an old CloudServerURL, just return
+			// it
 			if (abstractUrl instanceof CloudServerURL) {
-				cloudUrl = (CloudServerURL)(abstractUrl);
-			} else {
-				cloudUrl = new CloudServerURL(abstractUrl.getName(), abstractUrl.getUrl(), abstractUrl.getUserDefined(), 
-						abstractUrl.getSignUpUrl(), abstractUrl.getSelfSigned()); 
+				cloudUrl = (CloudServerURL) (abstractUrl);
+			}
+			else {
+				cloudUrl = new CloudServerURL(abstractUrl.getName(), abstractUrl.getUrl(), abstractUrl.getUserDefined(),
+						abstractUrl.getSignUpUrl(), abstractUrl.getSelfSigned());
 			}
 		}
 		return cloudUrl;
 	}
-	
-	private static List<CloudServerURL> convertAbstractCloudFoundryUrlListToCloudServerURLList (List <AbstractCloudFoundryUrl> abstractUrls) {
+
+	private static List<CloudServerURL> convertAbstractCloudFoundryUrlListToCloudServerURLList(
+			List<AbstractCloudFoundryUrl> abstractUrls) {
 		if (abstractUrls == null)
 			return null;
-		
+
 		List<CloudServerURL> urls = new ArrayList<CloudFoundryBrandingExtensionPoint.CloudServerURL>();
 		for (AbstractCloudFoundryUrl abstractUrl : abstractUrls) {
 			if (abstractUrl != null) {
-				urls.add (convertAbstractCloudFoundryUrlToCloudServerURL(abstractUrl));	
+				urls.add(convertAbstractCloudFoundryUrlToCloudServerURL(abstractUrl));
 			}
 		}
 		return urls;
 	}
 
-	/** 
-	 * @deprecated use {@link CloudServerUIUtil#getAllUrls(String, IRunnableContext)}
+	/**
+	 * @deprecated use
+	 * {@link CloudServerUIUtil#getAllUrls(String, IRunnableContext)}
 	 */
 	public static List<CloudServerURL> getAllUrls(String serverTypeId) {
 		try {
-			// Switch to new generic utility method, then convert to the expected return type
-			return convertAbstractCloudFoundryUrlListToCloudServerURLList(CloudServerUIUtil.getAllUrls(serverTypeId, null));
-		} catch (CoreException ex) {
+			// Switch to new generic utility method, then convert to the
+			// expected return type
+			return convertAbstractCloudFoundryUrlListToCloudServerURLList(
+					CloudServerUIUtil.getAllUrls(serverTypeId, null));
+		}
+		catch (CoreException ex) {
 			CloudFoundryServerUiPlugin.logError(ex);
 		}
-		
-		// If an exception shows up, return an empty list (to have backwards compatibility)
+
+		// If an exception shows up, return an empty list (to have backwards
+		// compatibility)
 		return new ArrayList<CloudServerURL>();
 	}
 
-	/** 
-	 * @deprecated use {@link CloudServerUIUtil#getDefaultUrl(String, IRunnableContext)}
+	/**
+	 * @deprecated use
+	 * {@link CloudServerUIUtil#getDefaultUrl(String, IRunnableContext)}
 	 */
-	public static CloudServerURL getDefaultUrl(String serverTypeId) {		
+	public static CloudServerURL getDefaultUrl(String serverTypeId) {
 		CloudServerURL url = null;
 		try {
-			// Switch to new generic utility method, then convert to the expected return type
+			// Switch to new generic utility method, then convert to the
+			// expected return type
 			AbstractCloudFoundryUrl abstractUrl = CloudServerUIUtil.getDefaultUrl(serverTypeId, null);
 			if (abstractUrl != null) {
 				url = convertAbstractCloudFoundryUrlToCloudServerURL(abstractUrl);
-			} 
-		} catch (CoreException ex) {
+			}
+		}
+		catch (CoreException ex) {
 			CloudFoundryServerUiPlugin.logError(ex);
 		}
-		
+
 		return url;
 	}
 
-	/** 
-	 * @deprecated use {@link CloudServerUIUtil#getUrls(String, IRunnableContext)}
+	/**
+	 * @deprecated use
+	 * {@link CloudServerUIUtil#getUrls(String, IRunnableContext)}
 	 */
 	public static List<CloudServerURL> getUrls(String serverTypeId) {
 		try {
-			// Switch to new generic utility method, then convert to the expected return type
-			return convertAbstractCloudFoundryUrlListToCloudServerURLList(CloudServerUIUtil.getUrls(serverTypeId, null));
-		} catch (CoreException ex) {
+			// Switch to new generic utility method, then convert to the
+			// expected return type
+			return convertAbstractCloudFoundryUrlListToCloudServerURLList(
+					CloudServerUIUtil.getUrls(serverTypeId, null));
+		}
+		catch (CoreException ex) {
 			CloudFoundryServerUiPlugin.logError(ex);
 		}
-		
-		// If an exception shows up, return an empty list (to have backwards compatibility)
+
+		// If an exception shows up, return an empty list (to have backwards
+		// compatibility)
 		return new ArrayList<CloudServerURL>();
 	}
 
@@ -210,22 +226,25 @@ public class CloudUiUtil {
 	 * @deprecated use {@link CloudServerUIUtil#getUserDefinedUrls(String))}
 	 */
 	public static List<CloudServerURL> getUserDefinedUrls(String serverTypeId) {
-		// Switch to new generic utility method, then convert to the expected return type
-		return convertAbstractCloudFoundryUrlListToCloudServerURLList(CloudServerUIUtil.getUserDefinedUrls(serverTypeId));
+		// Switch to new generic utility method, then convert to the expected
+		// return type
+		return convertAbstractCloudFoundryUrlListToCloudServerURLList(
+				CloudServerUIUtil.getUserDefinedUrls(serverTypeId));
 	}
 
 	/**
-	 * @deprecated user {@link CloudServerUIUtil#storeUserDefinedUrls(String, List)}
+	 * @deprecated user
+	 * {@link CloudServerUIUtil#storeUserDefinedUrls(String, List)}
 	 */
 	public static void storeUserDefinedUrls(String serverTypeId, List<CloudServerURL> urls) {
 		if (urls == null)
 			return;
-		
-		List <AbstractCloudFoundryUrl> abstractUrls = new ArrayList <AbstractCloudFoundryUrl> ();
+
+		List<AbstractCloudFoundryUrl> abstractUrls = new ArrayList<AbstractCloudFoundryUrl>();
 		for (CloudServerURL cloudUrl : urls) {
 			abstractUrls.add(cloudUrl);
 		}
-		
+
 		// Use the new correct method
 		CloudServerUIUtil.storeUserDefinedUrls(serverTypeId, abstractUrls);
 	}
@@ -246,8 +265,8 @@ public class CloudUiUtil {
 	 * @throws OperationCanceledException if validation is cancelled.
 	 */
 	public static void validateCredentials(final String userName, final String password, final String urlText,
-			final boolean displayURL, final boolean selfSigned, IRunnableContext context) throws CoreException,
-			OperationCanceledException {
+			final boolean displayURL, final boolean selfSigned, IRunnableContext context)
+			throws CoreException, OperationCanceledException {
 		try {
 			ICoreRunnable coreRunner = new ICoreRunnable() {
 				public void run(IProgressMonitor monitor) throws CoreException {
@@ -280,7 +299,8 @@ public class CloudUiUtil {
 	 * @param password must not be null
 	 * @param urlText must not be null. Can be either display or actual URL
 	 * @param displayURL true if URL is display URL
-	 * @param selfSigned true if connecting to a self-signing server. False otherwise
+	 * @param selfSigned true if connecting to a self-signing server. False
+	 * otherwise
 	 * @param context may be optional
 	 * @return spaces descriptor, or null if it couldn't be determined
 	 * @throws CoreException
@@ -296,8 +316,8 @@ public class CloudUiUtil {
 					if (displayURL) {
 						url = getUrlFromDisplayText(urlText);
 					}
-					supportsSpaces[0] = CloudFoundryServerBehaviour.getCloudSpacesExternalClient(new CloudCredentials(
-							userName, password), url, selfSigned, monitor);
+					supportsSpaces[0] = CloudFoundryServerBehaviour.getCloudSpacesExternalClient(
+							new CloudCredentials(userName, password), url, selfSigned, monitor);
 				}
 			};
 			if (context != null) {
@@ -335,7 +355,8 @@ public class CloudUiUtil {
 					return cloudUrl.getName() + " - " + url; //$NON-NLS-1$
 				}
 			}
-		} catch (CoreException ex) {
+		}
+		catch (CoreException ex) {
 			CloudFoundryServerUiPlugin.logError(ex);
 		}
 		return url;
@@ -370,10 +391,8 @@ public class CloudUiUtil {
 				throw (CoreException) e.getCause();
 			}
 			else {
-				CloudFoundryServerUiPlugin
-						.getDefault()
-						.getLog()
-						.log(new Status(IStatus.ERROR, CloudFoundryServerUiPlugin.PLUGIN_ID, "Unexpected exception", e)); //$NON-NLS-1$
+				CloudFoundryServerUiPlugin.getDefault().getLog().log(
+						new Status(IStatus.ERROR, CloudFoundryServerUiPlugin.PLUGIN_ID, "Unexpected exception", e)); //$NON-NLS-1$
 			}
 		}
 		catch (InterruptedException e) {
@@ -444,22 +463,26 @@ public class CloudUiUtil {
 	 * @param shell
 	 * @return new URL, null if no wildcard appears in cloudUrl or if user
 	 * cancels out of defining a new value
-	 * @deprecated use {@link CloudServerUIUtil#getWildcardUrl(AbstractCloudFoundryUrl, List, Shell)} instead.
+	 * @deprecated use
+	 * {@link CloudServerUIUtil#getWildcardUrl(AbstractCloudFoundryUrl, List, Shell)}
+	 * instead.
 	 */
-	public static CloudServerURL getWildcardUrl(CloudServerURL cloudUrl, List<CloudServerURL> allCloudUrls, Shell shell) {
-		// Switch to new generic utility method, then convert to the expected return type
-		ArrayList <AbstractCloudFoundryUrl> allCloudFoundryUrls = new ArrayList<AbstractCloudFoundryUrl>();
+	public static CloudServerURL getWildcardUrl(CloudServerURL cloudUrl, List<CloudServerURL> allCloudUrls,
+			Shell shell) {
+		// Switch to new generic utility method, then convert to the expected
+		// return type
+		ArrayList<AbstractCloudFoundryUrl> allCloudFoundryUrls = new ArrayList<AbstractCloudFoundryUrl>();
 		if (allCloudUrls != null) {
 			for (CloudServerURL _cloudUrl : allCloudUrls) {
-				allCloudFoundryUrls.add (_cloudUrl);
+				allCloudFoundryUrls.add(_cloudUrl);
 			}
 		}
-		
+
 		AbstractCloudFoundryUrl returnUrl = CloudServerUIUtil.getWildcardUrl(cloudUrl, allCloudFoundryUrls, shell);
 		if (returnUrl != null) {
 			return new CloudServerURL(returnUrl.getName(), returnUrl.getUrl(), true, returnUrl.getSelfSigned());
 		}
-		
+
 		return null;
 	}
 
@@ -530,242 +553,279 @@ public class CloudUiUtil {
 		return PlatformUI.getWorkbench().getModalDialogShellProvider().getShell();
 	}
 
-	
-	public static UniqueSubdomain getUniqueSubdomain(String url, CloudFoundryServer server, IProgressMonitor monitor) throws CoreException {
-			if (url == null) return null; // Incorrect usage. Provide a non-null string
-			
-			ApplicationUrlLookupService lookup = ApplicationUrlLookupService.getCurrentLookup(server);
-			CloudApplicationURL cloudUrl = null;
-			boolean isUniqueURL = true;
-			int intSuffix = 1;
-			
-			UniqueSubdomain result = null;
-			
-			if(monitor == null) {
-				// Monitor is optional, so use a NullProgressMonitor.
-				monitor = new NullProgressMonitor();
-			}
-			
-			List<CloudRoute> routes = null;
-				
-			do {
+	public static UniqueSubdomain getUniqueSubdomain(String url, CloudFoundryServer server, IProgressMonitor monitor)
+			throws CoreException {
+		if (url == null)
+			return null; // Incorrect usage. Provide a non-null string
 
-				try {
-					// It does NOT check if the URL is taken already, even if valid.					
-					cloudUrl = lookup.getCloudApplicationURL(url);
-				} catch(CoreException e) {
-					// if error occurred, eg. url is null, then don't check for host taken and simply return
-					break;
-				}
-				
-				if(cloudUrl == null) {
-					// if error occurred, eg. url is null, then don't check for host taken and simply return
-					break;
-				}
-													
-				if(routes == null) {
-					routes = server.getBehaviour().getRoutes(cloudUrl.getDomain(), monitor);
-				}
-				
-				boolean isFound = false; // is in route list?
-				boolean isRouteReservedAndUnused = false; // is route reserve and unused?
-				boolean isRouteCreated = false; // did we create the route in reserveRoute?
-				
-				// First check the existing cloud routes
-				for(CloudRoute cr : routes) {
-					// If we own the route...
-					if(cr.getHost().equalsIgnoreCase(cloudUrl.getSubdomain())) {
-						isFound = true;
-						isRouteCreated = false;
-						
-						if(!cr.inUse()) {
-							isRouteReservedAndUnused = true;
-						} else {
-							isRouteReservedAndUnused = false;								
-						}
-						
-						break;
-					}
-				}
-				
-				if(!isFound) {
-					// If the route was not found in the getRoutes(...) list, then attempt to reserve it
-					
-					isRouteReservedAndUnused = server.getBehaviour().reserveRouteIfAvailable(cloudUrl.getSubdomain(), cloudUrl.getDomain(), monitor);
-					isRouteCreated = isRouteReservedAndUnused;
-				}
+		ApplicationUrlLookupService lookup = ApplicationUrlLookupService.getCurrentLookup(server);
+		CloudApplicationURL cloudUrl = null;
+		boolean isUniqueURL = true;
+		int intSuffix = 1;
 
-				if(isRouteReservedAndUnused) {
-					result = new UniqueSubdomain();
-					result.setRouteCreated(isRouteCreated);
-					result.setCloudUrl(cloudUrl);
-					
-					// break or just set boolean to true
-					isUniqueURL = true;
-					
-				} else {
-					// The route is taken (as determined either by checking the route list, or by attempting to reserve)
-					
-					isUniqueURL = false;
-					StringBuilder sb = new StringBuilder(url);
-					String subdomain = cloudUrl.getSubdomain();
-					// Get the last integers in the subdomain
-					Pattern p = Pattern.compile("(\\d+)$");  //$NON-NLS-N$
-					Matcher m = p.matcher(subdomain);
-					// If it ends with a number, then simply increment it by one to get the new candidate subdomain name
-					if (m.find()) {
-						// Examples: subdomain could be MyApp1 or MyApp99 or MyApp2015
-						String intSuffixString = m.group(1); // The number can be any length
-						intSuffix = Integer.parseInt(intSuffixString);
-						int beginning = subdomain.indexOf(intSuffixString);
-						int length = intSuffixString.length();
-						// Examples: MyApp1 to MyApp2;  MyApp99 to MyApp100; MyApp2015 to MyApp2016
-						// Increment intSuffix first
-						url = sb.replace(beginning, beginning+length, Integer.toString(++intSuffix)).toString();
-					} else { // Otherwise, simply append 1 to the end of the subdomain
-						// Example: subdomain = MyApp --> MyApp1
-						url = sb.insert(sb.indexOf(subdomain) + subdomain.length(), "1").toString();  
-					}						
-				}
-					
-			} while (!isUniqueURL && intSuffix < Integer.MAX_VALUE - 1 && !monitor.isCanceled()); // Support suffix up to the number 2^31 - 1
-			
-			return result;
-		}
-		
-		/**
-		 * Run the host name validator in the context of the wizard container
-		 * 
-		 * @param appUrl
-		 * @param server
-		 * @param monitor
-		 * @param message
-		 * @return
-		 */
-		public static HostnameValidationResult validateHostname(CloudApplicationURL appUrl, CloudFoundryServer server, IWizardContainer container) {
-			return validateHostname(appUrl, server, container, null);
+		UniqueSubdomain result = null;
+
+		if (monitor == null) {
+			// Monitor is optional, so use a NullProgressMonitor.
+			monitor = new NullProgressMonitor();
 		}
 
-		/**
-		 * Run the host name validator in the context of the wizard container and provide a custom error message
-		 * @param appUrl
-		 * @param server
-		 * @param container
-		 * @param message - override with custom error message
-		 * @return
-		 */
-		public static HostnameValidationResult validateHostname(CloudApplicationURL appUrl, CloudFoundryServer server, IWizardContainer container, String message) {
-			HostnameValidator val = message == null ? new HostnameValidator(appUrl, server) : new HostnameValidator(appUrl, server, message);
+		List<CloudRoute> routes = null;
+
+		do {
+
 			try {
-				container.run(true,  true,  val);
+				// It does NOT check if the URL is taken already, even if valid.
+				cloudUrl = lookup.getCloudApplicationURL(url);
 			}
-			catch (Exception e) {
-				CloudFoundryPlugin.logWarning("Hostname taken validation was not completed. " + e.getMessage()); //$NON-NLS-1$
+			catch (CoreException e) {
+				// if error occurred, eg. url is null, then don't check for host
+				// taken and simply return
+				break;
+			}
 
-				IStatus status = new Status(IStatus.ERROR, CloudFoundryServerUiPlugin.PLUGIN_ID, Messages.CloudApplicationUrlPart_ERROR_UNABLE_TO_CHECK_HOSTNAME);				
-				return new HostnameValidationResult(status, val.isRouteCreated());
+			if (cloudUrl == null) {
+				// if error occurred, eg. url is null, then don't check for host
+				// taken and simply return
+				break;
 			}
-			
-			return new HostnameValidationResult(val.getStatus(), val.isRouteCreated());
-		}
-		
-		/**
-		 * Clean up reserved URLs except the URL to keep (urlToKeep) from the context of a wizard.  If urlToKeep is null, then all
-		 * reserved URLs will be removed.
-		 * 
-		 * @param wizard - the wizard
-		 * @param server - the CloudFoundryServer
-		 * @param reservedUrls - list of CloudApplicationURL that have been reserved
-		 * @param urlToKeep - The URL to keep from the list of reservedUrls
-		 */
-		public static void cleanupReservedRoutes(IWizard wizard, final CloudFoundryServer server, List<CloudApplicationURL> reservedUrls, String urlToKeep) {
-			for (CloudApplicationURL cloudURL : reservedUrls) {
-				// Don't remove the one that is needed
-				if (urlToKeep != null && urlToKeep.equals(cloudURL.getUrl())) {
-					continue;
+
+			if (routes == null) {
+				routes = server.getBehaviour().getRoutes(cloudUrl.getDomain(), monitor);
+			}
+
+			boolean isFound = false; // is in route list?
+			boolean isRouteReservedAndUnused = false; // is route reserve and
+														// unused?
+			boolean isRouteCreated = false; // did we create the route in
+											// reserveRoute?
+
+			// First check the existing cloud routes
+			for (CloudRoute cr : routes) {
+				// If we own the route...
+				if (cr.getHost().equalsIgnoreCase(cloudUrl.getSubdomain())) {
+					isFound = true;
+					isRouteCreated = false;
+
+					if (!cr.inUse()) {
+						isRouteReservedAndUnused = true;
+					}
+					else {
+						isRouteReservedAndUnused = false;
+					}
+
+					break;
 				}
+			}
+
+			if (!isFound) {
+				// If the route was not found in the getRoutes(...) list, then
+				// attempt to reserve it
+
+				isRouteReservedAndUnused = server.getBehaviour().reserveRouteIfAvailable(cloudUrl.getSubdomain(),
+						cloudUrl.getDomain(), monitor);
+				isRouteCreated = isRouteReservedAndUnused;
+			}
+
+			if (isRouteReservedAndUnused) {
+				result = new UniqueSubdomain();
+				result.setRouteCreated(isRouteCreated);
+				result.setCloudUrl(cloudUrl);
+
+				// break or just set boolean to true
+				isUniqueURL = true;
+
+			}
+			else {
+				// The route is taken (as determined either by checking the
+				// route list, or by attempting to reserve)
+
+				isUniqueURL = false;
+				StringBuilder sb = new StringBuilder(url);
+				String subdomain = cloudUrl.getSubdomain();
+				// Get the last integers in the subdomain
+				Pattern p = Pattern.compile("(\\d+)$"); // $NON-NLS-N$
+				Matcher m = p.matcher(subdomain);
+				// If it ends with a number, then simply increment it by one to
+				// get the new candidate subdomain name
+				if (m.find()) {
+					// Examples: subdomain could be MyApp1 or MyApp99 or
+					// MyApp2015
+					String intSuffixString = m.group(1); // The number can be
+															// any length
+					intSuffix = Integer.parseInt(intSuffixString);
+					int beginning = subdomain.indexOf(intSuffixString);
+					int length = intSuffixString.length();
+					// Examples: MyApp1 to MyApp2; MyApp99 to MyApp100;
+					// MyApp2015 to MyApp2016
+					// Increment intSuffix first
+					url = sb.replace(beginning, beginning + length, Integer.toString(++intSuffix)).toString();
+				}
+				else { // Otherwise, simply append 1 to the end of the subdomain
+					// Example: subdomain = MyApp --> MyApp1
+					url = sb.insert(sb.indexOf(subdomain) + subdomain.length(), "1").toString();
+				}
+			}
+
+		} while (!isUniqueURL && intSuffix < Integer.MAX_VALUE - 1 && !monitor.isCanceled()); // Support
+																								// suffix
+																								// up
+																								// to
+																								// the
+																								// number
+																								// 2^31
+																								// -
+																								// 1
+
+		return result;
+	}
+
+	/**
+	 * Run the host name validator in the context of the wizard container
+	 * 
+	 * @param appUrl
+	 * @param server
+	 * @param monitor
+	 * @param message
+	 * @return
+	 */
+	public static HostnameValidationResult validateHostname(CloudApplicationURL appUrl, CloudFoundryServer server,
+			IWizardContainer container) {
+		return validateHostname(appUrl, server, container, null);
+	}
+
+	/**
+	 * Run the host name validator in the context of the wizard container and
+	 * provide a custom error message
+	 * @param appUrl
+	 * @param server
+	 * @param container
+	 * @param message - override with custom error message
+	 * @return
+	 */
+	public static HostnameValidationResult validateHostname(CloudApplicationURL appUrl, CloudFoundryServer server,
+			IWizardContainer container, String message) {
+		HostnameValidator val = message == null ? new HostnameValidator(appUrl, server)
+				: new HostnameValidator(appUrl, server, message);
+		try {
+			container.run(true, true, val);
+		}
+		catch (Exception e) {
+			CloudFoundryPlugin.logWarning("Hostname taken validation was not completed. " + e.getMessage()); //$NON-NLS-1$
+
+			IStatus status = new Status(IStatus.ERROR, CloudFoundryServerUiPlugin.PLUGIN_ID,
+					Messages.CloudApplicationUrlPart_ERROR_UNABLE_TO_CHECK_HOSTNAME);
+			return new HostnameValidationResult(status, val.isRouteCreated());
+		}
+
+		return new HostnameValidationResult(val.getStatus(), val.isRouteCreated());
+	}
+
+	/**
+	 * Clean up reserved URLs except the URL to keep (urlToKeep) from the
+	 * context of a wizard. If urlToKeep is null, then all reserved URLs will be
+	 * removed.
+	 * 
+	 * @param wizard - the wizard
+	 * @param server - the CloudFoundryServer
+	 * @param reservedUrls - list of CloudApplicationURL that have been reserved
+	 * @param urlToKeep - The URL to keep from the list of reservedUrls
+	 */
+	public static void cleanupReservedRoutes(IWizard wizard, final CloudFoundryServer server,
+			List<CloudApplicationURL> reservedUrls, String urlToKeep) {
+		for (CloudApplicationURL cloudURL : reservedUrls) {
+			// Don't remove the one that is needed
+			if (urlToKeep != null && urlToKeep.equals(cloudURL.getUrl())) {
+				continue;
+			}
+			deleteRoute(wizard, server, cloudURL);
+		}
+		reservedUrls.clear();
+	}
+
+	/**
+	 * Clean up reserved URLs except those specified in the deployment info,
+	 * from the context of a wizard
+	 * 
+	 * @param workingCopy
+	 * @param wizard - the wizard
+	 * @param server - the CloudFoundryServer
+	 * @param reservedUrls - the list of all reserved route URLS
+	 */
+	public static void cleanupReservedRoutesIfNotNeeded(DeploymentInfoWorkingCopy workingCopy, IWizard wizard,
+			final CloudFoundryServer server, List<CloudApplicationURL> reservedUrls) {
+		List<String> urls = workingCopy.getUris();
+		if (urls == null) {
+			urls = new ArrayList<String>();
+		}
+		// Clean up unused routes that were reserved and no longer needed
+		for (CloudApplicationURL cloudURL : reservedUrls) {
+			boolean isNeeded = false;
+
+			for (String url : urls) {
+				if (url.equals(cloudURL.getUrl())) {
+					isNeeded = true;
+					break;
+				}
+			}
+			if (!isNeeded) {
 				deleteRoute(wizard, server, cloudURL);
 			}
-			reservedUrls.clear();
 		}
+		reservedUrls.clear();
+	}
 
-		/**
-		 * Clean up reserved URLs except those specified in the deployment info, from the context of a wizard
-		 * 
-		 * @param workingCopy
-		 * @param wizard - the wizard
-		 * @param server - the CloudFoundryServer
-		 * @param reservedUrls - the list of all reserved route URLS
-		 */
-		public static void cleanupReservedRoutesIfNotNeeded(DeploymentInfoWorkingCopy workingCopy, IWizard wizard, final CloudFoundryServer server, List<CloudApplicationURL> reservedUrls) {
-			List<String> urls = workingCopy.getUris();
-			if (urls == null) {
-				urls = new ArrayList<String>();
-			}
-			// Clean up unused routes that were reserved and no longer needed
-			for (CloudApplicationURL cloudURL : reservedUrls) {
-				boolean isNeeded = false;
-
-				for (String url : urls) {
-					if (url.equals(cloudURL.getUrl())) {
-						isNeeded = true;
-						break;
+	private static void deleteRoute(final IWizard wizard, final CloudFoundryServer server,
+			final CloudApplicationURL fCloudURL) {
+		try {
+			wizard.getContainer().run(true, true, new IRunnableWithProgress() {
+				@Override
+				public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
+					try {
+						server.getBehaviour().deleteRoute(fCloudURL.getSubdomain(), fCloudURL.getDomain(), monitor);
+					}
+					catch (CoreException e) {
+						CloudFoundryPlugin.logError(e);
+					}
+					finally {
+						monitor.done();
 					}
 				}
-				if (!isNeeded) {
-					deleteRoute(wizard, server, cloudURL);
-				}
-			}
-			reservedUrls.clear();
+			});
 		}
-		
-		private static void deleteRoute(final IWizard wizard, final CloudFoundryServer server, final CloudApplicationURL fCloudURL) {
-			try {
-				wizard.getContainer().run(true, true, new IRunnableWithProgress() {
-					@Override
-					public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
-						try {
-							server.getBehaviour().deleteRoute(fCloudURL.getSubdomain(), fCloudURL.getDomain(), monitor);
-						}
-						catch (CoreException e) {
-							CloudFoundryPlugin.logError(e);
-						}
-						finally {
-							monitor.done();
-						}
-					}
-				});
-			} catch (InterruptedException e) {
-				CloudFoundryPlugin.logWarning("The following route was not deleted: " + fCloudURL.getUrl());  //$NON-NLS-N$					
-			} catch (InvocationTargetException e) {
-				CloudFoundryPlugin.logWarning("The following route was not deleted: " + fCloudURL.getUrl());  //$NON-NLS-N$
-			}
+		catch (InterruptedException e) {
+			CloudFoundryPlugin.logWarning("The following route was not deleted: " + fCloudURL.getUrl()); // $NON-NLS-N$
 		}
-		
+		catch (InvocationTargetException e) {
+			CloudFoundryPlugin.logWarning("The following route was not deleted: " + fCloudURL.getUrl()); // $NON-NLS-N$
+		}
+	}
 
-	/** Returned by the getUniqueSubdomain(...) method; if successful it contains the unique cloud subdomain url,
-	 * and whether or not the route needed to be created (a route does not need to be created if it already exists) */
+	/**
+	 * Returned by the getUniqueSubdomain(...) method; if successful it contains
+	 * the unique cloud subdomain url, and whether or not the route needed to be
+	 * created (a route does not need to be created if it already exists)
+	 */
 	public static class UniqueSubdomain {
 		private CloudApplicationURL cloudUrl = null;
+
 		private boolean routeCreated = false;
-	
-		
+
 		public CloudApplicationURL getCloudUrl() {
 			return cloudUrl;
 		}
-		
+
 		public boolean isRouteCreated() {
 			return routeCreated;
 		}
-		
+
 		public void setCloudUrl(CloudApplicationURL cloudUrl) {
 			this.cloudUrl = cloudUrl;
 		}
-		
+
 		public void setRouteCreated(boolean routeCreated) {
 			this.routeCreated = routeCreated;
 		}
-		
+
 	}
-		
 }

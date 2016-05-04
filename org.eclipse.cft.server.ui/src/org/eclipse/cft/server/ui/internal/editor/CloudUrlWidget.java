@@ -28,7 +28,7 @@ import org.eclipse.cft.server.core.AbstractCloudFoundryUrl;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.ui.internal.CloudFoundryServerUiPlugin;
 import org.eclipse.cft.server.ui.internal.CloudServerUIUtil;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.dialogs.Dialog;
@@ -152,7 +152,7 @@ public class CloudUrlWidget {
 
 		String url = getURLSelection();
 		if (url != null) {
-			url = CloudUiUtil.getUrlFromDisplayText(url);
+			url = CFUiUtil.getUrlFromDisplayText(url);
 
 			cfServer.setUrl(url);
 		}

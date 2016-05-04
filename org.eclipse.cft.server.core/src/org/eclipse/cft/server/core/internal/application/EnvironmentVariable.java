@@ -21,8 +21,11 @@
 package org.eclipse.cft.server.core.internal.application;
 
 /**
- * Representation of a process environment variable used for JSON serialisation of a service command
- *
+ * Representation of a process environment variable
+ * 
+ * WARNING: Referenced by public API. Do not move or rename to avoid breaking
+ * public API
+ * 
  */
 public class EnvironmentVariable {
 

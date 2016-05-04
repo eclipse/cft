@@ -28,7 +28,7 @@ import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.ICoreRunnable;
 import org.eclipse.cft.server.ui.internal.Logger;
 import org.eclipse.cft.server.ui.internal.Messages;
@@ -140,7 +140,7 @@ public class ServiceToApplicationsBindingWizard extends Wizard {
 
 		protected void performFinish() {
 			try {
-				CloudUiUtil.runForked(new ICoreRunnable() {
+				CFUiUtil.runForked(new ICoreRunnable() {
 					@Override
 					public void run(IProgressMonitor monitor) throws CoreException {
 						monitor.setTaskName(Messages.MANAGE_SERVICES_TO_APPLICATIONS_FINISH);

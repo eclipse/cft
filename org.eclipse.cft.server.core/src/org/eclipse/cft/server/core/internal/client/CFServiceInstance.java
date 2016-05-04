@@ -25,6 +25,9 @@ import org.springframework.util.Assert;
 /**
  * Represents a cloud service instance.
  * 
+ * WARNING: Referenced by public API. Do not move or rename to avoid breaking
+ * public API
+ * 
  */
 public class CFServiceInstance {
 

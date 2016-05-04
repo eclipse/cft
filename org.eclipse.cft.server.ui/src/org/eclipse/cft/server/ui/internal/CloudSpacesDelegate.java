@@ -127,7 +127,7 @@ public abstract class CloudSpacesDelegate {
 	 * @return
 	 */
 	public boolean matchesCurrentDescriptor(String urlText, String userName, String password, boolean selfSigned) {
-		String actualURL = CloudUiUtil.getUrlFromDisplayText(urlText);
+		String actualURL = CFUiUtil.getUrlFromDisplayText(urlText);
 
 		String cachedDescriptorID = CloudSpacesDescriptor.getDescriptorID(userName, password, actualURL, selfSigned);
 
@@ -227,12 +227,12 @@ public abstract class CloudSpacesDelegate {
 
 	protected CloudSpacesDescriptor internalUpdateDescriptor(String urlText, String userName, String password,
 			boolean selfSigned, IRunnableContext context) throws CoreException {
-		String actualURL = CloudUiUtil.getUrlFromDisplayText(urlText);
+		String actualURL = CFUiUtil.getUrlFromDisplayText(urlText);
 
 		validateCredentialsLocally(actualURL, userName, password);
 
 		if (spacesDescriptor == null) {
-			CloudOrgsAndSpaces orgsAndSpaces = CloudUiUtil.getCloudSpaces(userName, password, actualURL, true,
+			CloudOrgsAndSpaces orgsAndSpaces = CFUiUtil.getCloudSpaces(userName, password, actualURL, true,
 					selfSigned, context);
 
 			if (orgsAndSpaces != null) {

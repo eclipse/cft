@@ -222,7 +222,7 @@ public class CloudFoundryUiCallback extends CloudFoundryCallback {
 
 				@Override
 				public void run() {
-					Shell shell = CloudUiUtil.getShell();
+					Shell shell = CFUiUtil.getShell();
 					if (shell != null) {
 						MessageDialog.openError(shell, Messages.CloudFoundryUiCallback_ERROR_CALLBACK_TITLE,
 								status.getMessage());
@@ -238,7 +238,7 @@ public class CloudFoundryUiCallback extends CloudFoundryCallback {
 
 			public void run() {
 
-				Shell shell = CloudUiUtil.getShell();
+				Shell shell = CFUiUtil.getShell();
 				if (shell != null) {
 					shouldContinue[0] = MessageDialog.openConfirm(shell, title, message);
 				}

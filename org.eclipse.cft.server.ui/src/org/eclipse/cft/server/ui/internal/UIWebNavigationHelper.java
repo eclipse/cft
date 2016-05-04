@@ -48,7 +48,7 @@ public class UIWebNavigationHelper {
 		UIJob job = new UIJob(label) {
 
 			public IStatus runInUIThread(IProgressMonitor monitor) {
-				CloudUiUtil.openUrl(location);
+				CFUiUtil.openUrl(location);
 				return Status.OK_STATUS;
 			}
 		};
@@ -60,7 +60,7 @@ public class UIWebNavigationHelper {
 		UIJob job = new UIJob(label) {
 
 			public IStatus runInUIThread(IProgressMonitor monitor) {
-				CloudUiUtil.openUrl(location, WebBrowserPreference.EXTERNAL);
+				CFUiUtil.openUrl(location, WebBrowserPreference.EXTERNAL);
 				return Status.OK_STATUS;
 			}
 		};

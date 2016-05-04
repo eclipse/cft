@@ -27,6 +27,8 @@ import java.util.List;
 /**
  * Describes a Cloud service. This service is typically defined in Cloud Foundry
  * and is used to create service instances. See {@link CFServiceInstance}
+ * 
+ * WARNING: Referenced by public API. Do not move or rename to avoid breaking public API
  *
  */
 public class CFServiceOffering {

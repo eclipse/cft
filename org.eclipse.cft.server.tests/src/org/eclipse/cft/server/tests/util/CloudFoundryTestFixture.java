@@ -48,7 +48,7 @@ import org.eclipse.cft.server.tests.AllCloudFoundryTests;
 import org.eclipse.cft.server.tests.server.TestServlet;
 import org.eclipse.cft.server.tests.server.WebApplicationContainerBean;
 import org.eclipse.cft.server.tests.sts.util.StsTestUtil;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.ServerDescriptor;
 import org.eclipse.cft.server.ui.internal.ServerHandler;
 import org.eclipse.core.resources.IProject;
@@ -225,7 +225,7 @@ public class CloudFoundryTestFixture {
 
 		protected void setCloudSpace(CloudFoundryServer cloudServer, String orgName, String spaceName)
 				throws CoreException {
-			CloudOrgsAndSpaces spaces = CloudUiUtil.getCloudSpaces(cloudServer.getUsername(), cloudServer.getPassword(),
+			CloudOrgsAndSpaces spaces = CFUiUtil.getCloudSpaces(cloudServer.getUsername(), cloudServer.getPassword(),
 					cloudServer.getUrl(), false, cloudServer.getSelfSignedCertificate(), null);
 			Assert.isTrue(spaces != null, "Failed to resolve orgs and spaces.");
 			Assert.isTrue(spaces.getDefaultCloudSpace() != null,

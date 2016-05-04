@@ -48,7 +48,7 @@ import org.eclipse.cft.server.core.internal.debug.DebugOperationType;
 import org.eclipse.cft.server.core.internal.jrebel.CloudRebelAppHandler;
 import org.eclipse.cft.server.rse.internal.ConfigureRemoteCloudFoundryAction;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.actions.DebugApplicationEditorAction;
 import org.eclipse.cft.server.ui.internal.actions.EditorAction.RefreshArea;
@@ -688,7 +688,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		mappedURIsLink.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				CloudUiUtil.openUrl("http://" + e.text); //$NON-NLS-1$
+				CFUiUtil.openUrl("http://" + e.text); //$NON-NLS-1$
 			}
 		});
 

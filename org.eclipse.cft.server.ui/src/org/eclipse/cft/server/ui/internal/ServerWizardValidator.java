@@ -217,7 +217,7 @@ public abstract class ServerWizardValidator implements ServerValidator {
 					// the validation will convert
 					// it to an actual URL)
 					boolean displayURL = true;
-					CloudUiUtil.validateCredentials(userName, password, url, displayURL, acceptSelfSigned,
+					CFUiUtil.validateCredentials(userName, password, url, displayURL, acceptSelfSigned,
 							runnableContext);
 				}
 

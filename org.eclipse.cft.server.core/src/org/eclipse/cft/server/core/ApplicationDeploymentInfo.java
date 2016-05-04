@@ -31,14 +31,17 @@ import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
  * Describes the application that is to be pushed to a CF server, or already
  * exists in a server.
  * <p/>
- * This is the primary model of an application's metadata, and includes the
- * application's name, staging, URIs, and list of bound services.Note that
- * properties that are NOT part of an application deployment manifest (e.g. that
- * are transient and only applicable when an operation is being performed on the
- * application, like selecting its deployment mode) should not be defined here).
+ * This is the primary model of an application, and includes among other things,
+ * the application's name, memory, instances, buildpack, URLs, and list of bound
+ * services. This models the application information as found in Cloud Foundry.
+ * 
+ * <p/>
+ * The info only describes an application, but does not define the contents of
+ * an application.
+ * 
+ * @see CFApplicationArchive for application contents
  */
 public class ApplicationDeploymentInfo extends Observable {
-
 
 	private List<EnvironmentVariable> envVars = new ArrayList<EnvironmentVariable>();
 

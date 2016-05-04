@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.ICoreRunnable;
 import org.eclipse.cft.server.ui.internal.IEventSource;
 import org.eclipse.cft.server.ui.internal.IPartChangeListener;
@@ -248,7 +248,7 @@ public abstract class PartsWizardPage extends WizardPage implements IPartChangeL
 				CoreException cex = null;
 				try {
 					// Fork in a worker thread.
-					CloudUiUtil.runForked(runnable, getWizard().getContainer());
+					CFUiUtil.runForked(runnable, getWizard().getContainer());
 				}
 				catch (OperationCanceledException e) {
 					// Not an error. User can still enter manual values

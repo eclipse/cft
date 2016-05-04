@@ -40,7 +40,7 @@ import org.eclipse.cft.server.core.internal.application.ZipArchive;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.standalone.core.internal.application.ICloudFoundryArchiver;
 import org.eclipse.cft.server.standalone.ui.internal.Messages;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -379,7 +379,7 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 			public void run() {
 				try {
 
-					Shell shell = CloudUiUtil.getShell();
+					Shell shell = CFUiUtil.getShell();
 
 					IJarExportRunnable runnable = packageData.createJarExportRunnable(shell);
 					try {

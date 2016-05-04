@@ -32,7 +32,7 @@ import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.jface.wizard.IWizardPage;
@@ -158,13 +158,13 @@ public class CloudFoundryApplicationWizard extends Wizard implements IReservedUR
 	@Override
 	public boolean performFinish() {
 		workingCopy.save();
-		CloudUiUtil.cleanupReservedRoutesIfNotNeeded(workingCopy, this, server, getCreatedUrls());
+		CFUiUtil.cleanupReservedRoutesIfNotNeeded(workingCopy, this, server, getCreatedUrls());
 		return true;
 	}
 
 	@Override
 	public boolean performCancel() {
-		CloudUiUtil.cleanupReservedRoutes(this,  server, getCreatedUrls(), null);
+		CFUiUtil.cleanupReservedRoutes(this,  server, getCreatedUrls(), null);
 		return super.performCancel();
 	}
 
@@ -185,7 +185,7 @@ public class CloudFoundryApplicationWizard extends Wizard implements IReservedUR
 	}
 
 	public HostnameValidationResult validateURL(CloudApplicationURL appUrl) {
-		return CloudUiUtil.validateHostname(appUrl, server, getContainer());
+		return CFUiUtil.validateHostname(appUrl, server, getContainer());
 	}
 	
 	

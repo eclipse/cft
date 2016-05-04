@@ -45,7 +45,7 @@ import org.eclipse.swt.widgets.Shell;
  * 
  * Available API is exposed through {@link CloudUIUtil}
  * 
- * This class is an appropriate complement for {@link CloudUiUtil}
+ * This class is an appropriate complement for {@link CFUiUtil}
  * that exposes (internally) the methods that received and returned the old
  * {@link CloudServerURL}, switching it to the more generic
  * {@link AbstractCloudFoundryUrl}
@@ -77,10 +77,10 @@ public class CloudServerUIUtil {
 				}
 			};
 			if (context != null) {
-				CloudUiUtil.runForked(coreRunner, context);
+				CFUiUtil.runForked(coreRunner, context);
 			}
 			else {
-				CloudUiUtil.runForked(coreRunner);
+				CFUiUtil.runForked(coreRunner);
 			}
 
 			return abstractUrls[0];
@@ -120,10 +120,10 @@ public class CloudServerUIUtil {
 				}
 			};
 			if (context != null) {
-				CloudUiUtil.runForked(coreRunner, context);
+				CFUiUtil.runForked(coreRunner, context);
 			}
 			else {
-				CloudUiUtil.runForked(coreRunner);
+				CFUiUtil.runForked(coreRunner);
 			}
 
 			return cloudUrls;
@@ -160,7 +160,7 @@ public class CloudServerUIUtil {
 		List<AbstractCloudFoundryUrl> urls = new ArrayList<AbstractCloudFoundryUrl>();
 
 		IPreferenceStore prefStore = CloudFoundryServerUiPlugin.getDefault().getPreferenceStore();
-		String urlString = prefStore.getString(CloudUiUtil.ATTR_USER_DEFINED_URLS + "." + serverTypeId); //$NON-NLS-1$
+		String urlString = prefStore.getString(CFUiUtil.ATTR_USER_DEFINED_URLS + "." + serverTypeId); //$NON-NLS-1$
 
 		if (urlString != null && urlString.length() > 0) {
 			// Split on "||"
@@ -207,6 +207,6 @@ public class CloudServerUIUtil {
 			}
 		}
 
-		prefStore.setValue(CloudUiUtil.ATTR_USER_DEFINED_URLS + "." + serverTypeId, builder.toString()); //$NON-NLS-1$
+		prefStore.setValue(CFUiUtil.ATTR_USER_DEFINED_URLS + "." + serverTypeId, builder.toString()); //$NON-NLS-1$
 	}
 }
