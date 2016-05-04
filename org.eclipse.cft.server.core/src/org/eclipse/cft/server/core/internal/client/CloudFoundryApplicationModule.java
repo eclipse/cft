@@ -537,7 +537,7 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 
 		if (delegate != null) {
 			try {
-				info = delegate.getExistingApplicationDeploymentInfo(this, cloudServer);
+				info = delegate.getExistingApplicationDeploymentInfo(this, cloudServer.getServer());
 			}
 			catch (CoreException e) {
 				CloudFoundryPlugin.logError(e);
@@ -590,7 +590,7 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 
 		if (delegate != null) {
 			try {
-				defaultInfo = delegate.getDefaultApplicationDeploymentInfo(this, getCloudFoundryServer(), monitor);
+				defaultInfo = delegate.getDefaultApplicationDeploymentInfo(this, getCloudFoundryServer().getServer(), monitor);
 			}
 			catch (CoreException e) {
 				CloudFoundryPlugin.logError(e);

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,15 +24,15 @@ package org.eclipse.cft.server.ui.internal.wizards;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.jface.wizard.IWizardPage;
@@ -103,7 +103,7 @@ public class CloudFoundryApplicationWizard extends Wizard implements IReservedUR
 			wizardDelegate = ApplicationWizardRegistry.getDefaultJavaWebWizardDelegate();
 		}
 
-		applicationDeploymentPages = wizardDelegate.getWizardPages(applicationDescriptor, server, module);
+		applicationDeploymentPages = wizardDelegate.getWizardPages(applicationDescriptor, server.getServer(), module);
 
 		if (applicationDeploymentPages != null && !applicationDeploymentPages.isEmpty()) {
 			for (IWizardPage updatedPage : applicationDeploymentPages) {
@@ -128,7 +128,7 @@ public class CloudFoundryApplicationWizard extends Wizard implements IReservedUR
 	 * to the application. To see the actual list of services to be bound,
 	 * obtain the deployment descriptor: {@link #getDeploymentDescriptor()}
 	 */
-	public List<CloudService> getCloudServicesToCreate() {
+	public List<CFServiceInstance> getCloudServicesToCreate() {
 		return applicationDescriptor.getCloudServicesToCreate();
 	}
 
@@ -158,13 +158,13 @@ public class CloudFoundryApplicationWizard extends Wizard implements IReservedUR
 	@Override
 	public boolean performFinish() {
 		workingCopy.save();
-		CloudUiUtil.cleanupReservedRoutesIfNotNeeded(workingCopy, this, server, getCreatedUrls());
+		CFUiUtil.cleanupReservedRoutesIfNotNeeded(workingCopy, this, server, getCreatedUrls());
 		return true;
 	}
 
 	@Override
 	public boolean performCancel() {
-		CloudUiUtil.cleanupReservedRoutes(this,  server, getCreatedUrls(), null);
+		CFUiUtil.cleanupReservedRoutes(this,  server, getCreatedUrls(), null);
 		return super.performCancel();
 	}
 
@@ -185,7 +185,7 @@ public class CloudFoundryApplicationWizard extends Wizard implements IReservedUR
 	}
 
 	public HostnameValidationResult validateURL(CloudApplicationURL appUrl) {
-		return CloudUiUtil.validateHostname(appUrl, server, getContainer());
+		return CFUiUtil.validateHostname(appUrl, server, getContainer());
 	}
 	
 	

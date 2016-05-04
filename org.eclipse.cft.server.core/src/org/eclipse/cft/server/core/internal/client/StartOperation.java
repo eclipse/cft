@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -29,13 +29,14 @@ import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
-import org.eclipse.cft.server.core.internal.CachingApplicationArchive;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
-import org.eclipse.cft.server.core.internal.application.CloudApplicationArchive;
+import org.eclipse.cft.server.core.internal.application.ApplicationUtil;
+import org.eclipse.cft.server.core.internal.application.CachingApplicationArchive;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -140,7 +141,7 @@ public class StartOperation extends RestartOperation {
 			SubMonitor subMonitor = SubMonitor.convert(monitor, 100);
 
 			subMonitor.subTask(generatingArchiveLabel);
-			ApplicationArchive applicationArchive = getBehaviour().generateApplicationArchiveFile(
+			CFApplicationArchive applicationArchive = getBehaviour().generateApplicationArchiveFile(
 					appModule.getDeploymentInfo(), appModule, getModules(), server, incrementalPublish,
 					subMonitor.newChild(20));
 			if (applicationArchive == null) {
@@ -171,7 +172,7 @@ public class StartOperation extends RestartOperation {
 
 			subMonitor.worked(10);
 
-			final ApplicationArchive applicationArchiveFin = applicationArchive;
+			final CFApplicationArchive applicationArchiveFin = applicationArchive;
 			final CloudFoundryApplicationModule appModuleFin = appModule;
 			// Now push the application resources to the server
 
@@ -226,7 +227,7 @@ public class StartOperation extends RestartOperation {
 	 * @throws CoreException if error creating the application
 	 */
 	protected void pushApplication(CloudFoundryOperations client, final CloudFoundryApplicationModule appModule,
-			ApplicationArchive applicationArchive, final IProgressMonitor monitor) throws CoreException {
+			CFApplicationArchive applicationArchive, final IProgressMonitor monitor) throws CoreException {
 
 		String appName = appModule.getDeploymentInfo().getDeploymentName();
 
@@ -258,7 +259,8 @@ public class StartOperation extends RestartOperation {
 				try {
 					if (applicationArchive instanceof CachingApplicationArchive) {
 						final CachingApplicationArchive cachingArchive = (CachingApplicationArchive) applicationArchive;
-						client.uploadApplication(appName, cachingArchive, new UploadStatusCallback() {
+						ApplicationArchive v1ArchiveWrapper = ApplicationUtil.asV1ApplicationArchive(cachingArchive);
+						client.uploadApplication(appName, v1ArchiveWrapper, new UploadStatusCallback() {
 
 							public void onProcessMatchedResources(int length) {
 
@@ -283,20 +285,17 @@ public class StartOperation extends RestartOperation {
 
 					}
 					else {
-						client.uploadApplication(appName, applicationArchive, new UploadStatusCallback() {
+						ApplicationArchive v1ArchiveWrapper = ApplicationUtil
+								.asV1ApplicationArchive(applicationArchive);
+
+						client.uploadApplication(appName, v1ArchiveWrapper, new UploadStatusCallback() {
 
 							public void onProcessMatchedResources(int length) {
 
 							}
 
 							public void onMatchedFileNames(Set<String> matchedFileNames) {
-								// try {
-								// printlnToConsole(appModule, ".", false,
-								// false, monitor);
-								// }
-								// catch (CoreException e) {
-								// CloudFoundryPlugin.logError(e);
-								// }
+
 							}
 
 							public void onCheckResources() {
@@ -315,15 +314,13 @@ public class StartOperation extends RestartOperation {
 					}
 				}
 				finally {
-					if (applicationArchive instanceof CloudApplicationArchive) {
-						try {
-							((CloudApplicationArchive) applicationArchive).close();
-						}
-						catch (CoreException e) {
-							// Don't let errors in closing the archive stop the
-							// publish operation
-							CloudFoundryPlugin.logError(e);
-						}
+					try {
+						applicationArchive.close();
+					}
+					catch (CoreException e) {
+						// Don't let errors in closing the archive stop the
+						// publish operation
+						CloudFoundryPlugin.logError(e);
 					}
 				}
 			}

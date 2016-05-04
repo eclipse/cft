@@ -194,7 +194,7 @@ public class CloudRebelUIHandler extends CloudRebelAppHandler {
 								Display.getDefault().syncExec(new Runnable() {
 
 									public void run() {
-										Shell shell = CloudUiUtil.getShell();
+										Shell shell = CFUiUtil.getShell();
 
 										proceed[0] = shell != null
 												&& !shell.isDisposed()

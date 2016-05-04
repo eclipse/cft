@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,19 +24,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudServerListener;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudRefreshEvent;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
-import org.eclipse.cft.server.ui.internal.actions.RefreshEditorAction;
 import org.eclipse.cft.server.ui.internal.actions.EditorAction.EditorCloudEvent;
 import org.eclipse.cft.server.ui.internal.actions.EditorAction.RefreshArea;
+import org.eclipse.cft.server.ui.internal.actions.RefreshEditorAction;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -72,7 +72,7 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 
 	private final List<CloudServerListener> cloudServerListeners = new ArrayList<CloudServerListener>();
 
-	private List<CloudService> services;
+	private List<CFServiceInstance> services;
 
 	private ScrolledForm sform;
 
@@ -143,7 +143,7 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 		return masterDetailsBlock;
 	}
 
-	public List<CloudService> getServices() {
+	public List<CFServiceInstance> getServices() {
 		return services;
 	}
 
@@ -208,7 +208,7 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 		}
 	}
 
-	public void setServices(List<CloudService> services) {
+	public void setServices(List<CFServiceInstance> services) {
 		this.services = services;
 	}
 
@@ -346,7 +346,7 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 					&& (this.type == CloudServerEvent.EVENT_UPDATE_SERVICES
 							|| this.type == CloudServerEvent.EVENT_SERVER_REFRESHED)
 					&& status.getSeverity() != IStatus.ERROR) {
-				List<CloudService> services = ((CloudRefreshEvent) event).getServices();
+				List<CFServiceInstance> services = ((CloudRefreshEvent) event).getServices();
 				if (services == null) {
 					services = Collections.emptyList();
 				}

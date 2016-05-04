@@ -20,9 +20,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.standalone.core.internal.pivotal;
 
-import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.application.ICloudFoundryServerApplicationDelegate;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.pivotal.PivotalConstants;
@@ -30,6 +28,7 @@ import org.eclipse.cft.server.standalone.core.internal.application.StandaloneApp
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 
 /**
  * 
@@ -45,13 +44,13 @@ public class PivotalStandaloneApplicationDelegate extends StandaloneApplicationD
 	}
 
 	@Override
-	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(IModule module, CloudFoundryServer cloudServer,
+	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(IModule module, IServer server,
 			IProgressMonitor monitor) throws CoreException {
-		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, cloudServer);
+		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, server);
 		// Set default values.
 		String appName = appModule.getDeployedApplicationName();
 		ApplicationDeploymentInfo deploymentInfo = new ApplicationDeploymentInfo(appName);
-		deploymentInfo.setStaging(new Staging(null, PivotalConstants.PIVOTAL_WEB_SERVICES_JAVA_BUILDPACK));
+		deploymentInfo.setBuildpack(PivotalConstants.PIVOTAL_WEB_SERVICES_JAVA_BUILDPACK);
 		deploymentInfo.setMemory(PivotalConstants.PIVOTAL_DEFAULT_MEMORY);
 
 		return deploymentInfo;

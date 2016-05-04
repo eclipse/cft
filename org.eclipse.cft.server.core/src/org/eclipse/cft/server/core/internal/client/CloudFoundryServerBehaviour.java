@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and IBM Corporation 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc., IBM Corporation, and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -38,22 +38,20 @@ import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.StreamingLogToken;
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
-import org.cloudfoundry.client.lib.domain.CloudService;
-import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.eclipse.cft.server.core.AbstractApplicationDelegate;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
+import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
-import org.eclipse.cft.server.core.internal.CachingApplicationArchive;
+import org.eclipse.cft.server.core.internal.BehaviourOperationsScheduler;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryLoginHandler;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
@@ -62,9 +60,9 @@ import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ModuleResourceDeltaWrapper;
-import org.eclipse.cft.server.core.internal.BehaviourOperationsScheduler;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
+import org.eclipse.cft.server.core.internal.application.CachingApplicationArchive;
 import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
 import org.eclipse.cft.server.core.internal.jrebel.CloudRebelAppHandler;
 import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
@@ -237,17 +235,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			CloudFoundryPlugin.logError(e);
 		}
 		return ApplicationDebugLauncher.NO_DEBUG;
-	}
-
-	/**
-	 * Creates the given list of services
-	 * @deprecated Use {@link #operations()} instead.
-	 * @param services
-	 * @param monitor
-	 * @throws CoreException
-	 */
-	public void createService(final CloudService[] services, IProgressMonitor monitor) throws CoreException {
-		operations().createServices(services).run(monitor);
 	}
 
 	public synchronized List<CloudDomain> getDomainsFromOrgs(IProgressMonitor monitor) throws CoreException {
@@ -675,7 +662,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		return getRequestFactory().getFile(app, instanceIndex, path, isDir).run(monitor);
 	}
 
-	public List<CloudServiceOffering> getServiceOfferings(IProgressMonitor monitor) throws CoreException {
+	public List<CFServiceOffering> getServiceOfferings(IProgressMonitor monitor) throws CoreException {
 		return getRequestFactory().getServiceOfferings().run(monitor);
 	}
 
@@ -686,7 +673,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		getRequestFactory().deleteAllApplications().run(monitor);
 	}
 
-	public List<CloudService> getServices(IProgressMonitor monitor) throws CoreException {
+	public List<CFServiceInstance> getServices(IProgressMonitor monitor) throws CoreException {
 		return getRequestFactory().getServices().run(monitor);
 	}
 
@@ -922,21 +909,21 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public void refreshApplicationBoundServices(CloudFoundryApplicationModule appModule, IProgressMonitor monitor)
 			throws CoreException {
 		DeploymentInfoWorkingCopy copy = appModule.resolveDeploymentInfoWorkingCopy(monitor);
-		List<CloudService> boundServices = copy.getServices();
+		List<CFServiceInstance> boundServices = copy.getServices();
 		if (boundServices != null && !boundServices.isEmpty()) {
 
-			List<CloudService> allServices = getServices(monitor);
+			List<CFServiceInstance> allServices = getServices(monitor);
 			if (allServices != null) {
-				Map<String, CloudService> existingAsMap = new HashMap<String, CloudService>();
+				Map<String, CFServiceInstance> existingAsMap = new HashMap<String, CFServiceInstance>();
 
-				for (CloudService existingServices : allServices) {
+				for (CFServiceInstance existingServices : allServices) {
 					existingAsMap.put(existingServices.getName(), existingServices);
 				}
 
-				List<CloudService> updatedServices = new ArrayList<CloudService>();
+				List<CFServiceInstance> updatedServices = new ArrayList<CFServiceInstance>();
 
-				for (CloudService boundService : boundServices) {
-					CloudService updatedService = existingAsMap.get(boundService.getName());
+				for (CFServiceInstance boundService : boundServices) {
+					CFServiceInstance updatedService = existingAsMap.get(boundService.getName());
 					// Check if there is an updated mapping to an actual Cloud
 					// Service or retain the old one.
 					if (updatedService != null) {
@@ -1266,8 +1253,10 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		}.run(monitor);
 	}
 
-	/** Retrieves the routes for the given domain name; will return early if cancelled, with 
-	 * an OperationCanceledException. */
+	/**
+	 * Retrieves the routes for the given domain name; will return early if
+	 * cancelled, with an OperationCanceledException.
+	 */
 	public List<CloudRoute> getRoutes(final String domainName, IProgressMonitor monitor) throws CoreException {
 
 		BaseClientRequest<List<CloudRoute>> request = getRequestFactory().getRoutes(domainName);
@@ -1294,11 +1283,13 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	/**
-	 * Attempt to reserve a route; returns true if the route could be reserved, or false otherwise.
-	 * Note: This will return false if user already owns the route, or if the route is owned by another user. 
-	 * Will return early if cancelled, with an OperationCanceledException. 
+	 * Attempt to reserve a route; returns true if the route could be reserved,
+	 * or false otherwise. Note: This will return false if user already owns the
+	 * route, or if the route is owned by another user. Will return early if
+	 * cancelled, with an OperationCanceledException.
 	 */
-	public boolean reserveRouteIfAvailable(final String host, final String domainName, IProgressMonitor monitor) throws CoreException {
+	public boolean reserveRouteIfAvailable(final String host, final String domainName, IProgressMonitor monitor)
+			throws CoreException {
 
 		BaseClientRequest<Boolean> request = getRequestFactory().reserveRouteIfAvailable(host, domainName);
 
@@ -1573,7 +1564,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @throws CoreException if failure occurred while generated an archive file
 	 * containing the application's payload
 	 */
-	protected ApplicationArchive generateApplicationArchiveFile(ApplicationDeploymentInfo deploymentInfo,
+	protected CFApplicationArchive generateApplicationArchiveFile(ApplicationDeploymentInfo deploymentInfo,
 			CloudFoundryApplicationModule cloudModule, IModule[] modules, Server server, boolean incrementalPublish,
 			IProgressMonitor monitor) throws CoreException {
 
@@ -1591,7 +1582,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 		AbstractApplicationDelegate delegate = ApplicationRegistry.getApplicationDelegate(cloudModule.getLocalModule());
 
-		ApplicationArchive archive = null;
+		CFApplicationArchive archive = null;
 		if (delegate != null && delegate.providesApplicationArchive(cloudModule.getLocalModule())) {
 			IModuleResource[] resources = getResources(modules);
 
@@ -1625,10 +1616,10 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	}
 
-	private ApplicationArchive getApplicationArchive(CloudFoundryApplicationModule cloudModule,
+	private CFApplicationArchive getApplicationArchive(CloudFoundryApplicationModule cloudModule,
 			IProgressMonitor monitor, AbstractApplicationDelegate delegate, IModuleResource[] resources)
-					throws CoreException {
-		return delegate.getApplicationArchive(cloudModule, getCloudFoundryServer(), resources, monitor);
+			throws CoreException {
+		return delegate.getApplicationArchive(cloudModule, getCloudFoundryServer().getServer(), resources, monitor);
 	}
 
 	/**
@@ -1674,12 +1665,12 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 				isError);
 	}
 
-	protected ApplicationArchive getIncrementalPublishArchive(final ApplicationDeploymentInfo deploymentInfo,
+	protected CFApplicationArchive getIncrementalPublishArchive(final ApplicationDeploymentInfo deploymentInfo,
 			IModule[] modules) {
 		IModuleResource[] allResources = getResources(modules);
 		IModuleResourceDelta[] deltas = getPublishedResourceDelta(modules);
 		List<IModuleResource> changedResources = getChangedResources(deltas);
-		ApplicationArchive moduleArchive = new CachingApplicationArchive(Arrays.asList(allResources), changedResources,
+		CFApplicationArchive moduleArchive = new CachingApplicationArchive(Arrays.asList(allResources), changedResources,
 				modules[0], deploymentInfo.getDeploymentName());
 
 		return moduleArchive;
@@ -1776,11 +1767,14 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 }
 
-
-/** Requests may be wrapped using this class, such that if the user cancels the monitor, the thread will automatically return.
+/**
+ * Requests may be wrapped using this class, such that if the user cancels the
+ * monitor, the thread will automatically return.
  * 
- * Note: Since the BaseClientRequest itself does not check the monitor, the BaseClientRequest may still be running even though 
- * the calling thread has return. Care should be taken to consider this logic. */
+ * Note: Since the BaseClientRequest itself does not check the monitor, the
+ * BaseClientRequest may still be running even though the calling thread has
+ * return. Care should be taken to consider this logic.
+ */
 class CancellableRequestThread<T> {
 
 	private T result = null;
@@ -1805,9 +1799,11 @@ class CancellableRequestThread<T> {
 
 		try {
 			result = request.run(monitor);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			exceptionThrown = e;
-		} finally {
+		}
+		finally {
 			synchronized (lock) {
 				threadComplete = true;
 				lock.notify();
@@ -1816,7 +1812,10 @@ class CancellableRequestThread<T> {
 
 	}
 
-	/** Starts the thread to invoke the request, and begins waiting for the thread to complete or be cancelled. */
+	/**
+	 * Starts the thread to invoke the request, and begins waiting for the
+	 * thread to complete or be cancelled.
+	 */
 	public T runAndWaitForCompleteOrCancelled() {
 		try {
 
@@ -1843,7 +1842,8 @@ class CancellableRequestThread<T> {
 					// Throw unchecked exception
 					throw (RuntimeException) thr;
 
-				} else {
+				}
+				else {
 					// Convert checked to unchecked exception
 					throw new RuntimeException(thr);
 				}
@@ -1859,7 +1859,8 @@ class CancellableRequestThread<T> {
 
 			return result;
 
-		} catch (InterruptedException e) {
+		}
+		catch (InterruptedException e) {
 			throw new OperationCanceledException();
 		}
 	}
@@ -1882,7 +1883,11 @@ class CancellableRequestThread<T> {
 		}
 	}
 
-	/** Simple thread that calls runInThread(...), to ensure that the BaseClientRequest may only be started by calling the runAndWaitForCompleteOrCancelled(...) method. */
+	/**
+	 * Simple thread that calls runInThread(...), to ensure that the
+	 * BaseClientRequest may only be started by calling the
+	 * runAndWaitForCompleteOrCancelled(...) method.
+	 */
 	private class ThreadWrapper extends Thread {
 
 		private ThreadWrapper() {

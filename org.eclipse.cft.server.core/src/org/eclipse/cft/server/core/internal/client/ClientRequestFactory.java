@@ -36,14 +36,13 @@ import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
-import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
+import org.eclipse.cft.server.core.internal.CloudServicesUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
@@ -175,11 +174,11 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<List<CloudService>> getDeleteServicesRequest(final List<String> services) {
-		return new BehaviourRequest<List<CloudService>>(Messages.CloudFoundryServerBehaviour_DELETE_SERVICES,
+	public BaseClientRequest<List<CFServiceInstance>> getDeleteServicesRequest(final List<String> services) {
+		return new BehaviourRequest<List<CFServiceInstance>>(Messages.CloudFoundryServerBehaviour_DELETE_SERVICES,
 				behaviour) {
 			@Override
-			protected List<CloudService> doRun(CloudFoundryOperations client, SubMonitor progress)
+			protected List<CFServiceInstance> doRun(CloudFoundryOperations client, SubMonitor progress)
 					throws CoreException {
 
 				SubMonitor serviceProgress = SubMonitor.convert(progress, services.size());
@@ -246,27 +245,27 @@ public class ClientRequestFactory {
 							NLS.bind(Messages.CloudFoundryServerBehaviour_ERROR_DELETE_SERVICES_BOUND, boundServs)));
 
 				}
-				return client.getServices();
+				return CloudServicesUtil.asServiceInstances(client.getServices());
 			}
 		};
 	}
 
-	public BaseClientRequest<List<CloudService>> getCreateServicesRequest(final CloudService[] services) {
-		return new BehaviourRequest<List<CloudService>>(Messages.CloudFoundryServerBehaviour_CREATE_SERVICES,
+	public BaseClientRequest<List<CFServiceInstance>> getCreateServicesRequest(final CFServiceInstance[] services) {
+		return new BehaviourRequest<List<CFServiceInstance>>(Messages.CloudFoundryServerBehaviour_CREATE_SERVICES,
 				behaviour) {
 			@Override
-			protected List<CloudService> doRun(CloudFoundryOperations client, SubMonitor progress)
+			protected List<CFServiceInstance> doRun(CloudFoundryOperations client, SubMonitor progress)
 					throws CoreException {
 
 				SubMonitor serviceProgress = SubMonitor.convert(progress, services.length);
 
-				for (CloudService service : services) {
+				for (CFServiceInstance service : services) {
 					serviceProgress.subTask(
 							NLS.bind(Messages.CloudFoundryServerBehaviour_CREATING_SERVICE, service.getName()));
-					client.createService(service);
+					client.createService(CloudServicesUtil.asLegacyV1Service(service));
 					serviceProgress.worked(1);
 				}
-				return client.getServices();
+				return CloudServicesUtil.asServiceInstances(client.getServices());
 			}
 		};
 	}
@@ -470,25 +469,25 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<List<CloudService>> getServices() throws CoreException {
+	public BaseClientRequest<List<CFServiceInstance>> getServices() throws CoreException {
 
 		final String label = NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_SERVICES,
 				behaviour.getCloudFoundryServer().getServer().getId());
-		return new BehaviourRequest<List<CloudService>>(label, behaviour) {
+		return new BehaviourRequest<List<CFServiceInstance>>(label, behaviour) {
 			@Override
-			protected List<CloudService> doRun(CloudFoundryOperations client, SubMonitor progress)
+			protected List<CFServiceInstance> doRun(CloudFoundryOperations client, SubMonitor progress)
 					throws CoreException {
-				return client.getServices();
+				return CloudServicesUtil.asServiceInstances(client.getServices());
 			}
 		};
 	}
 
-	public BaseClientRequest<List<CloudServiceOffering>> getServiceOfferings() throws CoreException {
-		return new BehaviourRequest<List<CloudServiceOffering>>("Getting available service options", behaviour) { //$NON-NLS-1$
+	public BaseClientRequest<List<CFServiceOffering>> getServiceOfferings() throws CoreException {
+		return new BehaviourRequest<List<CFServiceOffering>>("Getting available service options", behaviour) { //$NON-NLS-1$
 			@Override
-			protected List<CloudServiceOffering> doRun(CloudFoundryOperations client, SubMonitor progress)
+			protected List<CFServiceOffering> doRun(CloudFoundryOperations client, SubMonitor progress)
 					throws CoreException {
-				return client.getServiceOfferings();
+				return CloudServicesUtil.asServiceOfferings(client.getServiceOfferings());
 			}
 		};
 	}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.editor;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.ui.internal.actions.AddServicesToApplicationAction;
@@ -93,7 +93,7 @@ public class ServicesViewerDropListener extends ViewerDropAdapter {
 						.getSelection();
 				Object[] objects = selection.toArray();
 				for (Object obj : objects) {
-					if (obj instanceof CloudService) {
+					if (obj instanceof CFServiceInstance) {
 						return true;
 					}
 				}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2014, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,12 +23,12 @@ package org.eclipse.cft.server.ui.internal.wizards;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.ICoreRunnable;
 import org.eclipse.cft.server.ui.internal.Logger;
 import org.eclipse.cft.server.ui.internal.Messages;
@@ -140,7 +140,7 @@ public class ServiceToApplicationsBindingWizard extends Wizard {
 
 		protected void performFinish() {
 			try {
-				CloudUiUtil.runForked(new ICoreRunnable() {
+				CFUiUtil.runForked(new ICoreRunnable() {
 					@Override
 					public void run(IProgressMonitor monitor) throws CoreException {
 						monitor.setTaskName(Messages.MANAGE_SERVICES_TO_APPLICATIONS_FINISH);
@@ -149,17 +149,17 @@ public class ServiceToApplicationsBindingWizard extends Wizard {
 							List<ApplicationToService> applicationsToProcess = serviceToApplicationsBindingPart
 									.getApplicationToService();
 
-							CloudService cloudService = null;
+							CFServiceInstance cloudService = null;
 
 							try {
 								// Find the Cloud Service that was selected
-								List<CloudService> cloudServiceList = behaviour.getServices(monitor);
+								List<CFServiceInstance> cloudServiceList = behaviour.getServices(monitor);
 								int lenCloudService = cloudServiceList.size();
 
 								String serviceName = servicesHandler.toString();
 
 								for (int j = 0; j < lenCloudService; j++) {
-									CloudService currService = cloudServiceList.get(j);
+									CFServiceInstance currService = cloudServiceList.get(j);
 									if (currService != null) {
 										String currServiceName = currService.getName();
 										if (currServiceName != null && currServiceName.equals(serviceName)) {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 Pivotal Software Inc and IBM Corporation. 
+ * Copyright (c) 2014, 2016 Pivotal Software Inc and IBM Corporation. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,9 +32,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
-import org.cloudfoundry.client.lib.domain.CloudServicePlan;
-import org.eclipse.cft.server.core.internal.client.LocalCloudService;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
+import org.eclipse.cft.server.core.internal.client.CFServiceOffering;
+import org.eclipse.cft.server.core.internal.client.CFServicePlan;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.osgi.util.NLS;
@@ -634,17 +634,17 @@ class ServiceInstance {
 
 	private final String[] planDisplayNames;
 
-	private final List<CloudServicePlan> sortedPlans;
+	private final List<CFServicePlan> sortedPlans;
 
-	private final CloudServiceOffering offering;
+	private final CFServiceOffering offering;
 
-	public ServiceInstance(String name, List<CloudServicePlan> plans, CloudServiceOffering offering) {
+	public ServiceInstance(String name, List<CFServicePlan> plans, CFServiceOffering offering) {
 		this.name = name;
-		this.sortedPlans = new ArrayList<CloudServicePlan>(plans);
-		Collections.sort(this.sortedPlans, new Comparator<CloudServicePlan>() {
+		this.sortedPlans = new ArrayList<CFServicePlan>(plans);
+		Collections.sort(this.sortedPlans, new Comparator<CFServicePlan>() {
 
 			@Override
-			public int compare(CloudServicePlan p1, CloudServicePlan p2) {
+			public int compare(CFServicePlan p1, CFServicePlan p2) {
 				if (p1.isFree()) {
 					return -1;
 				}
@@ -663,7 +663,7 @@ class ServiceInstance {
 		planDisplayNames = new String[this.sortedPlans.size()];
 		
 		for (int x = 0; x < this.sortedPlans.size(); x++) {
-			CloudServicePlan plan = this.sortedPlans.get(x);
+			CFServicePlan plan = this.sortedPlans.get(x);
 			planNames[x] = plan.getName();
 			planDisplayNames[x] = plan.isFree() ? NLS.bind(Messages.CloudFoundryServiceWizardPageRightPanel_FREE_PLAN,
 					plan.getName()) : plan.getName();
@@ -698,7 +698,7 @@ class ServiceInstance {
 		return planDisplayNames;
 	}
 
-	public List<CloudServicePlan> getPlans() {
+	public List<CFServicePlan> getPlans() {
 		return this.sortedPlans;
 	}
 
@@ -711,13 +711,13 @@ class ServiceInstance {
 	}
 
 	/** Convert to local service, for the purpose of creation. */
-	public LocalCloudService convertToLocalService() {
-		final LocalCloudService localService = new LocalCloudService(""); //$NON-NLS-1$
+	public CFServiceInstance convertToLocalService() {
+		final CFServiceInstance localService = new CFServiceInstance(""); //$NON-NLS-1$
 		localService.setName(getUserDefinedName());
 		localService.setVersion(offering.getVersion());
-		localService.setLabel(offering.getLabel());
-		localService.setProvider(offering.getProvider());
+		localService.setService(offering.getName());
 		localService.setPlan(planNames[getSelectedPlan()]);
+		localService.setIsLocal(true);
 		return localService;
 	}
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.editor;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
@@ -41,9 +41,9 @@ public class ServiceViewerSorter extends CloudFoundryViewerSorter {
 			int result = 0;
 			int sortDirection = tableViewer.getTable().getSortDirection();
 			if (serviceColumn != null) {
-				if (e1 instanceof CloudService && e2 instanceof CloudService) {
-					CloudService service1 = (CloudService) e1;
-					CloudService service2 = (CloudService) e2;
+				if (e1 instanceof CFServiceInstance && e2 instanceof CFServiceInstance) {
+					CFServiceInstance service1 = (CFServiceInstance) e1;
+					CFServiceInstance service2 = (CFServiceInstance) e2;
 
 					switch (serviceColumn) {
 					case Name:
@@ -62,20 +62,18 @@ public class ServiceViewerSorter extends CloudFoundryViewerSorter {
 		return super.compare(viewer, e1, e2);
 	}
 
-	protected int compare(CloudService service1, CloudService service2, ServiceViewColumn sortColumn) {
+	protected int compare(CFServiceInstance service1, CFServiceInstance service2,
+			ServiceViewColumn sortColumn) {
 		int result = 0;
 		switch (sortColumn) {
 		case Version:
 			result = service1.getVersion() != null ? service1.getVersion().compareTo(service2.getVersion()) : 0;
 			break;
-		case Vendor:
-			result = service1.getLabel() != null ? service1.getLabel().compareTo(service2.getLabel()) : 0;
+		case Service:
+			result = service1.getService() != null ? service1.getService().compareTo(service2.getService()) : 0;
 			break;
 		case Plan:
 			result = service1.getPlan() != null ? service1.getPlan().compareTo(service2.getPlan()) : 0;
-			break;
-		case Provider:
-			result = service1.getProvider() != null ? service1.getProvider().compareTo(service2.getProvider()) : 0;
 			break;
 		}
 		return result;

@@ -241,7 +241,7 @@ public class EnvironmentVariablesPart extends UIPart implements Observer{
 
 	protected void handleAdd() {
 		boolean variableChanged = false;
-		Shell shell = CloudUiUtil.getShell();
+		Shell shell = CFUiUtil.getShell();
 		if (shell != null) {
 			VariableDialogue dialogue = new VariableDialogue(shell, Messages.EnvironmentVariablesPart_ADD_TITLE, null, variables);
 			if (dialogue.open() == Window.OK) {
@@ -256,7 +256,7 @@ public class EnvironmentVariablesPart extends UIPart implements Observer{
 
 	protected void handleEdit() {
 		boolean variableChanged = false;
-		Shell shell = CloudUiUtil.getShell();
+		Shell shell = CFUiUtil.getShell();
 		List<EnvironmentVariable> selection = getViewerSelection();
 		if (shell != null && selection != null && !selection.isEmpty()) {
 			EnvironmentVariable toEdit = selection.get(0);

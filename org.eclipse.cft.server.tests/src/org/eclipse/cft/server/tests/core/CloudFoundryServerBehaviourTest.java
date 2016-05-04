@@ -30,13 +30,14 @@ import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.CloudServicesUtil;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.tests.util.CloudFoundryTestUtil;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -74,10 +75,10 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
-		CloudService service = getCloudServiceToCreate("sqlService", "elephantsql", "turtle");
-		List<CloudService> servicesToBind = new ArrayList<CloudService>();
+		CFServiceInstance service = getCloudServiceToCreate("sqlService", "elephantsql", "turtle");
+		List<CFServiceInstance> servicesToBind = new ArrayList<CFServiceInstance>();
 		servicesToBind.add(service);
-		client.createService(service);
+		client.createService(CloudServicesUtil.asLegacyV1Service(service));
 
 		EnvironmentVariable variable = new EnvironmentVariable();
 		variable.setVariable("JAVA_OPTS");

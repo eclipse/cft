@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2014, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,13 +21,13 @@
 package org.eclipse.cft.server.ui.internal.console;
 
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.log.CloudLog;
 import org.eclipse.ui.console.ConsolePlugin;
 import org.eclipse.ui.console.IConsole;
 import org.eclipse.ui.console.IConsoleListener;
 import org.eclipse.ui.console.IConsoleManager;
 import org.eclipse.ui.console.MessageConsole;
+import org.eclipse.wst.server.core.IServer;
 
 /**
  * 
@@ -85,8 +85,8 @@ public class ConsoleManagerRegistry {
 		return registry;
 	}
 
-	public static CloudConsoleManager getConsoleManager(CloudFoundryServer cloudServer) {
-		return getInstance().getCloudConsoleManager(cloudServer);
+	public static CloudConsoleManager getConsoleManager(IServer server) {
+		return getInstance().getCloudConsoleManager(server);
 	}
 
 	/*
@@ -100,10 +100,10 @@ public class ConsoleManagerRegistry {
 	 * possible to determine the logging mechanism of the server, by default an
 	 * application log console manager (i.e. a console manager that uses
 	 * callbacks to obtain application logs) is returned.
-	 * @param cloudServer
+	 * @param server
 	 * @return non-null console manager based on the server type.
 	 */
-	public CloudConsoleManager getCloudConsoleManager(CloudFoundryServer cloudServer) {
+	public CloudConsoleManager getCloudConsoleManager(IServer server) {
 		return appConsoleManager;
 	}
 

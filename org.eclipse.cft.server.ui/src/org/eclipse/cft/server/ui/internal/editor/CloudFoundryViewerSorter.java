@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,8 +20,8 @@
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.editor;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.ui.internal.editor.AppStatsContentProvider.InstanceStatsAndInfo;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerSorter;
@@ -41,9 +41,9 @@ public class CloudFoundryViewerSorter extends ViewerSorter {
 			InstanceStats stats2 = ((InstanceStatsAndInfo) e2).getStats();
 			return stats1.getId().compareTo(stats2.getId());
 		}
-		if (e1 instanceof CloudService && e2 instanceof CloudService) {
-			CloudService service1 = (CloudService) e1;
-			CloudService service2 = (CloudService) e2;
+		if (e1 instanceof CFServiceInstance && e2 instanceof CFServiceInstance) {
+			CFServiceInstance service1 = (CFServiceInstance) e1;
+			CFServiceInstance service2 = (CFServiceInstance) e2;
 			return service1.getName().compareTo(service2.getName());
 		}
 		if (e1 instanceof IModule && e2 instanceof IModule) {

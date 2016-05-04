@@ -44,6 +44,7 @@ import org.eclipse.ui.console.IConsole;
 import org.eclipse.ui.console.IConsoleListener;
 import org.eclipse.ui.console.IConsoleManager;
 import org.eclipse.ui.console.MessageConsole;
+import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
 
 /**
@@ -109,10 +110,9 @@ public class ApplicationLogConsoleManager extends CloudConsoleManager {
 			CloudFoundryApplicationModule appModule, boolean show, boolean clear) throws CoreException {
 
 		if (!appModule.exists()) {
-			throw CloudErrorUtil
-					.toCoreException(NLS
-							.bind(org.eclipse.cft.server.ui.internal.Messages.ApplicationLogConsoleManager_APPLICATION_NOT_PUBLISHED,
-									appModule.getDeployedApplicationName()));
+			throw CloudErrorUtil.toCoreException(NLS.bind(
+					org.eclipse.cft.server.ui.internal.Messages.ApplicationLogConsoleManager_APPLICATION_NOT_PUBLISHED,
+					appModule.getDeployedApplicationName()));
 		}
 		// As of 1.7.2, instances are not used for loggregator. Loggregator
 		// shows content for all instances in the same console
@@ -150,7 +150,10 @@ public class ApplicationLogConsoleManager extends CloudConsoleManager {
 	}
 
 	@Override
-	public MessageConsole findCloudFoundryConsole(IServer server, CloudFoundryApplicationModule appModule) {
+	public MessageConsole findCloudFoundryConsole(IServer server, IModule module) {
+		CloudFoundryServer cfServer = (CloudFoundryServer) server.getAdapter(CloudFoundryServer.class);
+		CloudFoundryApplicationModule appModule = cfServer.getExistingCloudModule(module);
+
 		String curConsoleId = getConsoleId(server, appModule);
 		if (curConsoleId != null && consoleByUri.get(curConsoleId) != null) {
 			return consoleByUri.get(curConsoleId).getConsole();
@@ -161,7 +164,8 @@ public class ApplicationLogConsoleManager extends CloudConsoleManager {
 	@Override
 	public void writeToStandardConsole(String message, CloudFoundryServer server,
 			CloudFoundryApplicationModule appModule, int instanceIndex, boolean clear, boolean isError) {
-		// Sometimes framework may attempt to write to console when app is no longer available
+		// Sometimes framework may attempt to write to console when app is no
+		// longer available
 		if (appModule == null) {
 			return;
 		}
@@ -259,7 +263,8 @@ public class ApplicationLogConsoleManager extends CloudConsoleManager {
 			CloudFoundryApplicationModule appModule) {
 		MessageConsole appConsole = null;
 		for (IConsole console : ConsolePlugin.getDefault().getConsoleManager().getConsoles()) {
-			if (console instanceof MessageConsole && console.getName().equals(getConsoleDisplayName(server, appModule))) {
+			if (console instanceof MessageConsole
+					&& console.getName().equals(getConsoleDisplayName(server, appModule))) {
 				appConsole = (MessageConsole) console;
 			}
 		}
@@ -277,6 +282,9 @@ public class ApplicationLogConsoleManager extends CloudConsoleManager {
 	}
 
 	public static String getConsoleId(IServer server, CloudFoundryApplicationModule appModule) {
+		if (server == null || appModule == null) {
+			return null;
+		}
 		return server.getId() + "/" + appModule.getDeployedApplicationName(); //$NON-NLS-1$
 	}
 

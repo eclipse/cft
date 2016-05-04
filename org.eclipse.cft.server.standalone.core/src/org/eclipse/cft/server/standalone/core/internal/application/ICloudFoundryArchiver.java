@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 IBM Corporation and others. 
+ * Copyright (c) 2015, 2016 IBM Corporation and others. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,18 +20,16 @@
  ********************************************************************************/
 package org.eclipse.cft.server.standalone.core.internal.application;
 
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
+import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 
 public interface ICloudFoundryArchiver {
 
-	public void initialize(CloudFoundryApplicationModule appModule,
-			CloudFoundryServer cloudServer);
-	
-	public ApplicationArchive getApplicationArchive(IProgressMonitor monitor)
-			throws CoreException;
-	
+	public void initialize(IModule module, IServer server) throws CoreException;
+
+	public CFApplicationArchive getApplicationArchive(IProgressMonitor monitor) throws CoreException;
+
 }

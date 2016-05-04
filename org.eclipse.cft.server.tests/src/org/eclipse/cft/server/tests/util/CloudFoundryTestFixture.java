@@ -41,13 +41,14 @@ import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
 import org.eclipse.cft.server.tests.AllCloudFoundryTests;
 import org.eclipse.cft.server.tests.server.TestServlet;
 import org.eclipse.cft.server.tests.server.WebApplicationContainerBean;
 import org.eclipse.cft.server.tests.sts.util.StsTestUtil;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.ServerDescriptor;
 import org.eclipse.cft.server.ui.internal.ServerHandler;
 import org.eclipse.core.resources.IProject;
@@ -224,7 +225,7 @@ public class CloudFoundryTestFixture {
 
 		protected void setCloudSpace(CloudFoundryServer cloudServer, String orgName, String spaceName)
 				throws CoreException {
-			CloudOrgsAndSpaces spaces = CloudUiUtil.getCloudSpaces(cloudServer.getUsername(), cloudServer.getPassword(),
+			CloudOrgsAndSpaces spaces = CFUiUtil.getCloudSpaces(cloudServer.getUsername(), cloudServer.getPassword(),
 					cloudServer.getUrl(), false, cloudServer.getSelfSignedCertificate(), null);
 			Assert.isTrue(spaces != null, "Failed to resolve orgs and spaces.");
 			Assert.isTrue(spaces.getDefaultCloudSpace() != null,
@@ -264,7 +265,7 @@ public class CloudFoundryTestFixture {
 			clearCloudTarget();
 		}
 
-		public void deleteService(CloudService serviceToDelete) throws CoreException {
+		public void deleteService(CFServiceInstance serviceToDelete) throws CoreException {
 			CloudFoundryServerBehaviour serverBehavior = getBehaviour();
 
 			String serviceName = serviceToDelete.getName();
@@ -274,10 +275,10 @@ public class CloudFoundryTestFixture {
 			serverBehavior.operations().deleteServices(services).run(new NullProgressMonitor());
 		}
 
-		public List<CloudService> getAllServices() throws CoreException {
-			List<CloudService> services = getBehaviour().getServices(new NullProgressMonitor());
+		public List<CFServiceInstance> getAllServices() throws CoreException {
+			List<CFServiceInstance> services = getBehaviour().getServices(new NullProgressMonitor());
 			if (services == null) {
-				services = new ArrayList<CloudService>(0);
+				services = new ArrayList<CFServiceInstance>(0);
 			}
 			return services;
 		}
@@ -297,8 +298,8 @@ public class CloudFoundryTestFixture {
 		}
 
 		public void deleteTestServices() throws CoreException {
-			List<CloudService> services = getAllServices();
-			for (CloudService service : services) {
+			List<CFServiceInstance> services = getAllServices();
+			for (CFServiceInstance service : services) {
 				deleteService(service);
 				CloudFoundryTestUtil.waitIntervals(1000);
 			}
@@ -472,7 +473,7 @@ public class CloudFoundryTestFixture {
 	public void configureForApplicationDeployment(String fullApplicationName, int memory, boolean startApp)
 			throws Exception {
 		List<EnvironmentVariable> vars = null;
-		List<CloudService> services = null;
+		List<CFServiceInstance> services = null;
 		String buildpack = null;
 		configureForApplicationDeployment(fullApplicationName, memory, startApp, vars, services, buildpack);
 	}
@@ -482,7 +483,8 @@ public class CloudFoundryTestFixture {
 	}
 
 	public void configureForApplicationDeployment(String fullApplicationName, int memory, boolean startApp,
-			List<EnvironmentVariable> variables, List<CloudService> services, String buildpack) throws Exception {
+			List<EnvironmentVariable> variables, List<CFServiceInstance> services, String buildpack)
+			throws Exception {
 		CloudFoundryPlugin
 				.setCallback(new TestCallback(fullApplicationName, memory, startApp, variables, services, buildpack));
 	}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,13 +23,13 @@ package org.eclipse.cft.server.ui.internal;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.application.ManifestParser;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
@@ -149,7 +149,7 @@ public class ApplicationDeploymentUIHandler {
 
 			// Update the lookup
 			ApplicationUrlLookupService.update(server, monitor);
-			final List<CloudService> addedServices = new ArrayList<CloudService>();
+			final List<CFServiceInstance> addedServices = new ArrayList<CFServiceInstance>();
 
 			Display.getDefault().syncExec(new Runnable() {
 				public void run() {
@@ -165,7 +165,7 @@ public class ApplicationDeploymentUIHandler {
 						if (dialogueStatus == Dialog.OK) {
 
 							// First add any new services to the server
-							List<CloudService> services = wizard.getCloudServicesToCreate();
+							List<CFServiceInstance> services = wizard.getCloudServicesToCreate();
 							if (services != null) {
 								addedServices.addAll(services);
 							}
@@ -196,7 +196,7 @@ public class ApplicationDeploymentUIHandler {
 
 				if (!addedServices.isEmpty()) {
 					try {
-						server.getBehaviour().operations().createServices(addedServices.toArray(new CloudService[0]))
+						server.getBehaviour().operations().createServices(addedServices.toArray(new CFServiceInstance[0]))
 								.run(monitor);
 					}
 					catch (CoreException e) {

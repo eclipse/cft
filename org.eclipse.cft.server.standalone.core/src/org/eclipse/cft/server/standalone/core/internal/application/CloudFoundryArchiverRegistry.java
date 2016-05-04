@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 IBM Corporation and others.
+ * Copyright (c) 2015, 2016 IBM Corporation and others.
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,37 +30,36 @@ import org.eclipse.core.runtime.IExtensionPoint;
 import org.eclipse.core.runtime.Platform;
 
 public class CloudFoundryArchiverRegistry {
-	
+
 	public static final CloudFoundryArchiverRegistry INSTANCE = new CloudFoundryArchiverRegistry();
 
 	private CloudFoundryArchiverRegistry() {
 		// Cannot be created from outside
 	}
-	
-	public ICloudFoundryArchiver createArchiver(
-			CloudFoundryApplicationModule appModule,
-			CloudFoundryServer cloudServer) throws CoreException {
-		final String ARCHIVER_DELEGATE = "org.eclipse.cft.server.standalone.core.archiverDelegate";
-		final String ARCHIVER_ELEMENT = "archiver";
-		final String CLASS_ATTR = "class";
-		
+
+	public ICloudFoundryArchiver createArchiver(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer)
+			throws CoreException {
+		final String ARCHIVER_DELEGATE = "org.eclipse.cft.server.standalone.core.archiverDelegate"; //$NON-NLS-1$
+		final String ARCHIVER_ELEMENT = "archiver"; //$NON-NLS-1$
+		final String CLASS_ATTR = "class"; //$NON-NLS-1$
+
 		// At present it just picks the first archiver extension
 
 		IExtensionPoint archiverExtnPoint = Platform.getExtensionRegistry().getExtensionPoint(ARCHIVER_DELEGATE);
-		if (archiverExtnPoint != null) {	
+		if (archiverExtnPoint != null) {
 			for (IExtension extension : archiverExtnPoint.getExtensions()) {
 				for (IConfigurationElement config : extension.getConfigurationElements()) {
 					if (ARCHIVER_ELEMENT.equals(config.getName())) {
 						ICloudFoundryArchiver archiver = (ICloudFoundryArchiver) config
 								.createExecutableExtension(CLASS_ATTR);
-						archiver.initialize(appModule, cloudServer);
+						archiver.initialize(appModule.getLocalModule(), cloudServer.getServer());
 						return archiver;
 					}
 				}
 			}
 		}
 
-		throw CloudErrorUtil.toCoreException("Could not locate archivers");
+		throw CloudErrorUtil.toCoreException("Could not locate archivers"); //$NON-NLS-1$
 	}
 
 }

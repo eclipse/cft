@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
 import org.eclipse.core.runtime.CoreException;
@@ -33,12 +33,12 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 
 public class AbstractCloudFoundryServicesTest extends AbstractAsynchCloudTest {
 
-	protected void deleteService(CloudService service) throws CoreException {
+	protected void deleteService(CFServiceInstance service) throws CoreException {
 		harness.deleteService(service);
 	}
 
-	protected CloudService createCloudService(String name, String label, String plan) throws CoreException {
-		CloudService toCreate = getCloudServiceToCreate(name, label, plan);
+	protected CFServiceInstance createCloudService(String name, String label, String plan) throws CoreException {
+		CFServiceInstance toCreate = getCloudServiceToCreate(name, label, plan);
 
 		if (toCreate == null) {
 			throw CloudErrorUtil.toCoreException(
@@ -49,16 +49,16 @@ public class AbstractCloudFoundryServicesTest extends AbstractAsynchCloudTest {
 		return toCreate;
 	}
 
-	protected ICloudFoundryOperation getBindServiceOp(CloudFoundryApplicationModule appModule, CloudService service)
-			throws Exception {
+	protected ICloudFoundryOperation getBindServiceOp(CloudFoundryApplicationModule appModule,
+			CFServiceInstance service) throws Exception {
 		List<String> servicesToBind = new ArrayList<String>();
 		servicesToBind.add(service.getName());
 
 		return serverBehavior.operations().bindServices(appModule, servicesToBind);
 	}
 
-	protected ICloudFoundryOperation getUnbindServiceOp(CloudFoundryApplicationModule appModule, CloudService service)
-			throws Exception {
+	protected ICloudFoundryOperation getUnbindServiceOp(CloudFoundryApplicationModule appModule,
+			CFServiceInstance service) throws Exception {
 		CloudApplication updatedApplication = getUpdatedApplication(appModule.getDeployedApplicationName());
 		List<String> boundServices = updatedApplication.getServices();
 		List<String> servicesToUpdate = new ArrayList<String>();
@@ -104,28 +104,29 @@ public class AbstractCloudFoundryServicesTest extends AbstractAsynchCloudTest {
 		return foundService;
 	}
 
-	protected void createService(CloudService service) throws CoreException {
-		serverBehavior.operations().createServices(new CloudService[] { service }).run(new NullProgressMonitor());
+	protected void createService(CFServiceInstance service) throws CoreException {
+		serverBehavior.operations().createServices(new CFServiceInstance[] { service })
+				.run(new NullProgressMonitor());
 	}
 
-	protected void assertServiceExists(CloudService expectedService) throws Exception {
+	protected void assertServiceExists(CFServiceInstance expectedService) throws Exception {
 		String expectedServicename = expectedService.getName();
-		CloudService foundService = getCloudService(expectedServicename);
+		CFServiceInstance foundService = getCloudService(expectedServicename);
 		assertNotNull(foundService);
 		assertServiceEquals(expectedService, foundService);
 	}
 
 	protected void assertServiceExists(String serviceName) throws Exception {
-		CloudService foundService = getCloudService(serviceName);
+		CFServiceInstance foundService = getCloudService(serviceName);
 		assertNotNull(foundService);
 	}
 
-	protected CloudService getCloudService(String serviceName) throws CoreException {
+	protected CFServiceInstance getCloudService(String serviceName) throws CoreException {
 
-		List<CloudService> services = serverBehavior.getServices(new NullProgressMonitor());
-		CloudService foundService = null;
+		List<CFServiceInstance> services = serverBehavior.getServices(new NullProgressMonitor());
+		CFServiceInstance foundService = null;
 		if (services != null) {
-			for (CloudService service : services) {
+			for (CFServiceInstance service : services) {
 				if (serviceName.equals(service.getName())) {
 					foundService = service;
 					break;
@@ -137,13 +138,14 @@ public class AbstractCloudFoundryServicesTest extends AbstractAsynchCloudTest {
 
 	protected void assertServiceNotExist(String expectedServicename) throws Exception {
 
-		CloudService foundService = getCloudService(expectedServicename);
+		CFServiceInstance foundService = getCloudService(expectedServicename);
 
 		assertNull(foundService);
 	}
 
-	protected void assertServiceEquals(CloudService expectedService, CloudService actualService) throws Exception {
+	protected void assertServiceEquals(CFServiceInstance expectedService, CFServiceInstance actualService)
+			throws Exception {
 		assertEquals(actualService.getName(), expectedService.getName());
-		assertEquals(actualService.getLabel(), expectedService.getLabel());
+		assertEquals(actualService.getService(), expectedService.getService());
 	}
 }

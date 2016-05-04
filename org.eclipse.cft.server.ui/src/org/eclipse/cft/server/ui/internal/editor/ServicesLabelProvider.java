@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,9 +20,12 @@
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.editor;
 
-import static org.eclipse.cft.server.ui.internal.editor.ApplicationInstanceServiceColumn.*;
+import static org.eclipse.cft.server.ui.internal.editor.ApplicationInstanceServiceColumn.Name;
+import static org.eclipse.cft.server.ui.internal.editor.ApplicationInstanceServiceColumn.Plan;
+import static org.eclipse.cft.server.ui.internal.editor.ApplicationInstanceServiceColumn.Service;
+import static org.eclipse.cft.server.ui.internal.editor.ApplicationInstanceServiceColumn.Version;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.graphics.Image;
@@ -34,8 +37,6 @@ import org.eclipse.swt.graphics.Image;
  */
 public class ServicesLabelProvider extends LabelProvider implements ITableLabelProvider {
 
-
-
 	public ServicesLabelProvider() {
 
 	}
@@ -43,19 +44,19 @@ public class ServicesLabelProvider extends LabelProvider implements ITableLabelP
 	public Image getColumnImage(Object element, int columnIndex) {
 		return null;
 	}
-	
+
 	public ApplicationInstanceServiceColumn[] getServiceViewColumn() {
-		return new ApplicationInstanceServiceColumn[] { Name, Vendor, Plan, Version };
+		return new ApplicationInstanceServiceColumn[] { Name, Service, Plan, Version };
 	}
 
 	public String getColumnText(Object element, int columnIndex) {
-		if (element instanceof CloudService) {
-			CloudService service = (CloudService) element;
+		if (element instanceof CFServiceInstance) {
+			CFServiceInstance service = (CFServiceInstance) element;
 			switch (columnIndex) {
 			case 0:
 				return service.getName();
 			case 1:
-				return service.getLabel();
+				return service.getService();
 			case 2:
 				return service.getPlan();
 			case 3:

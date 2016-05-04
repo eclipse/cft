@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. and IBM Corporation 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and IBM Corporation 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,11 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.core.internal.client.LocalCloudService;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.ICoreRunnable;
 import org.eclipse.cft.server.ui.internal.Messages;
@@ -91,7 +90,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 	 * All services both existing and added, used to refresh the input of the
 	 * viewer
 	 */
-	private final Map<String, CloudService> allServices = new HashMap<String, CloudService>();
+	private final Map<String, CFServiceInstance> allServices = new HashMap<String, CFServiceInstance>();
 
 	private final ApplicationWizardDescriptor descriptor;
 
@@ -150,7 +149,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 				if (services != null) {
 					selectedServicesToBind.clear();
 					for (Object obj : services) {
-						CloudService service = (CloudService) obj;
+						CFServiceInstance service = (CFServiceInstance) obj;
 						selectedServicesToBind.add(service.getName());
 					}
 					setServicesToBindInDescriptor();
@@ -173,7 +172,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 				if (dialog.open() == Window.OK) {
 					// This cloud service does not yet exist. It will be created
 					// outside of the wizard
-					List<CloudService> addedService = wizard.getServices();
+					List<CFServiceInstance> addedService = wizard.getServices();
 					if (addedService != null) {
 						addServices(addedService);
 					}
@@ -213,12 +212,12 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 	 * @param service that was added and will also be automatically selected to
 	 * be bound to the application.
 	 */
-	protected void addServices(List<CloudService> services) {
+	protected void addServices(List<CFServiceInstance> services) {
 		if (services == null || services.size() == 0) {
 			return;
 		}
 		
-		for(CloudService service : services) {
+		for(CFServiceInstance service : services) {
 			allServices.put(service.getName(), service);
 
 			servicesToAdd.add(service.getName());
@@ -238,7 +237,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 			public void run(IProgressMonitor monitor) throws CoreException {
 
 				try {
-					List<CloudService> existingServices = cloudServer.getBehaviour().getServices(monitor);
+					List<CFServiceInstance> existingServices = cloudServer.getBehaviour().getServices(monitor);
 
 					// Clear only after retrieving an update list without errors
 					allServices.clear();
@@ -256,7 +255,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 					// (services that have not yet been created) will be
 					// unaffected by this.
 					if (existingServices != null) {
-						for (CloudService actualService : existingServices) {
+						for (CFServiceInstance actualService : existingServices) {
 							if (actualService != null) {
 								allServices.put(actualService.getName(), actualService);
 							}
@@ -270,8 +269,8 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 					// will require being created. Only create services IF they
 					// are to be bound to the app.
 					for (String name : selectedServicesToBind) {
-						CloudService service = allServices.get(name);
-						if (service instanceof LocalCloudService) {
+						CFServiceInstance service = allServices.get(name);
+						if (service.isLocal()) {
 							servicesToAdd.add(name);
 						}
 					}
@@ -314,10 +313,10 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 
 	protected void populateServicesFromDeploymentInfo() {
 
-		List<CloudService> servicesToBind = descriptor.getDeploymentInfo().getServices();
+		List<CFServiceInstance> servicesToBind = descriptor.getDeploymentInfo().getServices();
 
 		if (servicesToBind != null) {
-			for (CloudService service : servicesToBind) {
+			for (CFServiceInstance service : servicesToBind) {
 				allServices.put(service.getName(), service);
 
 				selectedServicesToBind.add(service.getName());
@@ -327,15 +326,15 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 	}
 
 	protected void setBoundServiceSelectionInUI() {
-		servicesViewer.setInput(allServices.values().toArray(new CloudService[] {}));
-		List<CloudService> checkedServices = getServicesToBindAsCloudServices();
+		servicesViewer.setInput(allServices.values().toArray(new CFServiceInstance[] {}));
+		List<CFServiceInstance> checkedServices = getServicesToBindAsCloudServices();
 		servicesViewer.setCheckedElements(checkedServices.toArray());
 	}
 
-	protected List<CloudService> getServicesToBindAsCloudServices() {
-		List<CloudService> servicesToBind = new ArrayList<CloudService>();
+	protected List<CFServiceInstance> getServicesToBindAsCloudServices() {
+		List<CFServiceInstance> servicesToBind = new ArrayList<CFServiceInstance>();
 		for (String serviceName : selectedServicesToBind) {
-			CloudService service = allServices.get(serviceName);
+			CFServiceInstance service = allServices.get(serviceName);
 			if (service != null) {
 				servicesToBind.add(service);
 			}
@@ -344,15 +343,15 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 	}
 
 	protected void setServicesToBindInDescriptor() {
-		List<CloudService> servicesToBind = getServicesToBindAsCloudServices();
+		List<CFServiceInstance> servicesToBind = getServicesToBindAsCloudServices();
 
 		descriptor.getDeploymentInfo().setServices(servicesToBind);
 	}
 
 	protected void setServicesToCreateInDescriptor() {
-		List<CloudService> toCreate = new ArrayList<CloudService>();
+		List<CFServiceInstance> toCreate = new ArrayList<CFServiceInstance>();
 		for (String serviceName : servicesToAdd) {
-			CloudService service = allServices.get(serviceName);
+			CFServiceInstance service = allServices.get(serviceName);
 			if (service != null) {
 				toCreate.add(service);
 			}

@@ -30,7 +30,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.CloudRoutePart;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.ICoreRunnable;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.PartChangeEvent;
@@ -72,7 +72,7 @@ public class CloudRoutesWizard extends Wizard {
 		final List<CloudRoute> toDelete = routePage.getRoutesToDelete();
 
 		if (!toDelete.isEmpty()) {
-			CloudUiUtil.runForked(new ICoreRunnable() {
+			CFUiUtil.runForked(new ICoreRunnable() {
 				public void run(final IProgressMonitor monitor) throws CoreException {
 					cloudServer.getBehaviour().deleteRoute(toDelete, monitor);
 				}

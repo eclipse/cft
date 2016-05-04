@@ -26,7 +26,6 @@ public enum ApplicationInstanceServiceColumn {
 
 	Name(125, Messages.TableColumn_NAME), 
 	Service(100, Messages.TableColumn_SERVICE), 
-	Vendor(100,Messages.TableColumn_VENDOR), 
 	Plan(75, Messages.TableColumn_PLAN), 
 	Version(75, Messages.TableColumn_VERSION);
 

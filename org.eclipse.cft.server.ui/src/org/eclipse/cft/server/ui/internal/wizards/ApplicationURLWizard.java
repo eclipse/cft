@@ -29,7 +29,7 @@ import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.ui.internal.CloudApplicationUrlPart;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.PartChangeEvent;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -70,13 +70,13 @@ public class ApplicationURLWizard extends Wizard implements IReservedURLTracker 
 
 	@Override
 	public boolean performFinish() {
-		CloudUiUtil.cleanupReservedRoutes(this, cloudServer, reservedUrls, editedUrl);
+		CFUiUtil.cleanupReservedRoutes(this, cloudServer, reservedUrls, editedUrl);
 		return true;
 	}
 
 	@Override
 	public boolean performCancel() {
-		CloudUiUtil.cleanupReservedRoutes(this, cloudServer, reservedUrls, null);
+		CFUiUtil.cleanupReservedRoutes(this, cloudServer, reservedUrls, null);
 		return super.performCancel();
 	}
 
@@ -176,7 +176,7 @@ public class ApplicationURLWizard extends Wizard implements IReservedURLTracker 
 
 	@Override
 	public HostnameValidationResult validateURL(CloudApplicationURL appUrl) {
-		return CloudUiUtil.validateHostname(appUrl, cloudServer, getContainer());
+		return CFUiUtil.validateHostname(appUrl, cloudServer, getContainer());
 	}
 
 }

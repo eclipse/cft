@@ -22,7 +22,7 @@ package org.eclipse.cft.server.ui.internal.actions;
 
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.wizards.OrgsAndSpacesWizard;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -66,7 +66,7 @@ public class CloneServerCommand extends BaseCommandHandler {
 	
 	public void doRun(final CloudFoundryServer cloudServer) {
 		final Shell shell = activePart != null && activePart.getSite() != null ? activePart.getSite().getShell()
-				: CloudUiUtil.getShell();
+				: CFUiUtil.getShell();
 
 		if (shell != null) {
 			UIJob job = new UIJob(getJobName()) {

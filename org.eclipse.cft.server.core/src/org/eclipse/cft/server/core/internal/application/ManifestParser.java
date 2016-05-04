@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,8 +32,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
-import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
@@ -42,9 +40,9 @@ import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
+import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
-import org.eclipse.cft.server.core.internal.client.LocalCloudService;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -317,8 +315,7 @@ public class ManifestParser {
 
 			String buildpackurl = getStringValue(application, BUILDPACK_PROP);
 			if (buildpackurl != null) {
-				Staging staging = new Staging(null, buildpackurl);
-				workingCopy.setStaging(staging);
+				workingCopy.setBuildpack(buildpackurl);
 			}
 
 			readEnvars(workingCopy, application);
@@ -373,14 +370,14 @@ public class ManifestParser {
 		// Backward compatibility with old manifest pre-1.8.2 where services
 		// were maps
 		if (services != null) {
-			Map<String, CloudService> servicesToBind = new LinkedHashMap<String, CloudService>();
+			Map<String, CFServiceInstance> servicesToBind = new LinkedHashMap<String, CFServiceInstance>();
 
 			for (Entry<?, ?> entry : services.entrySet()) {
 				Object serviceNameObj = entry.getKey();
 				if (serviceNameObj instanceof String) {
 					String serviceName = (String) serviceNameObj;
 					if (!servicesToBind.containsKey(serviceName)) {
-						LocalCloudService service = new LocalCloudService(serviceName);
+						CFServiceInstance service = new CFServiceInstance(serviceName);
 						servicesToBind.put(serviceName, service);
 
 						Object servicePropertiesObj = entry.getValue();
@@ -388,11 +385,7 @@ public class ManifestParser {
 							Map<?, ?> serviceProperties = (Map<?, ?>) servicePropertiesObj;
 							String label = getStringValue(serviceProperties, LABEL_PROP);
 							if (label != null) {
-								service.setLabel(label);
-							}
-							String provider = getStringValue(serviceProperties, PROVIDER_PROP);
-							if (provider != null) {
-								service.setProvider(provider);
+								service.setService(label);
 							}
 							String version = getStringValue(serviceProperties, VERSION_PROP);
 							if (version != null) {
@@ -407,19 +400,19 @@ public class ManifestParser {
 				}
 			}
 
-			workingCopy.setServices(new ArrayList<CloudService>(servicesToBind.values()));
+			workingCopy.setServices(new ArrayList<CFServiceInstance>(servicesToBind.values()));
 		}
 		else {
 			Object yamlElementObj = applications.get(SERVICES_PROP);
 			if (yamlElementObj instanceof List<?>) {
 				List<?> servListFromYaml = (List<?>) yamlElementObj;
 				Set<String> addedService = new HashSet<String>();
-				List<CloudService> cloudServices = new ArrayList<CloudService>();
+				List<CFServiceInstance> cloudServices = new ArrayList<CFServiceInstance>();
 				for (Object servNameObj : servListFromYaml) {
 					if (servNameObj instanceof String && !addedService.contains(servNameObj)) {
 						String serviceName = (String) servNameObj;
 						addedService.add(serviceName);
-						cloudServices.add(new LocalCloudService(serviceName));
+						cloudServices.add(new CFServiceInstance(serviceName));
 					}
 				}
 				workingCopy.setServices(cloudServices);
@@ -740,12 +733,12 @@ public class ManifestParser {
 				application.remove(ENV_PROP);
 			}
 
-			Staging staging = deploymentInfo.getStaging();
-
+			String buildpack = deploymentInfo.getBuildpack();
+			
 			// Only overwrite the buildpack URL if it can be resolved
 			// Otherwise retain any old value from before
-			if (staging != null && staging.getBuildpackUrl() != null) {
-				application.put(BUILDPACK_PROP, staging.getBuildpackUrl());
+			if (buildpack != null) {
+				application.put(BUILDPACK_PROP, buildpack);
 			}
 
 			// Only overwrite the archive path if present, but do not
@@ -762,13 +755,13 @@ public class ManifestParser {
 			// services in the
 			// deployment info has to match the content in the manifest.
 
-			List<CloudService> servicesToBind = deploymentInfo.getServices();
+			List<CFServiceInstance> servicesToBind = deploymentInfo.getServices();
 			if (servicesToBind != null && !servicesToBind.isEmpty()) {
 
 				List<String> services = new ArrayList<String>();
 				application.put(SERVICES_PROP, services);
 
-				for (CloudService service : servicesToBind) {
+				for (CFServiceInstance service : servicesToBind) {
 					String serviceName = service.getName();
 					if (serviceName != null && !services.contains(serviceName)) {
 						services.add(serviceName);

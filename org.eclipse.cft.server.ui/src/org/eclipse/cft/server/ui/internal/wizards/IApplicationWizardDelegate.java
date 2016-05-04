@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,9 +23,9 @@ package org.eclipse.cft.server.ui.internal.wizards;
 import java.util.List;
 
 import org.eclipse.cft.server.core.AbstractApplicationDelegate;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.jface.wizard.IWizardPage;
+import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 
 /**
  * Delegate that provides Application deployment wizard pages through the
@@ -67,15 +67,15 @@ public interface IApplicationWizardDelegate {
 	 * @param descriptor shared descriptor that contains information necessary
 	 * to push an application. Only one instance of the descriptor exists per
 	 * wizard session, and it is shared amongst all the wizard pages
-	 * @param cloudServer the Cloud Foundry server instance where the
+	 * @param server the Cloud Foundry server instance where the
 	 * application will be pushed to.
-	 * @param applicationModule Module representing the application that will be
+	 * @param module representing the application that will be
 	 * pushed to the Cloud Foundry server
 	 * @return List of pages that should be set, which replace the default
 	 * pages. Return null or empty list if the default wizard pages should be
 	 * used.
 	 */
-	public List<IWizardPage> getWizardPages(ApplicationWizardDescriptor descriptor, CloudFoundryServer cloudServer,
-			CloudFoundryApplicationModule applicationModule);
+	public List<IWizardPage> getWizardPages(ApplicationWizardDescriptor descriptor, IServer server,
+			IModule module);
 
 }

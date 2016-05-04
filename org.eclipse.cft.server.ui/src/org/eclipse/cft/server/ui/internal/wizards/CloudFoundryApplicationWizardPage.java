@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -38,8 +38,8 @@ import org.eclipse.cft.server.core.internal.ValueValidationUtil;
 import org.eclipse.cft.server.core.internal.application.ManifestParser;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil.UniqueSubdomain;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil.UniqueSubdomain;
 import org.eclipse.cft.server.ui.internal.ICoreRunnable;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.PartChangeEvent;
@@ -149,8 +149,7 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 
 	protected void init() {
 		appName = descriptor.getDeploymentInfo().getDeploymentName();
-		buildpack = descriptor.getDeploymentInfo().getStaging() != null
-				? descriptor.getDeploymentInfo().getStaging().getBuildpackUrl() : null;
+		buildpack = descriptor.getDeploymentInfo().getBuildpack();
 	}
 
 	protected CloudFoundryApplicationWizard getApplicationWizard() {
@@ -403,7 +402,7 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 				if (url != null) {
 					UniqueSubdomain uniqueSubdomain;
 					try {
-						uniqueSubdomain = CloudUiUtil.getUniqueSubdomain(url, server, monitor);
+						uniqueSubdomain = CFUiUtil.getUniqueSubdomain(url, server, monitor);
 					} catch (CoreException e) {
 						// Return the exception to calling class
 						return e.getStatus();

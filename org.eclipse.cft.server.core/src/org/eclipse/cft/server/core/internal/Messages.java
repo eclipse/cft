@@ -230,6 +230,8 @@ public class Messages extends NLS {
 	public static String CloudRebelAppHandler_UPDATED_URL;
 
 	public static String CloudRebelAppHandler_UP_TO_DATE;
+	
+	public static String CloudServerUtil_NOT_CLOUD_SERVER_ERROR;
 
 	public static String CommandOptions_DESCRIPTION_VARIABLES_FOR_TUNNEL;
 

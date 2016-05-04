@@ -25,6 +25,7 @@ import org.eclipse.cft.server.core.AbstractApplicationDelegate;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.CloudServerUtil;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
@@ -33,6 +34,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 
 /**
  * An internal application delegate used by the framework that handles
@@ -41,13 +43,11 @@ import org.eclipse.wst.server.core.IModule;
  */
 public abstract class ApplicationDelegate extends AbstractApplicationDelegate {
 
-
 	@Override
-	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(IModule module, CloudFoundryServer cloudServer,
+	public ApplicationDeploymentInfo getDefaultApplicationDeploymentInfo(IModule module, IServer server,
 			IProgressMonitor monitor) throws CoreException {
-
 		// Set default values.
-		String appName = getCloudFoundryApplicationModule(module, cloudServer).getDeployedApplicationName();
+		String appName = getCloudFoundryApplicationModule(module, server).getDeployedApplicationName();
 		ApplicationDeploymentInfo deploymentInfo = new ApplicationDeploymentInfo(appName);
 		deploymentInfo.setMemory(CloudUtil.DEFAULT_MEMORY);
 
@@ -63,7 +63,8 @@ public abstract class ApplicationDelegate extends AbstractApplicationDelegate {
 	 * does not exist or server is out of synch)
 	 */
 	protected CloudFoundryApplicationModule getCloudFoundryApplicationModule(IModule module,
-			CloudFoundryServer cloudServer) throws CoreException {
+			IServer server) throws CoreException {
+		CloudFoundryServer cloudServer = getCloudServer(server);
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
 		if (appModule == null) {
 			throw CloudErrorUtil.toCoreException(NLS.bind(Messages.ApplicationDelegate_NO_CLOUD_MODULE_FOUND,
@@ -78,9 +79,14 @@ public abstract class ApplicationDelegate extends AbstractApplicationDelegate {
 	}
 
 	@Override
-	public ApplicationDeploymentInfo getExistingApplicationDeploymentInfo(IModule module, CloudFoundryServer cloudServer)
-			throws CoreException {
+	public ApplicationDeploymentInfo getExistingApplicationDeploymentInfo(IModule module,
+			IServer server) throws CoreException {
 		return CloudUtil
-				.parseApplicationDeploymentInfo(getCloudFoundryApplicationModule(module, cloudServer).getApplication());
+				.parseApplicationDeploymentInfo(
+						getCloudFoundryApplicationModule(module, server).getApplication());
+	}
+	
+	protected CloudFoundryServer getCloudServer(IServer server) throws CoreException {
+		return CloudServerUtil.getCloudServer(server);
 	}
 }

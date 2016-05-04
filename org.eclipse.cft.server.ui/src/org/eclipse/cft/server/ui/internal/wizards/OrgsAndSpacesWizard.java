@@ -25,7 +25,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.ui.internal.CloudServerSpacesDelegate;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.ICoreRunnable;
 import org.eclipse.cft.server.ui.internal.ServerDescriptor;
 import org.eclipse.cft.server.ui.internal.ServerHandler;
@@ -84,7 +84,7 @@ public class OrgsAndSpacesWizard extends Wizard {
 				final String url = cloudServer.getUrl();
 				final boolean selfSignedCert = cloudServer.getSelfSignedCertificate();
 
-				CloudUiUtil.runForked(new ICoreRunnable() {
+				CFUiUtil.runForked(new ICoreRunnable() {
 					public void run(final IProgressMonitor monitor) throws CoreException {
 
 						ServerHandler serverHandler = new ServerHandler(descriptor);

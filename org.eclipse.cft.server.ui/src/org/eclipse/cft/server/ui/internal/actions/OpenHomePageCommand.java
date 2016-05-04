@@ -29,7 +29,7 @@ import java.util.Map;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -112,7 +112,7 @@ public class OpenHomePageCommand extends BaseCommandHandler {
 						}
 						
 						if (homePageUrl != null) {
-							CloudUiUtil.openUrl(homePageUrl.toExternalForm());
+							CFUiUtil.openUrl(homePageUrl.toExternalForm());
 						}
 						else {
 							CloudFoundryPlugin.logError("homePageUrl is null, unable to launch the Home Page URL"); //$NON-NLS-1$

@@ -26,7 +26,7 @@ import java.util.List;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.standalone.ui.internal.Messages;
 import org.eclipse.cft.server.standalone.ui.internal.SelectMainTypeWizard;
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -106,7 +106,7 @@ public class JavaTypeResolver {
 						@Override
 						public void run() {
 
-							final Shell shell = CloudUiUtil.getShell();
+							final Shell shell = CFUiUtil.getShell();
 
 							if (shell != null && !shell.isDisposed()) {
 								SelectMainTypeWizard wizard = new SelectMainTypeWizard(

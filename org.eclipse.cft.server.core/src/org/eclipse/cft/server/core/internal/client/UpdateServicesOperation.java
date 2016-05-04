@@ -22,23 +22,22 @@ package org.eclipse.cft.server.core.internal.client;
 
 import java.util.List;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 public class UpdateServicesOperation extends BehaviourOperation {
 
-	private final BaseClientRequest<List<CloudService>> request;
+	private final BaseClientRequest<List<CFServiceInstance>> request;
 
-	public UpdateServicesOperation(BaseClientRequest<List<CloudService>> request, CloudFoundryServerBehaviour behaviour) {
+	public UpdateServicesOperation(BaseClientRequest<List<CFServiceInstance>> request, CloudFoundryServerBehaviour behaviour) {
 		super(behaviour, null);
 		this.request = request;
 	}
 
 	@Override
 	public void run(IProgressMonitor monitor) throws CoreException {
-		List<CloudService> existingServices = request.run(monitor);
+		List<CFServiceInstance> existingServices = request.run(monitor);
 		ServerEventHandler.getDefault().fireServicesUpdated(getBehaviour().getCloudFoundryServer(),
 				existingServices);
 	}

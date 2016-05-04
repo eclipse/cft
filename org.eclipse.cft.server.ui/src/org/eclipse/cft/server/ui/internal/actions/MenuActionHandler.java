@@ -23,7 +23,7 @@ package org.eclipse.cft.server.ui.internal.actions;
 import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.cft.server.ui.internal.CloudUiUtil;
+import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -81,7 +81,7 @@ public abstract class MenuActionHandler<T> {
 		// Try the servers view directly
 		if (selection == null) {
 
-			IStructuredSelection strucSelection = CloudUiUtil.getServersViewSelection();
+			IStructuredSelection strucSelection = CFUiUtil.getServersViewSelection();
 			if (strucSelection != null && !strucSelection.isEmpty()) {
 				Object selectObj = strucSelection.getFirstElement();
 				if (selectionClass.isAssignableFrom(selectObj.getClass())) {

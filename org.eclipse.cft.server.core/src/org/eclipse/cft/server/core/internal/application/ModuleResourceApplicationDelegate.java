@@ -22,12 +22,12 @@ package org.eclipse.cft.server.core.internal.application;
 
 import java.util.Arrays;
 
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 import org.eclipse.wst.server.core.model.IModuleResource;
 
 /**
@@ -61,13 +61,13 @@ public abstract class ModuleResourceApplicationDelegate extends ApplicationDeleg
 	 * 
 	 * @see org.eclipse.cft.server.core.AbstractApplicationDelegate#
 	 * getApplicationArchive(org.eclipse.wst.server.core.IModule,
-	 * org.eclipse.cft.server.core.internal.CloudFoundryServer,
+	 * org.eclipse.wst.server.core.IServer,
 	 * org.eclipse.wst.server.core.model.IModuleResource[],
 	 * org.eclipse.core.runtime.IProgressMonitor)
 	 */
 	@Override
-	public ApplicationArchive getApplicationArchive(IModule module, CloudFoundryServer cloudFoundryServer,
-			IModuleResource[] moduleResources, IProgressMonitor monitor) throws CoreException {
+	public CFApplicationArchive getApplicationArchive(IModule module, IServer server, IModuleResource[] moduleResources,
+			IProgressMonitor monitor) throws CoreException {
 		return new ModuleResourceApplicationArchive(module, Arrays.asList(moduleResources));
 	}
 }
