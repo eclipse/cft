@@ -768,7 +768,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public StreamingLogToken addApplicationLogListener(final String appName, final ApplicationLogListener listener) {
 		if (appName != null && listener != null) {
 			try {
-				return new BehaviourRequest<StreamingLogToken>("Adding application log listener", this) //$NON-NLS-1$
+				return new BehaviourRequest<StreamingLogToken>(Messages.ADDING_APPLICATION_LOG_LISTENER, this) //$NON-NLS-1$
 				{
 					@Override
 					protected StreamingLogToken doRun(CloudFoundryOperations client, SubMonitor progress)
@@ -1242,7 +1242,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @throws CoreException if it failed to retrieve the orgs and spaces.
 	 */
 	public CloudOrgsAndSpaces getCloudSpaces(IProgressMonitor monitor) throws CoreException {
-		return new BehaviourRequest<CloudOrgsAndSpaces>("Getting orgs and spaces", this) { //$NON-NLS-1$
+		return new BehaviourRequest<CloudOrgsAndSpaces>(Messages.GETTING_ORGS_AND_SPACES, this) { //$NON-NLS-1$
 
 			@Override
 			protected CloudOrgsAndSpaces doRun(CloudFoundryOperations client, SubMonitor progress)
@@ -1326,7 +1326,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		final CloudFoundryOperations operations = CloudFoundryServerBehaviour.createExternalClientLogin(url,
 				credentials.getEmail(), credentials.getPassword(), selfSigned, monitor);
 
-		return new ClientRequest<CloudOrgsAndSpaces>("Getting orgs and spaces") { //$NON-NLS-1$
+		return new ClientRequest<CloudOrgsAndSpaces>(Messages.GETTING_ORGS_AND_SPACES) { //$NON-NLS-1$
 			@Override
 			protected CloudOrgsAndSpaces doRun(CloudFoundryOperations client, SubMonitor progress)
 					throws CoreException {
@@ -1367,7 +1367,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public static CloudFoundryOperations createExternalClientLogin(final String location, String userName,
 			String password, boolean selfSigned, IProgressMonitor monitor) throws CoreException {
 		SubMonitor progress = SubMonitor.convert(monitor);
-		progress.beginTask("Connecting", IProgressMonitor.UNKNOWN); //$NON-NLS-1$
+		
+		progress.beginTask(Messages.CONNECTING, IProgressMonitor.UNKNOWN); //$NON-NLS-1$
 		try {
 			final CloudFoundryOperations client = createClient(location, userName, password, selfSigned);
 
@@ -1400,7 +1401,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public static void register(String location, String userName, String password, boolean selfSigned,
 			IProgressMonitor monitor) throws CoreException {
 		SubMonitor progress = SubMonitor.convert(monitor);
-		progress.beginTask("Connecting", IProgressMonitor.UNKNOWN); //$NON-NLS-1$
+		progress.beginTask(Messages.CONNECTING, IProgressMonitor.UNKNOWN); //$NON-NLS-1$
 		try {
 			CloudFoundryOperations client = createClient(location, userName, password, selfSigned);
 			client.register(userName, password);

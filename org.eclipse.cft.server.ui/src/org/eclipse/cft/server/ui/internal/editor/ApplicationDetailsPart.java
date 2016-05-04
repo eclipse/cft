@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
+ * 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -971,7 +972,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 
 	protected Button createGeneralPushButton(Composite parent, String text) {
 		Button button = toolkit.createButton(parent, text, SWT.PUSH);
-		GridDataFactory.fillDefaults().align(SWT.LEFT, SWT.CENTER).hint(50, SWT.DEFAULT).applyTo(button);
+		GridDataFactory.fillDefaults().align(SWT.LEFT, SWT.CENTER).hint(SWT.DEFAULT, SWT.DEFAULT).applyTo(button);
 		return button;
 	}
 
@@ -1170,7 +1171,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 			int i = 0;
 			for (ApplicationInstanceServiceColumn descriptor : columnDescriptor) {
 				if (i < length) {
-					columnNames[i] = descriptor.name();
+					columnNames[i] = descriptor.getUserFacingName();
 					columnWidths[i] = descriptor.getWidth();
 					i++;
 				}

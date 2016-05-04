@@ -315,6 +315,12 @@ public class Messages extends NLS {
 
 	public static String OPERATION_CANCELED;
 
+	public static String ADDING_APPLICATION_LOG_LISTENER;
+	
+	public static String GETTING_ORGS_AND_SPACES;
+	
+	public static String CONNECTING;
+	
 	private static final String BUNDLE_NAME = CloudFoundryPlugin.PLUGIN_ID + ".internal.Messages"; //$NON-NLS-1$
 
 	static {
