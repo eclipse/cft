@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -160,7 +160,7 @@ public class EnvironmentVariablesPart extends UIPart implements Observer{
 			columnProperties[columnIndex] = column.name();
 			TableColumn tableColumn = new TableColumn(table, SWT.NONE, columnIndex++);
 			tableColumn.setData(column);
-			tableColumn.setText(column.name());
+			tableColumn.setText(column.getUserFacingName());
 			tableColumn.setWidth(column.getWidth());
 		}
 
@@ -344,15 +344,24 @@ public class EnvironmentVariablesPart extends UIPart implements Observer{
 	}
 
 	enum ViewColumn {
-		Variable(200), Value(200);
-		private int width;
+		
+		Variable(200, Messages.TableColumn_VARIABLE), 
+		Value(200, Messages.TableColumn_VALUE);
+		
+		private final int width;
+		private final String userFacingName;
 
-		private ViewColumn(int width) {
+		private ViewColumn(int width, String userFacingName) {
 			this.width = width;
+			this.userFacingName = userFacingName;
 		}
 
 		public int getWidth() {
 			return width;
+		}
+		
+		public String getUserFacingName() {
+			return userFacingName;
 		}
 	}
 
