@@ -136,7 +136,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		// pushed
 		// using framework API rather than test harness API.
 
-		String appPrefix = "testCloudFoundryModuleCreationNonWSTPublish";
+		String appPrefix = "testCFMCNonWSTPublish";
 		createWebApplicationProject();
 
 		// Configure the test fixture for deployment.
@@ -169,7 +169,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		// pushed
 		// using framework API rather than test harness API.
 
-		String appPrefix = "testCloudFoundryModuleCreationWSTPublish";
+		String appPrefix = "testCFMCWSTPublish";
 		createWebApplicationProject();
 
 		// Configure the test fixture for deployment.
@@ -231,7 +231,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 	}
 
 	public void testCreateDeployAppHelpersStopMode() throws Exception {
-		String prefix = "testCreateDeployAppHelpersStopMode";
+		String prefix = "testCDAppHelpersStopMode";
 		createWebApplicationProject();
 
 		boolean startApp = false;
@@ -309,7 +309,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 	public void testApplicationStartedInstanceRunningTracker() throws Exception {
 		// Tests the server behaviour API that checks if the application is
 		// running
-		String prefix = "testApplicationInstanceRunningTracker";
+		String prefix = "testAStartedRTracker";
 		createWebApplicationProject();
 
 		boolean startApp = true;
@@ -340,7 +340,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 	public void testApplicationStoppedInstanceRunningTracker() throws Exception {
 
-		String prefix = "testApplicationStoppedInstanceRunningTracker";
+		String prefix = "testAStoppedIRTracker";
 		createWebApplicationProject();
 
 		// Ensure app is deployed in STOP mode
@@ -362,7 +362,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 	public void testApplicationModuleRunningState() throws Exception {
 
-		String prefix = "testApplicationModuleRunningState";
+		String prefix = "testAModuleRunningState";
 		createWebApplicationProject();
 
 		boolean startApp = true;
@@ -493,7 +493,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		// Create an application and deploy it.
 		// Then disconnect and verify that the app module cache is cleared.
 
-		String appPrefix = "testCloudModulesClearedOnDisconnect";
+		String appPrefix = "testCMCOnDisconnect";
 		createWebApplicationProject();
 		boolean startApp = true;
 		deployApplication(appPrefix, startApp, harness.getDefaultBuildpack());

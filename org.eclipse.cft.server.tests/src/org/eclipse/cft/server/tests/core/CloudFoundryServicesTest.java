@@ -82,7 +82,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 	public void testServiceBindingUnbindingAppStarted() throws Exception {
 		CFServiceInstance service = createDefaultService();
 
-		String prefix = "testServiceBindingUnbindingAppStarted";
+		String prefix = "testSBUAppStarted";
 		createWebApplicationProject();
 		boolean startApp = true;
 		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
@@ -108,7 +108,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 	public void testServiceBindingUnbindingAppStopped() throws Exception {
 		CFServiceInstance service = createDefaultService();
 
-		String prefix = "testServiceBindingUnbindingAppStopped";
+		String prefix = "testSBUAppStopped";
 		createWebApplicationProject();
 
 		boolean startApp = false;
@@ -135,8 +135,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		// creation triggers a service change event
 
 		CFServiceInstance service = getCloudServiceToCreate(SERVICE_NAME, "elephantsql", "turtle");
-		serverBehavior.operations().createServices(new CFServiceInstance[] { service })
-				.run(new NullProgressMonitor());
+		serverBehavior.operations().createServices(new CFServiceInstance[] { service }).run(new NullProgressMonitor());
 		assertServiceExists(service);
 
 		List<CFServiceInstance> existingServices = serverBehavior.getServices(new NullProgressMonitor());
@@ -232,8 +231,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 
 	public void testServiceDeletionServicesInEvent() throws Exception {
 
-		CFServiceInstance service = createCloudService("testServiceDeletionServicesInEvent", "elephantsql",
-				"turtle");
+		CFServiceInstance service = createCloudService("testServiceDeletionServicesInEvent", "elephantsql", "turtle");
 		assertServiceExists(service);
 		service = createCloudService("testAnotherService", "elephantsql", "turtle");
 		List<CFServiceInstance> services = serverBehavior.getServices(new NullProgressMonitor());
