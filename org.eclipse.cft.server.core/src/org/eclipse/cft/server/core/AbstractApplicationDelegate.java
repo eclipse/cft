@@ -21,7 +21,6 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core;
 
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -115,7 +114,7 @@ public abstract class AbstractApplicationDelegate {
 	 * @throws CoreException if the application delegate provides an application
 	 * archive but it failed to create one.
 	 */
-	public abstract ApplicationArchive getApplicationArchive(IModule module, IServer server,
+	public abstract CFApplicationArchive getApplicationArchive(IModule module, IServer server,
 			IModuleResource[] moduleResources, IProgressMonitor monitor) throws CoreException;
 
 	/**

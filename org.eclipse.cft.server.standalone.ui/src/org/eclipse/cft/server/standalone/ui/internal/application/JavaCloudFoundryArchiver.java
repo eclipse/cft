@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,12 +30,13 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.zip.ZipFile;
 
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
+import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.application.CloudZipApplicationArchive;
+import org.eclipse.cft.server.core.internal.CloudServerUtil;
 import org.eclipse.cft.server.core.internal.application.JavaWebApplicationDelegate;
+import org.eclipse.cft.server.core.internal.application.ZipArchive;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.standalone.core.internal.application.ICloudFoundryArchiver;
 import org.eclipse.cft.server.standalone.ui.internal.Messages;
@@ -60,6 +61,7 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 import org.springframework.boot.loader.tools.Libraries;
 import org.springframework.boot.loader.tools.Library;
 import org.springframework.boot.loader.tools.LibraryCallback;
@@ -81,61 +83,56 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 	private CloudFoundryApplicationModule appModule;
 
 	private CloudFoundryServer cloudServer;
-	
+
 	private boolean initialized = false;
 
 	private static final String META_FOLDER_NAME = "META-INF"; //$NON-NLS-1$
 
 	private static final String MANIFEST_FILE = "MANIFEST.MF"; //$NON-NLS-1$
 
-	public void initialize(CloudFoundryApplicationModule appModule,
-			CloudFoundryServer cloudServer) {
-		this.appModule = appModule;
-		this.cloudServer = cloudServer;
-		// Need to know whether initalized or not to mimic the earlier behavior where the it was
-		// initialized within the constructor. Now it is being created from an extension point. 
+	public void initialize(IModule module, IServer server) throws CoreException {
+		this.cloudServer = CloudServerUtil.getCloudServer(server);
+
+		this.appModule = cloudServer.getExistingCloudModule(module);
+		// Need to know whether initalized or not to mimic the earlier behavior
+		// where the it was
+		// initialized within the constructor. Now it is being created from an
+		// extension point.
 		initialized = true;
 	}
 
-	public ApplicationArchive getApplicationArchive(IProgressMonitor monitor)
-			throws CoreException {
-		
+	public CFApplicationArchive getApplicationArchive(IProgressMonitor monitor) throws CoreException {
+
 		if (!initialized) {
 			// Seems like initialize() wasn't invoked prior to this call
 			throw CloudErrorUtil.toCoreException(Messages.JavaCloudFoundryArchiver_ERROR_ARCHIVER_NOT_INITIALIZED);
 		}
 
-		ApplicationArchive archive = JavaWebApplicationDelegate
-				.getArchiveFromManifest(appModule, cloudServer);
+		CFApplicationArchive archive = JavaWebApplicationDelegate.getArchiveFromManifest(appModule, cloudServer);
 
 		if (archive == null) {
 
 			File packagedFile = null;
 
-			IJavaProject javaProject = CloudFoundryProjectUtil
-					.getJavaProject(appModule);
+			IJavaProject javaProject = CloudFoundryProjectUtil.getJavaProject(appModule);
 
 			if (javaProject == null) {
 				handleApplicationDeploymentFailure(Messages.JavaCloudFoundryArchiver_ERROR_NO_JAVA_PROJ_RESOLVED);
 			}
 
-			JavaPackageFragmentRootHandler rootResolver = getPackageFragmentRootHandler(
-					javaProject, monitor);
+			JavaPackageFragmentRootHandler rootResolver = getPackageFragmentRootHandler(javaProject, monitor);
 
 			IType mainType = rootResolver.getMainType(monitor);
 
-			final IPackageFragmentRoot[] roots = rootResolver
-					.getPackageFragmentRoots(monitor);
+			final IPackageFragmentRoot[] roots = rootResolver.getPackageFragmentRoots(monitor);
 
 			if (roots == null || roots.length == 0) {
 				handleApplicationDeploymentFailure(Messages.JavaCloudFoundryArchiver_ERROR_NO_PACKAGE_FRAG_ROOTS);
 			}
 
-			JarPackageData jarPackageData = getJarPackageData(roots, mainType,
-					monitor);
+			JarPackageData jarPackageData = getJarPackageData(roots, mainType, monitor);
 
-			boolean isBoot = CloudFoundryProjectUtil
-					.isSpringBoot(appModule);
+			boolean isBoot = CloudFoundryProjectUtil.isSpringBoot(appModule);
 
 			// Search for existing MANIFEST.MF
 			IFile metaFile = getManifest(roots, javaProject);
@@ -155,30 +152,28 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 				// API
 				// to verify the packaging won't fail
 				if (!jarPackageData.isManifestAccessible()) {
-					handleApplicationDeploymentFailure(NLS
-							.bind(Messages.JavaCloudFoundryArchiver_ERROR_MANIFEST_NOT_ACCESSIBLE,
+					handleApplicationDeploymentFailure(
+							NLS.bind(Messages.JavaCloudFoundryArchiver_ERROR_MANIFEST_NOT_ACCESSIBLE,
 									metaFile.getLocation().toString()));
 				}
 
 				InputStream inputStream = null;
 				try {
 
-					inputStream = new FileInputStream(metaFile.getLocation()
-							.toFile());
+					inputStream = new FileInputStream(metaFile.getLocation().toFile());
 					Manifest manifest = new Manifest(inputStream);
 					Attributes att = manifest.getMainAttributes();
 					if (att.getValue("Main-Class") == null) { //$NON-NLS-1$
-						handleApplicationDeploymentFailure(Messages.JavaCloudFoundryArchiver_ERROR_NO_MAIN_CLASS_IN_MANIFEST);
+						handleApplicationDeploymentFailure(
+								Messages.JavaCloudFoundryArchiver_ERROR_NO_MAIN_CLASS_IN_MANIFEST);
 					}
 				} catch (FileNotFoundException e) {
-					handleApplicationDeploymentFailure(NLS
-							.bind(Messages.JavaCloudFoundryArchiver_ERROR_FAILED_READ_MANIFEST,
-									e.getLocalizedMessage()));
+					handleApplicationDeploymentFailure(NLS.bind(
+							Messages.JavaCloudFoundryArchiver_ERROR_FAILED_READ_MANIFEST, e.getLocalizedMessage()));
 
 				} catch (IOException e) {
-					handleApplicationDeploymentFailure(NLS
-							.bind(Messages.JavaCloudFoundryArchiver_ERROR_FAILED_READ_MANIFEST,
-									e.getLocalizedMessage()));
+					handleApplicationDeploymentFailure(NLS.bind(
+							Messages.JavaCloudFoundryArchiver_ERROR_FAILED_READ_MANIFEST, e.getLocalizedMessage()));
 
 				} finally {
 
@@ -218,9 +213,8 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 			try {
 				packagedFile = packageApplication(jarPackageData, monitor);
 			} catch (CoreException e) {
-				handleApplicationDeploymentFailure(NLS
-						.bind(Messages.JavaCloudFoundryArchiver_ERROR_JAVA_APP_PACKAGE,
-								e.getMessage()));
+				handleApplicationDeploymentFailure(
+						NLS.bind(Messages.JavaCloudFoundryArchiver_ERROR_JAVA_APP_PACKAGE, e.getMessage()));
 			}
 
 			if (packagedFile == null || !packagedFile.exists()) {
@@ -233,12 +227,10 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 
 			// At this stage a packaged file should have been created or found
 			try {
-				archive = new CloudZipApplicationArchive(new ZipFile(
-						packagedFile));
+				archive = new ZipArchive(new ZipFile(packagedFile));
 			} catch (IOException ioe) {
-				handleApplicationDeploymentFailure(NLS
-						.bind(Messages.JavaCloudFoundryArchiver_ERROR_CREATE_CF_ARCHIVE,
-								ioe.getMessage()));
+				handleApplicationDeploymentFailure(
+						NLS.bind(Messages.JavaCloudFoundryArchiver_ERROR_CREATE_CF_ARCHIVE, ioe.getMessage()));
 			}
 		}
 
@@ -261,8 +253,7 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 		IResource[] members = folder.members();
 		if (members != null) {
 			for (IResource mem : members) {
-				if (META_FOLDER_NAME.equals(mem.getName())
-						&& mem instanceof IFolder) {
+				if (META_FOLDER_NAME.equals(mem.getName()) && mem instanceof IFolder) {
 					return (IFolder) mem;
 				}
 			}
@@ -270,8 +261,7 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 		return null;
 	}
 
-	protected IFile getManifest(IPackageFragmentRoot[] roots,
-			IJavaProject javaProject) throws CoreException {
+	protected IFile getManifest(IPackageFragmentRoot[] roots, IJavaProject javaProject) throws CoreException {
 
 		IFolder metaFolder = null;
 		for (IPackageFragmentRoot root : roots) {
@@ -293,8 +283,7 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 			IResource[] members = metaFolder.members();
 			if (members != null) {
 				for (IResource mem : members) {
-					if (MANIFEST_FILE.equals(mem.getName().toUpperCase())
-							&& mem instanceof IFile) {
+					if (MANIFEST_FILE.equals(mem.getName().toUpperCase()) && mem instanceof IFile) {
 						return (IFile) mem;
 					}
 				}
@@ -314,44 +303,38 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 		};
 	}
 
-	protected JavaPackageFragmentRootHandler getPackageFragmentRootHandler(
-			IJavaProject javaProject, IProgressMonitor monitor)
-			throws CoreException {
+	protected JavaPackageFragmentRootHandler getPackageFragmentRootHandler(IJavaProject javaProject,
+			IProgressMonitor monitor) throws CoreException {
 
 		return new JavaPackageFragmentRootHandler(javaProject, cloudServer);
 	}
 
-	protected void bootRepackage(final IPackageFragmentRoot[] roots,
-			File packagedFile) throws CoreException {
+	protected void bootRepackage(final IPackageFragmentRoot[] roots, File packagedFile) throws CoreException {
 		Repackager bootRepackager = new Repackager(packagedFile);
 		try {
 			bootRepackager.repackage(new Libraries() {
 
-				public void doWithLibraries(LibraryCallback callBack)
-						throws IOException {
+				public void doWithLibraries(LibraryCallback callBack) throws IOException {
 					for (IPackageFragmentRoot root : roots) {
 
 						if (root.isArchive()) {
 
-							File rootFile = new File(root.getPath()
-									.toOSString());
+							File rootFile = new File(root.getPath().toOSString());
 							if (rootFile.exists()) {
-								callBack.library(new Library(rootFile,
-										LibraryScope.COMPILE));
+								callBack.library(new Library(rootFile, LibraryScope.COMPILE));
 							}
 						}
 					}
 				}
 			});
 		} catch (IOException e) {
-			handleApplicationDeploymentFailure(NLS.bind(
-					Messages.JavaCloudFoundryArchiver_ERROR_REPACKAGE_SPRING,
-					e.getMessage()));
+			handleApplicationDeploymentFailure(
+					NLS.bind(Messages.JavaCloudFoundryArchiver_ERROR_REPACKAGE_SPRING, e.getMessage()));
 		}
 	}
 
-	protected JarPackageData getJarPackageData(IPackageFragmentRoot[] roots,
-			IType mainType, IProgressMonitor monitor) throws CoreException {
+	protected JarPackageData getJarPackageData(IPackageFragmentRoot[] roots, IType mainType, IProgressMonitor monitor)
+			throws CoreException {
 
 		String filePath = getTempJarPath(appModule.getLocalModule());
 
@@ -382,12 +365,10 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 		return packageData;
 	}
 
-	protected File packageApplication(final JarPackageData packageData,
-			IProgressMonitor monitor) throws CoreException {
+	protected File packageApplication(final JarPackageData packageData, IProgressMonitor monitor) throws CoreException {
 
 		int progressWork = 10;
-		final SubMonitor subProgress = SubMonitor
-				.convert(monitor, progressWork);
+		final SubMonitor subProgress = SubMonitor.convert(monitor, progressWork);
 
 		final File[] createdFile = new File[1];
 
@@ -400,13 +381,11 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 
 					Shell shell = CloudUiUtil.getShell();
 
-					IJarExportRunnable runnable = packageData
-							.createJarExportRunnable(shell);
+					IJarExportRunnable runnable = packageData.createJarExportRunnable(shell);
 					try {
 						runnable.run(subProgress);
 
-						File file = new File(packageData.getJarLocation()
-								.toString());
+						File file = new File(packageData.getJarLocation().toString());
 						if (!file.exists()) {
 							handleApplicationDeploymentFailure();
 						} else {
@@ -433,15 +412,12 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 		return createdFile[0];
 	}
 
-	protected void handleApplicationDeploymentFailure(String errorMessage)
-			throws CoreException {
+	protected void handleApplicationDeploymentFailure(String errorMessage) throws CoreException {
 		if (errorMessage == null) {
 			errorMessage = Messages.JavaCloudFoundryArchiver_ERROR_CREATE_PACKAGED_FILE;
 		}
-		throw CloudErrorUtil.toCoreException(errorMessage
-				+ " - " //$NON-NLS-1$
-				+ appModule.getDeployedApplicationName()
-				+ ". Unable to package application for deployment."); //$NON-NLS-1$
+		throw CloudErrorUtil.toCoreException(errorMessage + " - " //$NON-NLS-1$
+				+ appModule.getDeployedApplicationName() + ". Unable to package application for deployment."); //$NON-NLS-1$
 	}
 
 	protected void handleApplicationDeploymentFailure() throws CoreException {
@@ -456,10 +432,8 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 			tempFolder.mkdirs();
 
 			if (!tempFolder.exists()) {
-				throw CloudErrorUtil
-						.toCoreException(NLS
-								.bind(Messages.JavaCloudFoundryArchiver_ERROR_CREATE_TEMP_DIR,
-										tempFolder.getPath()));
+				throw CloudErrorUtil.toCoreException(
+						NLS.bind(Messages.JavaCloudFoundryArchiver_ERROR_CREATE_TEMP_DIR, tempFolder.getPath()));
 			}
 
 			File targetFile = new File(tempFolder, module.getName() + ".jar"); //$NON-NLS-1$

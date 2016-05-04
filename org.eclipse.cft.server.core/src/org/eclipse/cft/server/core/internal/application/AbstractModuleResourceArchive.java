@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,8 +27,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.cloudfoundry.client.lib.archive.AbstractApplicationArchiveEntry;
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
+import org.eclipse.cft.server.core.ArchiveEntry;
+import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.wst.server.core.IModule;
@@ -61,9 +61,9 @@ import org.eclipse.wst.server.core.model.IModuleResource;
  * This application archive works directly on IModuleResource and computes sha1
  * and input stream entries for an application from its IModuleResource.
  */
-public abstract class AbstractModuleResourceArchive implements ApplicationArchive {
+public abstract class AbstractModuleResourceArchive implements CFApplicationArchive {
 
-	protected List<Entry> entries;
+	protected List<ArchiveEntry> entries;
 
 	private final IModule module;
 
@@ -74,9 +74,9 @@ public abstract class AbstractModuleResourceArchive implements ApplicationArchiv
 		this.resources = resources;
 	}
 
-	public Iterable<Entry> getEntries() {
+	public Iterable<ArchiveEntry> getEntries() {
 		if (entries == null) {
-			entries = new ArrayList<ApplicationArchive.Entry>();
+			entries = new ArrayList<ArchiveEntry>();
 			collectEntriesPriorToDeployment(entries, resources.toArray(new IModuleResource[0]));
 		}
 		return entries;
@@ -93,7 +93,7 @@ public abstract class AbstractModuleResourceArchive implements ApplicationArchiv
 	 * @param entries
 	 * @param resources
 	 */
-	protected void collectEntriesPriorToDeployment(List<Entry> entries, IModuleResource[] members) {
+	protected void collectEntriesPriorToDeployment(List<ArchiveEntry> entries, IModuleResource[] members) {
 		if (members == null) {
 			return;
 		}
@@ -213,12 +213,10 @@ public abstract class AbstractModuleResourceArchive implements ApplicationArchiv
 	 * caching for those values.
 	 * 
 	 */
-	public abstract class AbstractModuleResourceEntryAdapter extends AbstractApplicationArchiveEntry {
+	public abstract class AbstractModuleResourceEntryAdapter extends AbstractArchiveEntry {
 		private final IModuleResource moduleResource;
 
 		protected String name;
-
-		public static final long UNDEFINED_SIZE = AbstractApplicationArchiveEntry.UNDEFINED_SIZE;
 
 		public AbstractModuleResourceEntryAdapter(IModuleResource moduleResource) {
 			this.moduleResource = moduleResource;
@@ -234,7 +232,5 @@ public abstract class AbstractModuleResourceArchive implements ApplicationArchiv
 		}
 
 		abstract protected String computeName(IModuleResource resource);
-
 	}
-
 }

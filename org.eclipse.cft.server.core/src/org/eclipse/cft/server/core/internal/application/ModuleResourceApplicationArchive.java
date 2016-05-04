@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -69,8 +69,8 @@ public class ModuleResourceApplicationArchive extends AbstractModuleResourceArch
 	public ModuleResourceApplicationArchive(IModule module, List<IModuleResource> resources) throws CoreException {
 		super(module, resources);
 		if (resources == null || resources.isEmpty()) {
-			throw new CoreException(
-					CloudFoundryPlugin.getErrorStatus(NLS.bind(Messages.ModuleResourceApplicationArchive_ERROR_NO_DEPLOYABLE_RES_FOUND,
+			throw new CoreException(CloudFoundryPlugin
+					.getErrorStatus(NLS.bind(Messages.ModuleResourceApplicationArchive_ERROR_NO_DEPLOYABLE_RES_FOUND,
 							module.getName(), module.getId())));
 		}
 	}
@@ -112,7 +112,13 @@ public class ModuleResourceApplicationArchive extends AbstractModuleResourceArch
 
 	}
 
-	public String getFilename() {
+	@Override
+	public String getName() {
 		return getModule().getName();
+	}
+
+	@Override
+	public void close() throws CoreException {
+		// Nothing
 	}
 }

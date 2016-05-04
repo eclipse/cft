@@ -25,9 +25,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.Staging;
+import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -129,7 +129,7 @@ public class PushApplicationOperation extends StartOperation {
 
 	@Override
 	protected void pushApplication(CloudFoundryOperations client, final CloudFoundryApplicationModule appModule,
-			ApplicationArchive applicationArchive, final IProgressMonitor monitor) throws CoreException {
+			CFApplicationArchive applicationArchive, final IProgressMonitor monitor) throws CoreException {
 		String appName = appModule.getDeploymentInfo().getDeploymentName();
 
 		CloudApplication existingApp = null;

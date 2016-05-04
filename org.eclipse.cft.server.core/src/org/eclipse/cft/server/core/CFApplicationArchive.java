@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,33 +18,26 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.core.internal.application;
+package org.eclipse.cft.server.core;
 
-import java.io.IOException;
-import java.util.zip.ZipFile;
-
-import org.cloudfoundry.client.lib.archive.ZipApplicationArchive;
-import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.core.runtime.CoreException;
 
-public class CloudZipApplicationArchive extends ZipApplicationArchive implements
-		CloudApplicationArchive {
+public interface CFApplicationArchive {
+	/**
+	 *
+	 * @return the name of the archive (excluding any path). Cannot be null.
+	 */
+	String getName();
 
-	protected final ZipFile zipFile;
-
-	public CloudZipApplicationArchive(ZipFile zipFile) {
-		super(zipFile);
-		this.zipFile = zipFile;
-	}
-
-	@Override
-	public void close() throws CoreException {
-		try {
-			if (zipFile != null) {
-				zipFile.close();
-			}
-		} catch (IOException e) {
-			throw CloudErrorUtil.toCoreException(e);
-		}
-	}
+	/**
+	 *
+	 * @return a collection of entries contained in the archive
+	 */
+	Iterable<ArchiveEntry> getEntries();
+	
+	/**
+	 * 
+	 * @throws CoreException if failed to close the archive
+	 */
+	public void close() throws CoreException;
 }

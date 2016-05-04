@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,7 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.core.internal;
+package org.eclipse.cft.server.core.internal.application;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,10 +34,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
+import org.eclipse.cft.server.core.ArchiveEntry;
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.DeployedResourceCache.CachedDeployedApplication;
 import org.eclipse.cft.server.core.internal.DeployedResourceCache.DeployedResourceEntry;
-import org.eclipse.cft.server.core.internal.application.AbstractModuleResourceArchive;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.model.IModuleFile;
@@ -46,9 +47,9 @@ import org.eclipse.wst.server.core.model.IModuleResource;
 
 /**
  * Application archive for incremental publishing that optimises sha1 code and
- * file size calculation by using cached sha1 codes for files that have not changed.
- * Resources that have not been changed will be skipped from this calculation as
- * an optimisation step.
+ * file size calculation by using cached sha1 codes for files that have not
+ * changed. Resources that have not been changed will be skipped from this
+ * calculation as an optimisation step.
  * <p/>
  * This speeds up the process of publishing incremental changes in a
  * application, as sha1 hash codes need not be computed for files that haven't
@@ -93,7 +94,7 @@ public class CachingApplicationArchive extends AbstractModuleResourceArchive {
 		return names;
 	}
 
-	public String getFilename() {
+	public String getName() {
 		return fileName;
 	}
 
@@ -108,11 +109,11 @@ public class CachingApplicationArchive extends AbstractModuleResourceArchive {
 	}
 
 	public void generatePartialWarFile(Set<String> knownResourceNames) {
-		Iterable<Entry> localEntries = getEntries();
+		Iterable<ArchiveEntry> localEntries = getEntries();
 		Map<String, AbstractModuleResourceEntryAdapter> missingChangedEntries = new HashMap<String, AbstractModuleResourceEntryAdapter>();
 		Set<IModuleResource> missingChangedResources = new HashSet<IModuleResource>();
 
-		for (Entry entry : localEntries) {
+		for (ArchiveEntry entry : localEntries) {
 
 			if (entry.isDirectory() || !knownResourceNames.contains(entry.getName())) {
 				missingChangedEntries.put(entry.getName(), (AbstractModuleResourceEntryAdapter) entry);
@@ -129,14 +130,14 @@ public class CachingApplicationArchive extends AbstractModuleResourceArchive {
 				fileName = partialWar.getName();
 				ZipFile zipPartialWar = new ZipFile(partialWar);
 				Enumeration<? extends ZipEntry> zipEntries = zipPartialWar.entries();
-				List<Entry> toDeploy = new ArrayList<ApplicationArchive.Entry>();
+				List<ArchiveEntry> toDeploy = new ArrayList<ArchiveEntry>();
 				while (zipEntries.hasMoreElements()) {
 					ZipEntry zipEntry = zipEntries.nextElement();
 
 					AbstractModuleResourceEntryAdapter archiveEntry = missingChangedEntries.get(zipEntry.getName());
 					if (archiveEntry != null) {
-						DeployedResourceEntry deployedResourcesEntry = archiveEntry instanceof ZipModuleFileEntryAdapter ? ((ZipModuleFileEntryAdapter) archiveEntry)
-								.getDeployedResourcesEntry() : null;
+						DeployedResourceEntry deployedResourcesEntry = archiveEntry instanceof ZipModuleFileEntryAdapter
+								? ((ZipModuleFileEntryAdapter) archiveEntry).getDeployedResourcesEntry() : null;
 						toDeploy.add(new PartialZipEntryAdapter(deployedResourcesEntry, zipEntry, zipPartialWar));
 
 					}
@@ -165,14 +166,15 @@ public class CachingApplicationArchive extends AbstractModuleResourceArchive {
 	 * archive file, and possibly using a cache
 	 * 
 	 */
-	public class PartialZipEntryAdapter implements ApplicationArchive.Entry {
+	public class PartialZipEntryAdapter implements ArchiveEntry {
 		private final DeployedResourceEntry deployedResourcesEntry;
 
 		private final ZipEntry zipEntry;
 
 		private final ZipFile zipFile;
 
-		public PartialZipEntryAdapter(DeployedResourceEntry deployedResourcesEntry, ZipEntry zipEntry, ZipFile zipFile) {
+		public PartialZipEntryAdapter(DeployedResourceEntry deployedResourcesEntry, ZipEntry zipEntry,
+				ZipFile zipFile) {
 			this.zipFile = zipFile;
 			this.zipEntry = zipEntry;
 			this.deployedResourcesEntry = deployedResourcesEntry;
@@ -241,7 +243,8 @@ public class CachingApplicationArchive extends AbstractModuleResourceArchive {
 
 		private final boolean recalculate;
 
-		public ZipModuleFileEntryAdapter(IModuleFile moduleFile, CachedDeployedApplication appName, boolean recalculate) {
+		public ZipModuleFileEntryAdapter(IModuleFile moduleFile, CachedDeployedApplication appName,
+				boolean recalculate) {
 			super(moduleFile);
 
 			this.appName = appName;
@@ -279,4 +282,8 @@ public class CachingApplicationArchive extends AbstractModuleResourceArchive {
 		}
 	}
 
+	@Override
+	public void close() throws CoreException {
+		// nothing
+	}
 }

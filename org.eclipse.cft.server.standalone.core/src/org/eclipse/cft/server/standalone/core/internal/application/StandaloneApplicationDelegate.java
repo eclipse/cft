@@ -20,8 +20,8 @@
  ********************************************************************************/
 package org.eclipse.cft.server.standalone.core.internal.application;
 
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
+import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -79,7 +79,7 @@ public class StandaloneApplicationDelegate extends ModuleResourceApplicationDele
 	 * org.eclipse.wst.server.core.model.IModuleResource[],
 	 * org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	public ApplicationArchive getApplicationArchive(IModule module, IServer server, IModuleResource[] moduleResources,
+	public CFApplicationArchive getApplicationArchive(IModule module, IServer server, IModuleResource[] moduleResources,
 			IProgressMonitor monitor) throws CoreException {
 		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, server);
 		CloudFoundryServer cloudServer = getCloudServer(server);

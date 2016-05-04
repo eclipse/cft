@@ -27,8 +27,8 @@ import java.util.Arrays;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
+import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
@@ -84,13 +84,12 @@ public class JavaWebApplicationDelegate extends ApplicationDelegate {
 	 * org.eclipse.core.runtime.IProgressMonitor)
 	 */
 	@Override
-	public ApplicationArchive getApplicationArchive(IModule module, IServer server, IModuleResource[] moduleResources,
+	public CFApplicationArchive getApplicationArchive(IModule module, IServer server, IModuleResource[] moduleResources,
 			IProgressMonitor monitor) throws CoreException {
 
-		
 		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, server);
 		CloudFoundryServer cloudServer = getCloudServer(server);
-		ApplicationArchive manifestArchive = getArchiveFromManifest(appModule, cloudServer);
+		CFApplicationArchive manifestArchive = getArchiveFromManifest(appModule, cloudServer);
 		if (manifestArchive != null) {
 			return manifestArchive;
 		}
@@ -100,7 +99,7 @@ public class JavaWebApplicationDelegate extends ApplicationDelegate {
 
 			CloudFoundryPlugin.trace("War file " + warFile.getName() + " created"); //$NON-NLS-1$ //$NON-NLS-2$
 
-			return new CloudZipApplicationArchive(new ZipFile(warFile));
+			return new ZipArchive(new ZipFile(warFile));
 		}
 		catch (Exception e) {
 			throw new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID,
@@ -149,7 +148,7 @@ public class JavaWebApplicationDelegate extends ApplicationDelegate {
 		return info;
 	}
 
-	public static ApplicationArchive getArchiveFromManifest(CloudFoundryApplicationModule appModule,
+	public static CFApplicationArchive getArchiveFromManifest(CloudFoundryApplicationModule appModule,
 			CloudFoundryServer cloudServer) throws CoreException {
 		String archivePath = null;
 		ManifestParser parser = new ManifestParser(appModule, cloudServer);
@@ -193,7 +192,7 @@ public class JavaWebApplicationDelegate extends ApplicationDelegate {
 			}
 			else {
 				try {
-					return new CloudZipApplicationArchive(new ZipFile(packagedFile));
+					return new ZipArchive(new ZipFile(packagedFile));
 				}
 				catch (ZipException e) {
 					throw CloudErrorUtil.toCoreException(e);
