@@ -208,29 +208,11 @@ public class PushApplicationOperation extends StartOperation {
 					else {
 						updateMonitor.worked(50);
 					}
-				} else {
-					if (cloudAppCreationClientError != null) {
-						// There is a problem with the application creation and the application itself cannot be found in the 
-						// CF server. That means the cloud application does not exist at all on the server. Therefore,
-						// we are cleaning up the app that does not exist.
-						CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
-						if (cloudServer != null) {
-							cloudServer.removeApplication(appModule);
-						}
-					}
 				}
 			}
 			catch (CoreException ce) {
 				if (cloudAppCreationClientError == null) {
 					throw ce;
-				} else {
-					// There is a problem with the application creation and the application itself cannot be found in the 
-					// CF server. That means the cloud application does not exist at all on the server. Therefore,
-					// we are cleaning up the app that does not exist.
-					CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
-					if (cloudServer != null) {
-						cloudServer.removeApplication(appModule);
-					}
 				}
 			}
 
