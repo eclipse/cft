@@ -406,6 +406,9 @@ public class CloudApplicationUrlPart extends UIPart {
 					// Bring up a dialog to give feedback that the hostname is not taken and it will be reserved.
 					MessageDialog.openInformation(activeShell, Messages.CloudApplicationUrlPart_DIALOG_TITLE_HOSTNAME_VALIDATION, 
 						Messages.bind(Messages.CloudApplicationUrlPart_DIALOG_MESSAGE_HOSTNAME_AVAILABLE, cloudAppURL.getSubdomain()));
+				} else {
+					MessageDialog.openInformation(activeShell, Messages.CloudApplicationUrlPart_DIALOG_TITLE_HOSTNAME_VALIDATION, 
+							Messages.bind(Messages.CloudApplicationUrlPart_ERROR_HOSTNAME_TAKEN, cloudAppURL.getUrl()));	
 				}
 				notifyChange(new WizardPartChangeEvent(appUrl, validationResult.getStatus(), CloudUIEvent.VALIDATE_HOST_TAKEN_EVENT, ValidationEvents.VALIDATION_HOSTNAME_TAKEN, true));
 				
