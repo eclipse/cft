@@ -380,19 +380,19 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<ApplicationStats> getApplicationStats(final String applicationId) throws CoreException {
+	public BaseClientRequest<ApplicationStats> getApplicationStats(final String appName) throws CoreException {
 		return new StagingAwareRequest<ApplicationStats>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_APP_STATS, applicationId), behaviour) {
+				NLS.bind(Messages.CloudFoundryServerBehaviour_APP_STATS, appName), behaviour) {
 			@Override
 			protected ApplicationStats doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 				try {
-					return client.getApplicationStats(applicationId);
+					return client.getApplicationStats(appName);
 				}
 				catch (RestClientException ce) {
 					// Stats may not be available if app is still stopped or
 					// starting
-					if (CloudErrorUtil.isAppStoppedStateError(ce)
-							|| CloudErrorUtil.getBadRequestException(ce) != null) {
+					if (CloudErrorUtil.isAppStoppedStateError(ce) || CloudErrorUtil.getBadRequestException(ce) != null
+							|| CloudErrorUtil.is503Error(ce)) {
 						return null;
 					}
 					throw ce;
@@ -420,6 +420,49 @@ public class ClientRequestFactory {
 				}
 			}
 		};
+	}
+
+	/**
+	 * A relatively fast way to fetch all applications in the active session
+	 * Cloud space, that contains basic information about each apps.
+	 * <p/>
+	 * Information that may be MISSING from the list for each app: service
+	 * bindings, mapped URLs, and app instances.
+	 * @return request 
+	 * @throws CoreException
+	 */
+	public BaseClientRequest<List<CloudApplication>> getBasicApplications() throws CoreException {
+		final String serverId = behaviour.getCloudFoundryServer().getServer().getId();
+		return new BehaviourRequest<List<CloudApplication>>(
+				NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_APPS, serverId), behaviour) {
+
+			@Override
+			protected List<CloudApplication> doRun(CloudFoundryOperations client, SubMonitor progress)
+					throws CoreException {
+				AdditionalV1Operations externalClient = behaviour.getAdditionalV1ClientOperations(progress);
+				return externalClient.getBasicApplications();
+			}
+
+		};
+	}
+
+	public BaseClientRequest<CFV1Application> getCompleteApplication(final CloudApplication application)
+			throws CoreException {
+		return new ApplicationRequest<CFV1Application>(
+				NLS.bind(Messages.CloudFoundryServerBehaviour_GET_APPLICATION, application.getName()), behaviour) {
+
+			@Override
+			protected String get503Error(Throwable rce) {
+				return rce.getMessage();
+			}
+
+			@Override
+			protected CFV1Application doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+				AdditionalV1Operations externalClient = behaviour.getAdditionalV1ClientOperations(progress);
+				return externalClient.getCompleteApplication(application);
+			}
+		};
+
 	}
 
 	/**

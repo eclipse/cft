@@ -20,7 +20,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.pivotal;
 
-import org.eclipse.cft.server.core.internal.client.v2.DiegoCloudFoundryTarget;
+import org.eclipse.cft.server.core.internal.client.diego.DiegoCloudFoundryTarget;
 
 public class PivotalCloudFoundryTarget extends DiegoCloudFoundryTarget {
 

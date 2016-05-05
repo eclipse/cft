@@ -54,18 +54,69 @@ public class UpdateAllOperation extends BehaviourOperation {
 		SubMonitor subMonitor = SubMonitor.convert(monitor);
 		subMonitor.beginTask(NLS.bind(Messages.CloudBehaviourOperations_REFRESHING_APPS_AND_SERVICES,
 				cloudServer.getServer().getId()), 100);
+		
+		// Get updated list of services
+		List<CFServiceInstance> services = getBehaviour().getServices(subMonitor.newChild(20));
 
+		
+		// Split refresh of apps into two parts:
+		
+		// 1. Faster update of apps with basic info to refresh Servers view quicker
+		List<CloudApplication> applications = updateBasicListOfApps(cloudServer, subMonitor.newChild(30));
+		
+		// Notify UI to refresh the basic list of apps
+		fireRefreshEvent(services);
+		
+		// 2. Slower update of apps with stats, service bindings, etc..
+		updateCompleteApps(applications, cloudServer, subMonitor.newChild(70));
+		
+		fireRefreshEvent(services);
+	
+
+		subMonitor.worked(20);
+	}
+	
+	protected void fireRefreshEvent(List<CFServiceInstance> services) throws CoreException {
+		ServerEventHandler.getDefault().fireServerEvent(new AppsAndServicesRefreshEvent(getBehaviour().getCloudFoundryServer(),
+				getModule(), CloudServerEvent.EVENT_SERVER_REFRESHED, services));
+	}
+
+	protected List<CloudApplication> updateBasicListOfApps(CloudFoundryServer cloudServer, SubMonitor subMonitor)
+			throws CoreException {
 		// Get updated list of cloud applications from the server
-		List<CloudApplication> applications = getBehaviour().getApplications(subMonitor.newChild(50));
+		List<CloudApplication> applications = getBehaviour().getBasicApplications(subMonitor);
 
 		// update applications and deployments from server
 		Map<String, CloudApplication> deployedApplicationsByName = new LinkedHashMap<String, CloudApplication>();
+
+		// Empty stats as this is a longer process and will be fetched
+		// separately later
 		Map<String, ApplicationStats> stats = new LinkedHashMap<String, ApplicationStats>();
 
 		for (CloudApplication application : applications) {
-			ApplicationStats sts = getBehaviour().getApplicationStats(application.getName(), subMonitor);
-			stats.put(application.getName(), sts);
 			deployedApplicationsByName.put(application.getName(), application);
+		}
+
+		cloudServer.addAndDeleteModules(deployedApplicationsByName, stats);
+
+		// Skip modules that are starting
+		cloudServer.updateModulesState(new int[] { IServer.STATE_STARTING });
+
+		return applications;
+	}
+
+	protected void updateCompleteApps(List<CloudApplication> applications, CloudFoundryServer cloudServer,
+			SubMonitor subMonitor) throws CoreException {
+		Map<String, CloudApplication> deployedApplicationsByName = new LinkedHashMap<String, CloudApplication>();
+		Map<String, ApplicationStats> stats = new LinkedHashMap<String, ApplicationStats>();
+
+		for (CloudApplication toUpdate : applications) {
+			CFV1Application updatedApplication = getBehaviour().getCompleteApplication(toUpdate, subMonitor);
+			if (updatedApplication.getStats() != null) {
+				stats.put(toUpdate.getName(), updatedApplication.getStats());
+			}
+			deployedApplicationsByName.put(toUpdate.getName(), updatedApplication.getApplication());
+			subMonitor.worked(1);
 		}
 
 		cloudServer.addAndDeleteModules(deployedApplicationsByName, stats);
@@ -81,14 +132,5 @@ public class UpdateAllOperation extends BehaviourOperation {
 				appModule.validateDeploymentInfo();
 			}
 		}
-
-		List<CFServiceInstance> services = getBehaviour().getServices(subMonitor.newChild(20));
-
-		ServerEventHandler.getDefault().fireServerEvent(new CloudRefreshEvent(getBehaviour().getCloudFoundryServer(),
-				getModule(), CloudServerEvent.EVENT_SERVER_REFRESHED, services));
-
-		subMonitor.worked(20);
-
 	}
-
 }

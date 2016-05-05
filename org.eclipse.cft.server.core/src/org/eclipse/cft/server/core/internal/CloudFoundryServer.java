@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -43,7 +43,7 @@ import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.SelfSignedStore;
-import org.eclipse.cft.server.core.internal.client.v2.CloudInfoV2;
+import org.eclipse.cft.server.core.internal.client.diego.CloudInfoDiego;
 import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -183,7 +183,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 
 	private String serverTypeId;
 	
-	private CloudInfoV2 cloudInfo;
+	private CloudInfoDiego cloudInfo;
 
 	private ServerCredentialsStore credentialsStore;
 
@@ -1495,19 +1495,19 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		return serverTarget;
 	}
 
-	public synchronized CloudInfoV2 getCloudInfo() {
+	public synchronized CloudInfoDiego getCloudInfo() {
 		if (cloudInfo == null) {
 			HttpProxyConfiguration proxyConf = null;
 			// Must use external means of finding Api version as the v2 CF
 			// java-client-lib does not have API to obtain the CC version.
-			cloudInfo = new CloudInfoV2(new CloudCredentials(getUsername(), getPassword()), getUrl(), proxyConf,
+			cloudInfo = new CloudInfoDiego(new CloudCredentials(getUsername(), getPassword()), getUrl(), proxyConf,
 					getSelfSignedCertificate());
 		}
 		return cloudInfo;
 	}
 	
 	public synchronized boolean supportsSsh() {
-		CloudInfoV2 info = getCloudInfo();
+		CloudInfoDiego info = getCloudInfo();
 
 		return info.getSshClientId() != null && info.getSshHost() != null && info.getSshHost().getHost() != null
 				&& info.getSshHost().getFingerPrint() != null;

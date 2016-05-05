@@ -22,21 +22,20 @@ import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.client.v2.CloudInfoV2;
+import org.eclipse.cft.server.core.internal.client.diego.CloudInfoDiego;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
-public class BuildpackSupport extends V1ClientSupport {
+public class BuildpackSupport extends CFClientV1Support {
 
-	public BuildpackSupport(AuthorizationHeaderProvider oauth, CloudInfoV2 cloudInfo, boolean trustSelfSigned,
+	public BuildpackSupport(CloudFoundryOperations cfClient, CloudInfoDiego cloudInfo, boolean trustSelfSigned,
 			HttpProxyConfiguration httpProxyConfiguration) {
-		super(oauth, cloudInfo, trustSelfSigned, httpProxyConfiguration);
+		super(cfClient, /* no session space required */ null, cloudInfo, trustSelfSigned, httpProxyConfiguration);
 	}
 
 	public List<String> getBuildpacks() {
 		List<String> buildpacks = new ArrayList<String>();
-		String json = restTemplate.getForObject(url("/v2/buildpacks"), String.class); //$NON-NLS-1$
+		String json = restTemplate.getForObject(getUrl("/v2/buildpacks"), String.class); //$NON-NLS-1$
 		if (json != null) {
 			Map<String, Object> resource = JsonUtil.convertJsonToMap(json);
 			if (resource != null) {
@@ -54,26 +53,18 @@ public class BuildpackSupport extends V1ClientSupport {
 		return buildpacks;
 	}
 
-	public static BuildpackSupport create(CloudFoundryServer cloudServer, CloudFoundryOperations client, IProgressMonitor monitor)
-			throws CoreException {
+	public static BuildpackSupport create(CloudFoundryServer cloudServer, CloudFoundryOperations client,
+			IProgressMonitor monitor) throws CoreException {
 
 		String userName = cloudServer.getUsername();
 		String password = cloudServer.getPassword();
 		boolean selfSigned = cloudServer.getSelfSignedCertificate();
-		final CloudFoundryOperations cfClient = client;
 		HttpProxyConfiguration proxyConf = null;
 
-		AuthorizationHeaderProvider oauth = new AuthorizationHeaderProvider() {
-			public String getAuthorizationHeader() {
-				OAuth2AccessToken token = cfClient.login();
-				return token.getTokenType() + " " + token.getValue();
-			}
-		};
-
-		CloudInfoV2 cloudInfo = new CloudInfoV2(new CloudCredentials(userName, password),
+		CloudInfoDiego cloudInfo = new CloudInfoDiego(new CloudCredentials(userName, password),
 				client.getCloudControllerUrl().toString(), proxyConf, selfSigned);
 
-		return new BuildpackSupport(oauth, cloudInfo, selfSigned, proxyConf);
+		return new BuildpackSupport(client, cloudInfo, selfSigned, proxyConf);
 	}
 
 }

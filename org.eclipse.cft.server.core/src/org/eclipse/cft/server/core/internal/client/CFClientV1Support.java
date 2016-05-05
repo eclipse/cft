@@ -10,7 +10,7 @@
  * Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  *******************************************************************************/
-package org.eclipse.cft.server.core.internal.client.v2;
+package org.eclipse.cft.server.core.internal.client;
 
 import java.io.IOException;
 import java.net.URI;
@@ -18,7 +18,7 @@ import java.net.URI;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
-import org.eclipse.cft.server.core.internal.client.AuthorizationHeaderProvider;
+import org.eclipse.cft.server.core.internal.client.diego.CloudInfoDiego;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -26,39 +26,46 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.RestTemplate;
 
 /**
+ * Contains helper methods to allow access to certain components of an existing
+ * v1 client (so an existing connection to Cloud Foundry) that cannot be access
+ * via legacy v1 API. Examples are {@link RestTemplate} and additional target
+ * information as defined in {@link CloudInfoDiego}
+ *
  * @author Kris De Volder
  */
-public abstract class CfClientSideCart {
-
+public class CFClientV1Support {
 	protected final AuthorizationHeaderProvider oauth;
 
 	protected final RestTemplate restTemplate;
 
-	protected final CloudInfoV2 cloudInfo;
+	protected final CloudInfoDiego cloudInfo;
 
-	protected final CloudFoundryOperations client;
+	protected final String authorizationUrl;
 
-	protected final CloudSpace sessionSpace;
+	protected final CloudSpace existingSessionConnection;
 
-	public CfClientSideCart(CloudFoundryOperations client, CloudSpace sessionSpace, CloudInfoV2 cloudInfo,
+	public CFClientV1Support(CloudFoundryOperations cfClient, CloudSpace existingSessionConnection, CloudInfoDiego cloudInfo,
 			boolean trustSelfSigned, HttpProxyConfiguration httpProxyConfiguration) {
 		this.cloudInfo = cloudInfo;
-		this.client = client;
-		this.oauth = authProvider(client);
-		this.sessionSpace = sessionSpace;
+		this.oauth = getHeaderProvider(cfClient);
+		this.existingSessionConnection = existingSessionConnection;
 
 		this.restTemplate = RestUtils.createRestTemplate(httpProxyConfiguration, trustSelfSigned, true);
 		ClientHttpRequestFactory requestFactory = restTemplate.getRequestFactory();
 		restTemplate.setRequestFactory(authorize(requestFactory));
+
+		this.authorizationUrl = cloudInfo.getAuthorizationUrl();
 	}
 
-	private AuthorizationHeaderProvider authProvider(final CloudFoundryOperations client) {
-		return new AuthorizationHeaderProvider() {
-			public String getAuthorizationHeader() {
-				OAuth2AccessToken token = client.login();
-				return token.getTokenType() + " " + token.getValue(); //$NON-NLS-1$
-			}
-		};
+	/**
+	 * 
+	 * @return current session space in the connected client. It may be null if
+	 * the support does not require access to the existing client session.
+	 * However, this does NOT mean that the connected client has no session.
+	 * Only means that it is not accessible from the support
+	 */
+	protected CloudSpace getExistingConnectionSession() {
+		return this.existingSessionConnection;
 	}
 
 	protected ClientHttpRequestFactory authorize(final ClientHttpRequestFactory delegate) {
@@ -75,6 +82,16 @@ public abstract class CfClientSideCart {
 	protected String getUrl(String path) {
 		return cloudInfo.getCloudControllerUrl() + (path.startsWith("/") //$NON-NLS-1$
 				? path : "/" + path); //$NON-NLS-1$
+	}
+
+	protected AuthorizationHeaderProvider getHeaderProvider(final CloudFoundryOperations cfClient) {
+		AuthorizationHeaderProvider oauth = new AuthorizationHeaderProvider() {
+			public String getAuthorizationHeader() {
+				OAuth2AccessToken token = cfClient.login();
+				return token.getTokenType() + " " + token.getValue(); //$NON-NLS-1$
+			}
+		};
+		return oauth;
 	}
 
 }

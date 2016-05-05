@@ -27,13 +27,11 @@ import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.client.AuthorizationHeaderProvider;
-import org.eclipse.cft.server.core.internal.client.V1ClientSupport;
-import org.eclipse.cft.server.core.internal.client.v2.CloudInfoV2;
+import org.eclipse.cft.server.core.internal.client.CFClientV1Support;
+import org.eclipse.cft.server.core.internal.client.diego.CloudInfoDiego;
 import org.eclipse.core.runtime.CoreException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -43,13 +41,13 @@ import com.jcraft.jsch.UserInfo;
 /**
  * @author Kris De Volder
  */
-public class SshClientSupport extends V1ClientSupport {
+public class SshClientSupport extends CFClientV1Support {
 
 	private String sshClientId;
 
-	public SshClientSupport(AuthorizationHeaderProvider oauth, CloudInfoV2 cloudInfo, boolean trustSelfSigned,
+	public SshClientSupport(CloudFoundryOperations cfClient, CloudInfoDiego cloudInfo, boolean trustSelfSigned,
 			HttpProxyConfiguration httpProxyConfiguration) {
-		super(oauth, cloudInfo, trustSelfSigned, httpProxyConfiguration);
+		super(cfClient, /* no session space required */ null, cloudInfo, trustSelfSigned, httpProxyConfiguration);
 		this.sshClientId = cloudInfo.getSshClientId();
 	}
 
@@ -95,17 +93,11 @@ public class SshClientSupport extends V1ClientSupport {
 
 	public static SshClientSupport create(final CloudFoundryOperations client, CloudCredentials creds,
 			HttpProxyConfiguration proxyConf, boolean selfSigned) {
-		AuthorizationHeaderProvider oauth = new AuthorizationHeaderProvider() {
-			public String getAuthorizationHeader() {
-				OAuth2AccessToken token = client.login();
-				return token.getTokenType() + " " + token.getValue();
-			}
-		};
 
-		CloudInfoV2 cloudInfo = new CloudInfoV2(creds, client.getCloudControllerUrl().toString(), proxyConf,
+		CloudInfoDiego cloudInfo = new CloudInfoDiego(creds, client.getCloudControllerUrl().toString(), proxyConf,
 				selfSigned);
 
-		return new SshClientSupport(oauth, cloudInfo, selfSigned, proxyConf);
+		return new SshClientSupport(client, cloudInfo, selfSigned, proxyConf);
 	}
 
 	public Session connect(CloudApplication app, CloudFoundryServer cloudServer, int appInstance) throws CoreException {

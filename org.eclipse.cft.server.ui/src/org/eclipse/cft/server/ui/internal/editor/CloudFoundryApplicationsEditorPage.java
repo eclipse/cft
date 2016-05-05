@@ -31,7 +31,7 @@ import org.eclipse.cft.server.core.internal.CloudServerListener;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.core.internal.client.CloudRefreshEvent;
+import org.eclipse.cft.server.core.internal.client.AppsAndServicesRefreshEvent;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.actions.EditorAction.EditorCloudEvent;
@@ -342,11 +342,11 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 				return;
 			}
 
-			if (event instanceof CloudRefreshEvent
+			if (event instanceof AppsAndServicesRefreshEvent
 					&& (this.type == CloudServerEvent.EVENT_UPDATE_SERVICES
 							|| this.type == CloudServerEvent.EVENT_SERVER_REFRESHED)
 					&& status.getSeverity() != IStatus.ERROR) {
-				List<CFServiceInstance> services = ((CloudRefreshEvent) event).getServices();
+				List<CFServiceInstance> services = ((AppsAndServicesRefreshEvent) event).getServices();
 				if (services == null) {
 					services = Collections.emptyList();
 				}

@@ -25,7 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.cft.server.core.internal.application.ModuleChangeEvent;
 import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
-import org.eclipse.cft.server.core.internal.client.CloudRefreshEvent;
+import org.eclipse.cft.server.core.internal.client.AppsAndServicesRefreshEvent;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.wst.server.core.IModule;
@@ -59,7 +59,7 @@ public class ServerEventHandler {
 	}
 
 	public void fireServicesUpdated(CloudFoundryServer server, List<CFServiceInstance> services) {
-		fireServerEvent(new CloudRefreshEvent(server, null, CloudServerEvent.EVENT_UPDATE_SERVICES, services));
+		fireServerEvent(new AppsAndServicesRefreshEvent(server, null, CloudServerEvent.EVENT_UPDATE_SERVICES, services));
 	}
 
 	public void firePasswordUpdated(CloudFoundryServer server, IStatus status) {

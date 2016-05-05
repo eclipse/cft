@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2015 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,30 +18,27 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.core.internal.client;
+package org.eclipse.cft.server.core.internal.client.diego;
 
-import java.util.List;
+import org.eclipse.cft.server.core.internal.CloudFoundryServerTarget;
+import org.eclipse.cft.server.core.internal.client.ClientRequestFactory;
+import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.application.ModuleChangeEvent;
-import org.eclipse.wst.server.core.IModule;
+public class DiegoCloudFoundryTarget extends CloudFoundryServerTarget {
 
-public class CloudRefreshEvent extends ModuleChangeEvent {
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-
-	private final List<CFServiceInstance> services;
-
-	public CloudRefreshEvent(CloudFoundryServer server, IModule module, int type, List<CFServiceInstance> services) {
-		super(server, type, module, null);
-		this.services = services;
+	@Override
+	public String getServerUri() {
+		return ALL_SERVERS;
 	}
 
-	public List<CFServiceInstance> getServices() {
-		return services;
+	@Override
+	public ClientRequestFactory getRequestFactory(CloudFoundryServerBehaviour behaviour) {
+		return new DiegoRequestFactory(behaviour);
+	}
+
+	@Override
+	public boolean supportsSsh() {
+		return true;
 	}
 
 }

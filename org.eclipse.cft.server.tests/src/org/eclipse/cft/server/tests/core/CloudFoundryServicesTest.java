@@ -28,9 +28,9 @@ import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudServicesUtil;
+import org.eclipse.cft.server.core.internal.client.AppsAndServicesRefreshEvent;
 import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.core.internal.client.CloudRefreshEvent;
 import org.eclipse.cft.server.tests.util.ModulesRefreshListener;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
@@ -215,9 +215,9 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		assertTrue(refreshListener.modulesRefreshed(new NullProgressMonitor()));
 		assertEquals(CloudServerEvent.EVENT_UPDATE_SERVICES, refreshListener.getMatchedEvent().getType());
 
-		assertTrue("Expected " + CloudRefreshEvent.class,
-				refreshListener.getMatchedEvent() instanceof CloudRefreshEvent);
-		CloudRefreshEvent cloudEvent = (CloudRefreshEvent) refreshListener.getMatchedEvent();
+		assertTrue("Expected " + AppsAndServicesRefreshEvent.class,
+				refreshListener.getMatchedEvent() instanceof AppsAndServicesRefreshEvent);
+		AppsAndServicesRefreshEvent cloudEvent = (AppsAndServicesRefreshEvent) refreshListener.getMatchedEvent();
 		List<CFServiceInstance> existing = cloudEvent.getServices();
 		assertTrue("Expected 1 created service in cloud refresh event", existing.size() == 1);
 		assertEquals("testServiceCreationServicesInEvent", existing.get(0).getName());
@@ -245,10 +245,10 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 
 		assertTrue(refreshListener.modulesRefreshed(new NullProgressMonitor()));
 		assertEquals(CloudServerEvent.EVENT_UPDATE_SERVICES, refreshListener.getMatchedEvent().getType());
-		assertTrue("Expected " + CloudRefreshEvent.class,
-				refreshListener.getMatchedEvent() instanceof CloudRefreshEvent);
+		assertTrue("Expected " + AppsAndServicesRefreshEvent.class,
+				refreshListener.getMatchedEvent() instanceof AppsAndServicesRefreshEvent);
 
-		CloudRefreshEvent cloudEvent = (CloudRefreshEvent) refreshListener.getMatchedEvent();
+		AppsAndServicesRefreshEvent cloudEvent = (AppsAndServicesRefreshEvent) refreshListener.getMatchedEvent();
 		List<CFServiceInstance> eventServices = cloudEvent.getServices();
 
 		assertTrue("Expected 1 service in cloud refresh event", eventServices.size() == 1);
@@ -277,10 +277,10 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		assertTrue(refreshListener.modulesRefreshed(new NullProgressMonitor()));
 
 		assertEquals(CloudServerEvent.EVENT_SERVER_REFRESHED, refreshListener.getMatchedEvent().getType());
-		assertTrue("Expected " + CloudRefreshEvent.class,
-				refreshListener.getMatchedEvent() instanceof CloudRefreshEvent);
+		assertTrue("Expected " + AppsAndServicesRefreshEvent.class,
+				refreshListener.getMatchedEvent() instanceof AppsAndServicesRefreshEvent);
 
-		CloudRefreshEvent cloudEvent = (CloudRefreshEvent) refreshListener.getMatchedEvent();
+		AppsAndServicesRefreshEvent cloudEvent = (AppsAndServicesRefreshEvent) refreshListener.getMatchedEvent();
 		List<CFServiceInstance> eventServices = cloudEvent.getServices();
 		assertTrue("Expected 1 service in cloud refresh event", eventServices.size() == 1);
 		assertEquals("testExternalCreatedServiceRefresh", eventServices.get(0).getName());

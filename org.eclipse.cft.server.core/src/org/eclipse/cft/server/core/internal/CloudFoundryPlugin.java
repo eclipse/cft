@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,7 @@ import org.eclipse.cft.server.core.AbstractAppStateTracker;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryClientFactory;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
-import org.eclipse.cft.server.core.internal.client.v2.DiegoCloudFoundryTarget;
+import org.eclipse.cft.server.core.internal.client.diego.DiegoCloudFoundryTarget;
 import org.eclipse.cft.server.core.internal.pivotal.PivotalCloudFoundryTarget;
 import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.runtime.CoreException;

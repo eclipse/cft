@@ -37,6 +37,7 @@ import org.cloudfoundry.client.lib.ApplicationLogListener;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
+import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
@@ -130,6 +131,8 @@ import org.springframework.web.client.RestClientException;
 public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	private CloudFoundryOperations client;
+
+	private AdditionalV1Operations additionalClientSupport;
 
 	private BehaviourOperationsScheduler operationsScheduler;
 
@@ -648,9 +651,17 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		return getRequestFactory().getApplications().run(monitor);
 	}
 
-	public ApplicationStats getApplicationStats(final String applicationId, IProgressMonitor monitor)
+	public List<CloudApplication> getBasicApplications(IProgressMonitor monitor) throws CoreException {
+		return getRequestFactory().getBasicApplications().run(monitor);
+	}
+
+	public CFV1Application getCompleteApplication(CloudApplication application, IProgressMonitor monitor)
 			throws CoreException {
-		return getRequestFactory().getApplicationStats(applicationId).run(monitor);
+		return getRequestFactory().getCompleteApplication(application).run(monitor);
+	}
+
+	public ApplicationStats getApplicationStats(String appName, IProgressMonitor monitor) throws CoreException {
+		return getRequestFactory().getApplicationStats(appName).run(monitor);
 	}
 
 	public InstancesInfo getInstancesInfo(final String applicationId, IProgressMonitor monitor) throws CoreException {
@@ -720,6 +731,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	protected void internalResetClient() {
 		client = null;
+		additionalClientSupport = null;
 		applicationUrlLookup = null;
 		cloudBehaviourOperations = null;
 		operationsScheduler = null;
@@ -768,7 +780,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public StreamingLogToken addApplicationLogListener(final String appName, final ApplicationLogListener listener) {
 		if (appName != null && listener != null) {
 			try {
-				return new BehaviourRequest<StreamingLogToken>(Messages.ADDING_APPLICATION_LOG_LISTENER, this) //$NON-NLS-1$
+				return new BehaviourRequest<StreamingLogToken>(Messages.ADDING_APPLICATION_LOG_LISTENER, this)
 				{
 					@Override
 					protected StreamingLogToken doRun(CloudFoundryOperations client, SubMonitor progress)
@@ -982,6 +994,32 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		return client;
 	}
 
+	private synchronized AdditionalV1Operations getAdditionalV1ClientOperations(CloudFoundryOperations client)
+			throws CoreException {
+		if (additionalClientSupport != null) {
+			return additionalClientSupport;
+		}
+
+		CloudFoundryServer server = getCloudFoundryServer();
+		HttpProxyConfiguration httpProxyConfiguration = null;
+		CloudSpace sessionSpace = null;
+
+		if (server.getCloudFoundrySpace() != null) {
+			sessionSpace = server.getCloudFoundrySpace().getSpace();
+			if (sessionSpace == null && server.getCloudFoundrySpace().getSpaceName() != null) {
+				sessionSpace = client.getSpace(server.getCloudFoundrySpace().getSpaceName());
+			}
+		}
+
+		if (sessionSpace == null) {
+			throw CloudErrorUtil.toCoreException("No Cloud space resolved for " + server.getServer().getId() //$NON-NLS-1$
+					+ ". Please verify that the server is connected and refreshed and try again."); //$NON-NLS-1$
+		}
+		additionalClientSupport = new AdditionalV1Operations(client, sessionSpace, server.getCloudInfo(),
+				server.getSelfSignedCertificate(), httpProxyConfiguration);
+		return additionalClientSupport;
+	}
+
 	/**
 	 * 
 	 * @param monitor
@@ -990,6 +1028,20 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 */
 	public synchronized CloudFoundryOperations getClient(IProgressMonitor monitor) throws CoreException {
 		return getClient((CloudCredentials) null, monitor);
+	}
+
+	/**
+	 * For internal framework use only. Must not be called outside of internal
+	 * CFT framework.
+	 * @deprecated
+	 * @param monitor
+	 * @return
+	 * @throws CoreException
+	 */
+	public synchronized AdditionalV1Operations getAdditionalV1ClientOperations(IProgressMonitor monitor)
+			throws CoreException {
+		CloudFoundryOperations client = getClient(monitor);
+		return getAdditionalV1ClientOperations(client);
 	}
 
 	@Override
@@ -1242,7 +1294,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @throws CoreException if it failed to retrieve the orgs and spaces.
 	 */
 	public CloudOrgsAndSpaces getCloudSpaces(IProgressMonitor monitor) throws CoreException {
-		return new BehaviourRequest<CloudOrgsAndSpaces>(Messages.GETTING_ORGS_AND_SPACES, this) { //$NON-NLS-1$
+		return new BehaviourRequest<CloudOrgsAndSpaces>(Messages.GETTING_ORGS_AND_SPACES, this) { 
 
 			@Override
 			protected CloudOrgsAndSpaces doRun(CloudFoundryOperations client, SubMonitor progress)
@@ -1326,7 +1378,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		final CloudFoundryOperations operations = CloudFoundryServerBehaviour.createExternalClientLogin(url,
 				credentials.getEmail(), credentials.getPassword(), selfSigned, monitor);
 
-		return new ClientRequest<CloudOrgsAndSpaces>(Messages.GETTING_ORGS_AND_SPACES) { //$NON-NLS-1$
+		return new ClientRequest<CloudOrgsAndSpaces>(Messages.GETTING_ORGS_AND_SPACES) { 
 			@Override
 			protected CloudOrgsAndSpaces doRun(CloudFoundryOperations client, SubMonitor progress)
 					throws CoreException {
@@ -1367,8 +1419,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public static CloudFoundryOperations createExternalClientLogin(final String location, String userName,
 			String password, boolean selfSigned, IProgressMonitor monitor) throws CoreException {
 		SubMonitor progress = SubMonitor.convert(monitor);
-		
-		progress.beginTask(Messages.CONNECTING, IProgressMonitor.UNKNOWN); //$NON-NLS-1$
+
+		progress.beginTask(Messages.CONNECTING, IProgressMonitor.UNKNOWN); 
 		try {
 			final CloudFoundryOperations client = createClient(location, userName, password, selfSigned);
 
@@ -1401,7 +1453,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public static void register(String location, String userName, String password, boolean selfSigned,
 			IProgressMonitor monitor) throws CoreException {
 		SubMonitor progress = SubMonitor.convert(monitor);
-		progress.beginTask(Messages.CONNECTING, IProgressMonitor.UNKNOWN); //$NON-NLS-1$
+		progress.beginTask(Messages.CONNECTING, IProgressMonitor.UNKNOWN); 
 		try {
 			CloudFoundryOperations client = createClient(location, userName, password, selfSigned);
 			client.register(userName, password);
@@ -1670,8 +1722,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		IModuleResource[] allResources = getResources(modules);
 		IModuleResourceDelta[] deltas = getPublishedResourceDelta(modules);
 		List<IModuleResource> changedResources = getChangedResources(deltas);
-		CFApplicationArchive moduleArchive = new CachingApplicationArchive(Arrays.asList(allResources), changedResources,
-				modules[0], deploymentInfo.getDeploymentName());
+		CFApplicationArchive moduleArchive = new CachingApplicationArchive(Arrays.asList(allResources),
+				changedResources, modules[0], deploymentInfo.getDeploymentName());
 
 		return moduleArchive;
 	}

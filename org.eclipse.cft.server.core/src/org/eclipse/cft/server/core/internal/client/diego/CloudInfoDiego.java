@@ -10,7 +10,7 @@
  * Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  *******************************************************************************/
-package org.eclipse.cft.server.core.internal.client.v2;
+package org.eclipse.cft.server.core.internal.client.diego;
 
 import java.util.Map;
 
@@ -18,13 +18,14 @@ import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.util.CloudUtil;
 import org.cloudfoundry.client.lib.util.JsonUtil;
+import org.eclipse.cft.server.core.internal.client.RestUtils;
 import org.eclipse.cft.server.core.internal.ssh.SshHost;
 import org.springframework.web.client.RestTemplate;
 
 /**
  * @author Kris De Volder
  */
-public class CloudInfoV2 {
+public class CloudInfoDiego {
 
 	private RestTemplate restTemplate;
 
@@ -32,7 +33,7 @@ public class CloudInfoV2 {
 
 	private Map<String, Object> infoV2Map;
 
-	public CloudInfoV2(CloudCredentials creds, String url, HttpProxyConfiguration proxyConf, boolean selfSigned) {
+	public CloudInfoDiego(CloudCredentials creds, String url, HttpProxyConfiguration proxyConf, boolean selfSigned) {
 		restTemplate = RestUtils.createRestTemplate(proxyConf, selfSigned, false);
 		this.ccUrl = url;
 	}
