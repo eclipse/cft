@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -132,6 +132,10 @@ public class CloudUrlWidget {
 
 		if (selectionIndex < 0) {
 			urlCombo.deselectAll();
+			if (oldSelection != null) {
+				// This is not the first time selection means the URL list is cleared so needs to validate again.
+				setUpdatedSelectionInServer();
+			}
 		}
 		else {
 			urlCombo.select(selectionIndex);
@@ -153,9 +157,8 @@ public class CloudUrlWidget {
 		String url = getURLSelection();
 		if (url != null) {
 			url = CFUiUtil.getUrlFromDisplayText(url);
-
-			cfServer.setUrl(url);
 		}
+		cfServer.setUrl(url);
 	}
 
 	public void createControls(final Composite parent, final IRunnableContext runnableContext) throws CoreException {

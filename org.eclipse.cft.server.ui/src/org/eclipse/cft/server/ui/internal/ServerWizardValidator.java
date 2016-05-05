@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,7 @@
  *  
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
+ *     IBM - supports empty URL list
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal;
 
@@ -184,14 +185,13 @@ public abstract class ServerWizardValidator implements ServerValidator {
 		// before attempting a remote validation
 		ValidationStatus validationStatus = validateLocally();
 
-		String userName = cfServer.getUsername();
-		String password = cfServer.getPassword();
-		String url = cfServer.getUrl();
-		boolean acceptSelfSigned = cfServer.getSelfSignedCertificate();
-
 		IStatus eventStatus = null;
 
 		if (validationStatus.getStatus().isOK()) {
+			String userName = cfServer.getUsername();
+			String password = cfServer.getPassword();
+			String url = cfServer.getUrl();
+			boolean acceptSelfSigned = cfServer.getSelfSignedCertificate();
 
 			// If credentials changed, clear the space descriptor. If a server
 			// validation is required later on
