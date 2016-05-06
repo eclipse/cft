@@ -112,6 +112,13 @@ public class PushApplicationOperation extends StartOperation {
 				return CloudFoundryPlugin.getCallback().prepareForDeployment(cloudServer, appModule, monitor);
 			}
 			catch (OperationCanceledException oce) {
+				// Change in behavior:
+				// If the CF wizard  (callback prepareForDeployment) is canceled by the user, then it should be effectively canceling the monitor
+				// for the original publish operation that was initiated in the first place. That way, any adopter code with access to this monitor can
+				// check this flag (monitor.isCanceled()) so they can react to the cancel.  One impact on this change is that it will prevent
+				// other modules that are in Republish state from being published.  
+				// Set monitor to canceled here and not in AbstractPublishApplicationOperation since this operation invokes the wizard.
+				monitor.setCanceled(true);
 
 				CloudFoundryPlugin.log(new Status(Status.INFO, CloudFoundryPlugin.PLUGIN_ID,
 						"Operation cancelled during prepareForDeployment.", oce)); //$NON-NLS-1$
