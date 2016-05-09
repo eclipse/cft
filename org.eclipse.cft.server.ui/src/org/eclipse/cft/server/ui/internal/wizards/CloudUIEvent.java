@@ -34,6 +34,9 @@ public class CloudUIEvent implements IEventSource<CloudUIEvent> {
 	public static final CloudUIEvent APPLICATION_URL_CHANGED = new CloudUIEvent(
 			Messages.CloudUIEvent_TEXT_APP_URL_CHANGE);
 
+	public static final CloudUIEvent VALIDATE_SUBDOMAIN_EVENT = new CloudUIEvent(
+			Messages.CloudUIEvent_TEXT_VALIDATE_SUBDOMAIN_EVENT);
+
 	public static final CloudUIEvent BUILD_PACK_URL = new CloudUIEvent(Messages.CloudUIEvent_TEXT_BUILDPACK);
 
 	public static final CloudUIEvent MEMORY = new CloudUIEvent(Messages.COMMONTXT_MEM);

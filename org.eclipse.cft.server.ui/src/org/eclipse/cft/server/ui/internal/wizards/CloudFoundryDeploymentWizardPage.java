@@ -22,6 +22,7 @@
 package org.eclipse.cft.server.ui.internal.wizards;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
@@ -31,8 +32,11 @@ import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudUtil;
+import org.eclipse.cft.server.core.internal.ModuleCache;
+import org.eclipse.cft.server.core.internal.ModuleCache.ServerData;
 import org.eclipse.cft.server.core.internal.ValueValidationUtil;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
+import org.eclipse.cft.server.core.internal.application.ManifestParser;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.ui.internal.CloudApplicationUrlPart;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
@@ -116,6 +120,34 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 	protected void performWhenPageVisible() {
 
 		refreshMemoryOptions();
+
+		// Check that the current subdomain is in conflict with an existing app.
+		ModuleCache moduleCache = CloudFoundryPlugin.getModuleCache();
+		ServerData data = moduleCache.getData(server.getServerOriginal());
+		Collection<CloudFoundryApplicationModule> applications = data.getExistingCloudModules();
+		boolean duplicate = false;
+
+		String currentSubDomain = urlPart.getCurrentSubDomain();
+		for (CloudFoundryApplicationModule application : applications) {
+			if (application != module && application.getDeployedApplicationName().equalsIgnoreCase(currentSubDomain)) {
+				duplicate = true;
+				break;
+			}
+		}
+
+		if (duplicate) {
+			IStatus status = CloudFoundryPlugin.getErrorStatus(Messages.CloudFoundryApplicationWizardPage_ERROR_SUBDOMAIN_CONFLICT);
+			// We want to show that the host name from the manifest is already in conflict with an already existing application.
+			// Piggy back on the part status change event handling design, as though the subdomain part got changed manually
+			partStatus.put(CloudUIEvent.VALIDATE_SUBDOMAIN_EVENT, status);
+			update(true, status);			
+		} else {
+			boolean hasManifest = new ManifestParser(module, server).hasManifest();
+			// Only do if manifest exists.   Non-manifest cases, the name counter will increment and will have a valid/free hostname
+			if (hasManifest) {
+				urlPart.doInitialValidate();
+			}
+		}
 	}
 
 	protected void refreshMemoryOptions() {

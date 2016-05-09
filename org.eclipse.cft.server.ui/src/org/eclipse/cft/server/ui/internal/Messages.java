@@ -609,6 +609,8 @@ public class Messages extends NLS {
 
 	public static String CloudFoundryApplicationWizardPage_ERROR_NAME_CONFLICT;
 
+	public static String CloudFoundryApplicationWizardPage_ERROR_SUBDOMAIN_CONFLICT;
+
 	public static String CloudFoundryApplicationWizardPage_LABEL_BUILDPACK;
 
 	public static String CloudFoundryApplicationWizardPage_TEXT_DEPLOY_WIZ;
@@ -773,6 +775,8 @@ public class Messages extends NLS {
 	public static String CloudUIEvent_TEXT_APP_URL_CHANGE;
 
 	public static String CloudUIEvent_TEXT_VALIDATE_HOST_TAKEN_EVENT;
+
+	public static String CloudUIEvent_TEXT_VALIDATE_SUBDOMAIN_EVENT;
 
 	public static String CloudUIEvent_TEXT_BUILDPACK;
 

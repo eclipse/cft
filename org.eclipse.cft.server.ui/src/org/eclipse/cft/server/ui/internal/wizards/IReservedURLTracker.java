@@ -21,7 +21,6 @@
 package org.eclipse.cft.server.ui.internal.wizards;
 
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
-import org.eclipse.core.runtime.IStatus;
 
 /**
  * Tracker to add/reserve a Cloud route, check if a Cloud route is taken, and delete an

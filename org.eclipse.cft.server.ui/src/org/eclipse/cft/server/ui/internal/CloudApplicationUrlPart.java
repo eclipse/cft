@@ -96,8 +96,12 @@ public class CloudApplicationUrlPart extends UIPart {
 	// The Wizard Page that this part belongs to.  Need access to the IReservedURLTracker Wizard.
 	private IWizardPage page;
 
+	// For keeping track of when the part (page) was visited so initial host-name check is done once in the wizard
+	private boolean visited = false;
+
 	public CloudApplicationUrlPart(ApplicationUrlLookupService lookupService) {
 		this.lookupService = lookupService;
+		this.visited = false;
 	}
 
 	/**
@@ -128,6 +132,9 @@ public class CloudApplicationUrlPart extends UIPart {
 				// Since there is a Validate button, any changes to the sub-domain text must result in clearing of any existing hostname taken error.
 				// This is necessary because this existing error message could become stale/could no longer apply as the user modifies the subdomain.
 				notifyChange(new PartChangeEvent(subDomainText, Status.OK_STATUS, CloudUIEvent.VALIDATE_HOST_TAKEN_EVENT, ValidationEvents.VALIDATION_HOSTNAME_TAKEN));
+				// We want the error message to appear when the wizard page containing this URLPart is first displayed.  Once the subdomain text is
+				// edited, we need to clear the message.   The user has to click the Validate button.
+				notifyChange(new PartChangeEvent(subDomainText, Status.OK_STATUS, CloudUIEvent.VALIDATE_SUBDOMAIN_EVENT, ValidationEvents.VALIDATION));
 				resolveUrlFromSubdomain(subDomainText);
 			}
 		});
@@ -186,6 +193,11 @@ public class CloudApplicationUrlPart extends UIPart {
 
 	}
 	
+	// Expose for wizard page
+	public String getCurrentSubDomain() {
+		return subDomainText.getText();
+	}
+
 	public String getCurrentDomain() {
 		if (isActive(domainCombo)) {
 			int selectionIndex = domainCombo.getSelectionIndex();
@@ -385,6 +397,39 @@ public class CloudApplicationUrlPart extends UIPart {
 
 	public void setPage(IWizardPage page) {
 		this.page = page;
+	}
+	
+	/**
+	 * Do initial validation not invoked by user (eg. not by using the Validate Button).  This is called
+	 * only if the manifest.yml is present.  See CloudFoundryDeploymentWizardPage::performWhenPageVisible   
+	 */
+	public void doInitialValidate() {
+		
+		if (!visited) {
+			visited = true;
+			CloudApplicationURL appUrl = null;
+			try {
+				appUrl = lookupService.getCloudApplicationURL(currentUrl);
+			}
+			catch (CoreException ce) {
+				// if already invalid, say, manifest has some invalid text, then don't do hostname taken check
+				return;
+			}
+			if (appUrl != null) {
+				IWizard wizard = page.getWizard();
+				if (wizard instanceof IReservedURLTracker) {
+					IReservedURLTracker reservedURLTracker = (IReservedURLTracker)wizard;
+					if (!reservedURLTracker.isReserved(appUrl)) {
+						HostnameValidationResult validationResult = reservedURLTracker.validateURL(appUrl);
+						if (validationResult.getStatus().isOK()) {
+							// Reserve the URL
+							reservedURLTracker.addToReserved(appUrl, validationResult.isRouteCreated());
+						}
+						notifyChange(new WizardPartChangeEvent(appUrl, validationResult.getStatus(), CloudUIEvent.VALIDATE_HOST_TAKEN_EVENT, ValidationEvents.VALIDATION_HOSTNAME_TAKEN, true));
+					}
+				}
+			}
+		}
 	}
 
 	private void validateHostNameChecker(CloudApplicationURL appUrl) {
