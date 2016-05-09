@@ -23,7 +23,7 @@ package org.eclipse.cft.server.ui.internal.editor;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
+import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.jface.viewers.IStructuredSelection;
 
 public class ServicesHandler {

@@ -27,8 +27,8 @@ import java.util.Map;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
+import org.eclipse.cft.server.core.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
-import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;

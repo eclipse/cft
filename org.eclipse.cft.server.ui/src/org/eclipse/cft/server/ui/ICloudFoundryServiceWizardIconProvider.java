@@ -21,7 +21,7 @@
 
 package org.eclipse.cft.server.ui;
 
-import org.eclipse.cft.server.core.internal.client.CFServiceOffering;
+import org.eclipse.cft.server.core.CFServiceOffering;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.wst.server.core.IServer;
 

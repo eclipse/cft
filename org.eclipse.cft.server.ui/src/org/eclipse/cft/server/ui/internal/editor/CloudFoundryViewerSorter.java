@@ -21,7 +21,7 @@
 package org.eclipse.cft.server.ui.internal.editor;
 
 import org.cloudfoundry.client.lib.domain.InstanceStats;
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
+import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.ui.internal.editor.AppStatsContentProvider.InstanceStatsAndInfo;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerSorter;

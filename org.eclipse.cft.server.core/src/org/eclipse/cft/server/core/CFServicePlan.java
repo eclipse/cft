@@ -18,7 +18,7 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.core.internal.client;
+package org.eclipse.cft.server.core;
 
 /**
  * 

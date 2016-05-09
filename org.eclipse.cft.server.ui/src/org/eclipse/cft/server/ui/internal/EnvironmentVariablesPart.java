@@ -27,8 +27,8 @@ import java.util.Observable;
 import java.util.Observer;
 
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
+import org.eclipse.cft.server.core.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.ValueValidationUtil;
-import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.IDialogConstants;

@@ -22,6 +22,7 @@ package org.eclipse.cft.server.core.internal.client;
 
 import java.util.List;
 
+import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.application.ModuleChangeEvent;
 import org.eclipse.wst.server.core.IModule;

@@ -23,8 +23,8 @@ package org.eclipse.cft.server.ui.internal.actions;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;

@@ -49,6 +49,8 @@ import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.eclipse.cft.server.core.AbstractApplicationDelegate;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.CFApplicationArchive;
+import org.eclipse.cft.server.core.CFServiceInstance;
+import org.eclipse.cft.server.core.CFServiceOffering;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;

@@ -37,8 +37,8 @@ import java.util.zip.ZipOutputStream;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
-import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
+import org.eclipse.cft.server.core.CFServiceInstance;
+import org.eclipse.cft.server.core.EnvironmentVariable;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;

@@ -18,9 +18,9 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.core.internal.client;
+package org.eclipse.cft.server.core;
 
-import org.springframework.util.Assert;
+import org.eclipse.core.runtime.Assert;
 
 /**
  * Represents a cloud service instance.
@@ -42,7 +42,7 @@ public class CFServiceInstance {
 	private boolean isLocal = false;
 
 	public CFServiceInstance(String name) {
-		Assert.notNull(name);
+		Assert.isNotNull(name);
 		setName(name);
 	}
 
@@ -64,8 +64,8 @@ public class CFServiceInstance {
 
 	/**
 	 * 
-	 * @return isLocal true if the service instance is defined locally but not in
-	 * the Cloud. False (default) if service exists in CF.
+	 * @return isLocal true if the service instance is defined locally but not
+	 * in the Cloud. False (default) if service exists in CF.
 	 */
 	public boolean isLocal() {
 		return isLocal;

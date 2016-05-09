@@ -24,9 +24,9 @@ package org.eclipse.cft.server.ui.internal.editor;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.debug.CloudFoundryProperties;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;

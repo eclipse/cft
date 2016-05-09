@@ -32,10 +32,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-
+import org.eclipse.cft.server.core.CFServiceOffering;
+import org.eclipse.cft.server.core.CFServicePlan;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.client.CFServiceOffering;
-import org.eclipse.cft.server.core.internal.client.CFServicePlan;
 import org.eclipse.cft.server.ui.ICloudFoundryServiceWizardIconProvider;
 import org.eclipse.cft.server.ui.internal.Logger;
 import org.eclipse.cft.server.ui.internal.Messages;

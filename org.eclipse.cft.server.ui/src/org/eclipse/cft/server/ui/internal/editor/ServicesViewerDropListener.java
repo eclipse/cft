@@ -20,7 +20,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.editor;
 
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
+import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.ui.internal.actions.AddServicesToApplicationAction;

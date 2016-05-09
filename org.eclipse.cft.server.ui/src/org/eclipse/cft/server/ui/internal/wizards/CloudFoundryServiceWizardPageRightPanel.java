@@ -32,9 +32,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
-import org.eclipse.cft.server.core.internal.client.CFServiceOffering;
-import org.eclipse.cft.server.core.internal.client.CFServicePlan;
+import org.eclipse.cft.server.core.CFServiceInstance;
+import org.eclipse.cft.server.core.CFServiceOffering;
+import org.eclipse.cft.server.core.CFServicePlan;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.osgi.util.NLS;

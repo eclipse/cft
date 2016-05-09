@@ -26,10 +26,10 @@ import java.util.List;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudServicesUtil;
 import org.eclipse.cft.server.core.internal.client.AppsAndServicesRefreshEvent;
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.tests.util.ModulesRefreshListener;
 import org.eclipse.core.runtime.NullProgressMonitor;

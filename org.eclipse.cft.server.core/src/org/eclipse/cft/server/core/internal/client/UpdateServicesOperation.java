@@ -22,6 +22,7 @@ package org.eclipse.cft.server.core.internal.client;
 
 import java.util.List;
 
+import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;

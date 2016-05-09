@@ -25,7 +25,7 @@ import static org.eclipse.cft.server.ui.internal.editor.ApplicationInstanceServi
 import static org.eclipse.cft.server.ui.internal.editor.ApplicationInstanceServiceColumn.Service;
 import static org.eclipse.cft.server.ui.internal.editor.ApplicationInstanceServiceColumn.Version;
 
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
+import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.graphics.Image;

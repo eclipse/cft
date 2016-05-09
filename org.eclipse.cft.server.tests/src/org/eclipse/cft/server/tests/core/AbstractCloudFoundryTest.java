@@ -24,12 +24,12 @@ import java.util.List;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.eclipse.cft.server.core.CFServiceInstance;
+import org.eclipse.cft.server.core.CFServiceOffering;
+import org.eclipse.cft.server.core.CFServicePlan;
+import org.eclipse.cft.server.core.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
-import org.eclipse.cft.server.core.internal.client.CFServiceOffering;
-import org.eclipse.cft.server.core.internal.client.CFServicePlan;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.tests.server.TestServlet;

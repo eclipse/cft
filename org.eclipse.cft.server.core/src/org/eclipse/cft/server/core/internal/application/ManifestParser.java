@@ -33,6 +33,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
+import org.eclipse.cft.server.core.CFServiceInstance;
+import org.eclipse.cft.server.core.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
@@ -40,7 +42,6 @@ import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
 import org.eclipse.core.resources.IFile;

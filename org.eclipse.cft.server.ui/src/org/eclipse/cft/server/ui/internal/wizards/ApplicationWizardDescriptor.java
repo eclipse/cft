@@ -23,8 +23,8 @@ package org.eclipse.cft.server.ui.internal.wizards;
 import java.util.List;
 
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
+import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
 import org.eclipse.core.runtime.Assert;
 
 /**

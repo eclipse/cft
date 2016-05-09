@@ -32,10 +32,10 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
+import org.eclipse.cft.server.core.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;

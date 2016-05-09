@@ -24,9 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Observable;
 
-import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
-
 /**
  * Describes the application that is to be pushed to a CF server, or already
  * exists in a server.

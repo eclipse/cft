@@ -27,9 +27,9 @@ import org.cloudfoundry.client.lib.domain.CloudEntity;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
-import org.eclipse.cft.server.core.internal.client.CFServiceOffering;
-import org.eclipse.cft.server.core.internal.client.CFServicePlan;
+import org.eclipse.cft.server.core.CFServiceInstance;
+import org.eclipse.cft.server.core.CFServiceOffering;
+import org.eclipse.cft.server.core.CFServicePlan;
 
 public class CloudServicesUtil {
 

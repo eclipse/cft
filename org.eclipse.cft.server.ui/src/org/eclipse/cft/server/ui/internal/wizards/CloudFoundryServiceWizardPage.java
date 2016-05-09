@@ -27,9 +27,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import org.eclipse.cft.server.core.CFServiceInstance;
+import org.eclipse.cft.server.core.CFServiceOffering;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.client.CFServiceInstance;
-import org.eclipse.cft.server.core.internal.client.CFServiceOffering;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Logger;
 import org.eclipse.cft.server.ui.internal.Messages;
