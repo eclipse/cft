@@ -27,13 +27,13 @@ public interface CFApplicationArchive {
 	 *
 	 * @return the name of the archive (excluding any path). Cannot be null.
 	 */
-	String getName();
+	public String getName();
 
 	/**
 	 *
 	 * @return a collection of entries contained in the archive
 	 */
-	Iterable<ArchiveEntry> getEntries();
+	public Iterable<ArchiveEntry> getEntries();
 	
 	/**
 	 * 
