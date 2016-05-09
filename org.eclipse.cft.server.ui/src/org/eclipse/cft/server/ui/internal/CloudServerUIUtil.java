@@ -145,7 +145,7 @@ public class CloudServerUIUtil {
 			if (dialog.open() == IDialogConstants.OK_ID) {
 				url = dialog.getUrl();
 				String name = dialog.getName();
-				boolean selfSigned = url != null && CloudFoundryServer.getSelfSignedCertificate(url);
+				boolean selfSigned = url != null && CloudFoundryServer.isSelfSigned(url);
 				return new UserDefinedCloudFoundryUrl(name, url, selfSigned);
 			}
 			else {
@@ -178,7 +178,7 @@ public class CloudServerUIUtil {
 								url = values[1];
 							}
 
-							boolean selfSigned = url != null && CloudFoundryServer.getSelfSignedCertificate(url);
+							boolean selfSigned = url != null && CloudFoundryServer.isSelfSigned(url);
 							urls.add(new UserDefinedCloudFoundryUrl(name, url, selfSigned));
 						}
 					}
@@ -203,7 +203,7 @@ public class CloudServerUIUtil {
 				builder.append("||"); //$NON-NLS-1$
 
 				// Also store the self-signed for each user-defined URL
-				CloudFoundryServer.setSelfSignedCertificate(url.getSelfSigned(), url.getUrl());
+				CloudFoundryServer.setSelfSigned(url.getSelfSigned(), url.getUrl());
 			}
 		}
 

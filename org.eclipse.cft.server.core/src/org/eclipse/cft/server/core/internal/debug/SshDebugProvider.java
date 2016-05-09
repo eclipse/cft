@@ -34,7 +34,7 @@ public class SshDebugProvider extends CloudFoundryDebugProvider {
 	@Override
 	public boolean isDebugSupported(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer) {
 		IJavaProject javaProject = CloudFoundryProjectUtil.getJavaProject(appModule);
-		return javaProject != null && javaProject.exists() && cloudServer.supportsSsh();
+		return javaProject != null && javaProject.exists() && cloudServer.getBehaviour().supportsSsh();
 	}
 
 	@Override

@@ -57,6 +57,8 @@ import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryLoginHandler;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.CloudFoundryServerTarget;
+import org.eclipse.cft.server.core.internal.CloudFoundryTargetManager;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.Messages;
@@ -64,6 +66,7 @@ import org.eclipse.cft.server.core.internal.ModuleResourceDeltaWrapper;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.application.CachingApplicationArchive;
+import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
 import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
 import org.eclipse.cft.server.core.internal.jrebel.CloudRebelAppHandler;
 import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
@@ -142,6 +145,10 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	private ClientRequestFactory requestFactory;
 
+	private CloudFoundryServerTarget serverTarget;
+
+	private CloudFoundryTargetManager targetManager;
+
 	private IServerListener serverListener = new IServerListener() {
 
 		public void serverChanged(ServerEvent event) {
@@ -167,9 +174,27 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	ClientRequestFactory getRequestFactory() throws CoreException {
 		if (requestFactory == null) {
-			requestFactory = getCloudFoundryServer().getTarget().getRequestFactory(this);
+			requestFactory = getTarget().createRequestFactory(getCloudFoundryServer().getServer());
 		}
 		return requestFactory;
+	}
+
+	public synchronized void setTargetManager(CloudFoundryTargetManager targetManager) {
+		// Target manager cannot be null.
+		if (targetManager != null) {
+			this.targetManager = targetManager;
+		}
+	}
+
+	/**
+	 * 
+	 * @return never null.
+	 */
+	protected synchronized CloudFoundryServerTarget getTarget() throws CoreException {
+		if (serverTarget == null) {
+			serverTarget = targetManager.getTarget(getCloudFoundryServer());
+		}
+		return serverTarget;
 	}
 
 	@Override
@@ -780,8 +805,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public StreamingLogToken addApplicationLogListener(final String appName, final ApplicationLogListener listener) {
 		if (appName != null && listener != null) {
 			try {
-				return new BehaviourRequest<StreamingLogToken>(Messages.ADDING_APPLICATION_LOG_LISTENER, this)
-				{
+				return new BehaviourRequest<StreamingLogToken>(Messages.ADDING_APPLICATION_LOG_LISTENER, this) {
 					@Override
 					protected StreamingLogToken doRun(CloudFoundryOperations client, SubMonitor progress)
 							throws CoreException {
@@ -982,13 +1006,12 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			CloudFoundrySpace cloudFoundrySpace = cloudServer.getCloudFoundrySpace();
 
 			if (credentials != null) {
-				client = createClient(url, credentials, cloudFoundrySpace, cloudServer.getSelfSignedCertificate());
+				client = createClient(url, credentials, cloudFoundrySpace, cloudServer.isSelfSigned());
 			}
 			else {
 				String userName = getCloudFoundryServer().getUsername();
 				String password = getCloudFoundryServer().getPassword();
-				client = createClient(url, userName, password, cloudFoundrySpace,
-						cloudServer.getSelfSignedCertificate());
+				client = createClient(url, userName, password, cloudFoundrySpace, cloudServer.isSelfSigned());
 			}
 		}
 		return client;
@@ -1001,7 +1024,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		}
 
 		CloudFoundryServer server = getCloudFoundryServer();
-		HttpProxyConfiguration httpProxyConfiguration = null;
+		HttpProxyConfiguration httpProxyConfiguration = server.getProxyConfiguration();
 		CloudSpace sessionSpace = null;
 
 		if (server.getCloudFoundrySpace() != null) {
@@ -1015,8 +1038,9 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			throw CloudErrorUtil.toCoreException("No Cloud space resolved for " + server.getServer().getId() //$NON-NLS-1$
 					+ ". Please verify that the server is connected and refreshed and try again."); //$NON-NLS-1$
 		}
-		additionalClientSupport = new AdditionalV1Operations(client, sessionSpace, server.getCloudInfo(),
-				server.getSelfSignedCertificate(), httpProxyConfiguration);
+		additionalClientSupport = getRequestFactory().createAdditionalV1Operations(client, sessionSpace,
+				getRequestFactory().getCloudInfo(), httpProxyConfiguration, server.isSelfSigned());
+
 		return additionalClientSupport;
 	}
 
@@ -1047,6 +1071,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	@Override
 	protected void initialize(IProgressMonitor monitor) {
 		super.initialize(monitor);
+		// Set a default target manager
+		setTargetManager(CloudFoundryPlugin.getTargetManager());
 		CloudRebelAppHandler appHandler = CloudFoundryPlugin.getCallback().getJRebelHandler();
 		if (appHandler != null) {
 			appHandler.register();
@@ -1294,7 +1320,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @throws CoreException if it failed to retrieve the orgs and spaces.
 	 */
 	public CloudOrgsAndSpaces getCloudSpaces(IProgressMonitor monitor) throws CoreException {
-		return new BehaviourRequest<CloudOrgsAndSpaces>(Messages.GETTING_ORGS_AND_SPACES, this) { 
+		return new BehaviourRequest<CloudOrgsAndSpaces>(Messages.GETTING_ORGS_AND_SPACES, this) {
 
 			@Override
 			protected CloudOrgsAndSpaces doRun(CloudFoundryOperations client, SubMonitor progress)
@@ -1378,7 +1404,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		final CloudFoundryOperations operations = CloudFoundryServerBehaviour.createExternalClientLogin(url,
 				credentials.getEmail(), credentials.getPassword(), selfSigned, monitor);
 
-		return new ClientRequest<CloudOrgsAndSpaces>(Messages.GETTING_ORGS_AND_SPACES) { 
+		return new ClientRequest<CloudOrgsAndSpaces>(Messages.GETTING_ORGS_AND_SPACES) {
 			@Override
 			protected CloudOrgsAndSpaces doRun(CloudFoundryOperations client, SubMonitor progress)
 					throws CoreException {
@@ -1420,7 +1446,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			String password, boolean selfSigned, IProgressMonitor monitor) throws CoreException {
 		SubMonitor progress = SubMonitor.convert(monitor);
 
-		progress.beginTask(Messages.CONNECTING, IProgressMonitor.UNKNOWN); 
+		progress.beginTask(Messages.CONNECTING, IProgressMonitor.UNKNOWN);
 		try {
 			final CloudFoundryOperations client = createClient(location, userName, password, selfSigned);
 
@@ -1453,7 +1479,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public static void register(String location, String userName, String password, boolean selfSigned,
 			IProgressMonitor monitor) throws CoreException {
 		SubMonitor progress = SubMonitor.convert(monitor);
-		progress.beginTask(Messages.CONNECTING, IProgressMonitor.UNKNOWN); 
+		progress.beginTask(Messages.CONNECTING, IProgressMonitor.UNKNOWN);
 		try {
 			CloudFoundryOperations client = createClient(location, userName, password, selfSigned);
 			client.register(userName, password);
@@ -1816,6 +1842,20 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	public List<String> getBuildpacks(IProgressMonitor monitor) throws CoreException {
 		return getRequestFactory().getBuildpacks().run(monitor);
+	}
+
+	public boolean supportsSsh() {
+		try {
+			return getRequestFactory().supportsSsh();
+		}
+		catch (CoreException e) {
+			CloudFoundryPlugin.logError(e);
+		}
+		return false;
+	}
+
+	public CFInfo getCloudInfo() throws CoreException {
+		return getRequestFactory().getCloudInfo();
 	}
 }
 

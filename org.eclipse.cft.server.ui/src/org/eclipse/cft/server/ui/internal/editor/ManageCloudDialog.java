@@ -133,7 +133,7 @@ public class ManageCloudDialog extends Dialog {
 	 */
 	protected CloudServerURL promptForCloudURL(String serverID, Shell shell, List<CloudServerURL> allURLs,
 			String existingURL, String existingName) {
-		boolean selfSigned = existingURL != null && CloudFoundryServer.getSelfSignedCertificate(existingURL);
+		boolean selfSigned = existingURL != null && CloudFoundryServer.isSelfSigned(existingURL);
 		CloudUrlWizard wizard = new CloudUrlWizard(serverID, allURLs, existingURL, existingName, selfSigned);
 		WizardDialog dialog = new WizardDialog(shell, wizard);
 		if (dialog.open() == Dialog.OK) {
@@ -156,7 +156,7 @@ public class ManageCloudDialog extends Dialog {
 	 */
 	protected AbstractCloudFoundryUrl promptForCloudFoundryUrl(String serverID, Shell shell, List<AbstractCloudFoundryUrl> allURLs,
 			String existingURL, String existingName) {
-		boolean selfSigned = existingURL != null && CloudFoundryServer.getSelfSignedCertificate(existingURL);
+		boolean selfSigned = existingURL != null && CloudFoundryServer.isSelfSigned(existingURL);
 		CloudUrlWizard wizard = new CloudUrlWizard(serverID, existingURL, existingName, selfSigned, allURLs);
 		WizardDialog dialog = new WizardDialog(shell, wizard);
 		if (dialog.open() == Dialog.OK) {
@@ -501,7 +501,7 @@ public class ManageCloudDialog extends Dialog {
 		// Also remove the self-signed settings for cloud URL
 		if (urlsToDelete != null) {
 			for (String url : urlsToDelete) {
-				CloudFoundryServer.setSelfSignedCertificate(false, url);
+				CloudFoundryServer.setSelfSigned(false, url);
 			}
 		}
 

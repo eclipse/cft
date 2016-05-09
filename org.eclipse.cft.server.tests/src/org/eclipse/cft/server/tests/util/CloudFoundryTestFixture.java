@@ -215,7 +215,7 @@ public class CloudFoundryTestFixture {
 			cloudFoundryServer.setUsername(credentials.userEmail);
 
 			cloudFoundryServer.setUrl(getUrl());
-			cloudFoundryServer.setSelfSignedCertificate(credentials.selfSignedCertificate);
+			cloudFoundryServer.setSelfSigned(credentials.selfSignedCertificate);
 
 			setCloudSpace(cloudFoundryServer, credentials.organization, credentials.space);
 
@@ -226,7 +226,7 @@ public class CloudFoundryTestFixture {
 		protected void setCloudSpace(CloudFoundryServer cloudServer, String orgName, String spaceName)
 				throws CoreException {
 			CloudOrgsAndSpaces spaces = CFUiUtil.getCloudSpaces(cloudServer.getUsername(), cloudServer.getPassword(),
-					cloudServer.getUrl(), false, cloudServer.getSelfSignedCertificate(), null);
+					cloudServer.getUrl(), false, cloudServer.isSelfSigned(), null);
 			Assert.isTrue(spaces != null, "Failed to resolve orgs and spaces.");
 			Assert.isTrue(spaces.getDefaultCloudSpace() != null,
 					"No default space selected in cloud space lookup handler.");

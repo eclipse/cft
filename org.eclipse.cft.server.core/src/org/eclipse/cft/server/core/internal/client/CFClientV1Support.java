@@ -18,7 +18,7 @@ import java.net.URI;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
-import org.eclipse.cft.server.core.internal.client.diego.CloudInfoDiego;
+import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -28,8 +28,7 @@ import org.springframework.web.client.RestTemplate;
 /**
  * Contains helper methods to allow access to certain components of an existing
  * v1 client (so an existing connection to Cloud Foundry) that cannot be access
- * via legacy v1 API. Examples are {@link RestTemplate} and additional target
- * information as defined in {@link CloudInfoDiego}
+ * via legacy v1 API. Examples are {@link RestTemplate}
  *
  * @author Kris De Volder
  */
@@ -38,14 +37,14 @@ public class CFClientV1Support {
 
 	protected final RestTemplate restTemplate;
 
-	protected final CloudInfoDiego cloudInfo;
+	private final CFInfo cloudInfo;
 
 	protected final String authorizationUrl;
 
 	protected final CloudSpace existingSessionConnection;
 
-	public CFClientV1Support(CloudFoundryOperations cfClient, CloudSpace existingSessionConnection, CloudInfoDiego cloudInfo,
-			boolean trustSelfSigned, HttpProxyConfiguration httpProxyConfiguration) {
+	public CFClientV1Support(CloudFoundryOperations cfClient, CloudSpace existingSessionConnection, CFInfo cloudInfo,
+			HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSigned) {
 		this.cloudInfo = cloudInfo;
 		this.oauth = getHeaderProvider(cfClient);
 		this.existingSessionConnection = existingSessionConnection;
@@ -92,6 +91,10 @@ public class CFClientV1Support {
 			}
 		};
 		return oauth;
+	}
+
+	protected CFInfo getCloudInfo() {
+		return this.cloudInfo;
 	}
 
 }

@@ -143,7 +143,7 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 		final CloudFoundryServer cloudServer = behaviour.getCloudFoundryServer();
 
 		// If ssh is not supported, try the default legacy file fetching
-		if (!cloudServer.supportsSsh()) {
+		if (!supportsSsh()) {
 			return super.getFile(app, instanceIndex, path, isDir);
 		}
 
@@ -156,14 +156,8 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 					return null;
 				}
 
-				String url = cloudServer.getUrl();
-				String userName = cloudServer.getUsername();
-				String password = cloudServer.getPassword();
-				boolean selfSigned = cloudServer.getSelfSignedCertificate();
-
-				SshClientSupport ssh = SshClientSupport.create(CloudFoundryServerBehaviour
-						.createExternalClientLogin(url, userName, password, selfSigned, progress),
-						new CloudCredentials(userName, password), null, selfSigned);
+				SshClientSupport ssh = SshClientSupport.create(client, getCloudInfo(),
+						cloudServer.getProxyConfiguration(), cloudServer.isSelfSigned());
 
 				Session session = ssh.connect(app, cloudServer, instanceIndex);
 
@@ -186,6 +180,30 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 				}
 			}
 		};
+	}
+
+	@Override
+	public CloudInfoSsh getCloudInfo() throws CoreException {
+		if (cachedInfo == null) {
+			CloudFoundryServer cloudServer = behaviour.getCloudFoundryServer();
+			cachedInfo = new CloudInfoSsh(new CloudCredentials(cloudServer.getUsername(), cloudServer.getPassword()),
+					cloudServer.getUrl(), cloudServer.getProxyConfiguration(), cloudServer.isSelfSigned());
+		}
+		return (CloudInfoSsh) cachedInfo;
+	}
+
+	@Override
+	public boolean supportsSsh() {
+		try {
+			CloudInfoSsh infoDiego = getCloudInfo();
+			return infoDiego != null && infoDiego.getSshClientId() != null && infoDiego.getSshHost() != null
+					&& infoDiego.getSshHost().getHost() != null && infoDiego.getSshHost().getFingerPrint() != null;
+		}
+		catch (CoreException e) {
+			CloudFoundryPlugin.logError(e);
+		}
+		return false;
+
 	}
 
 	protected String getContent(Channel channel) throws CoreException {

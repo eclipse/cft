@@ -22,7 +22,6 @@ package org.eclipse.cft.server.core.internal.debug;
 
 import java.util.List;
 
-import org.cloudfoundry.client.lib.CloudCredentials;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
@@ -30,7 +29,8 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
+import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
+import org.eclipse.cft.server.core.internal.client.diego.CloudInfoSsh;
 import org.eclipse.cft.server.core.internal.ssh.SshClientSupport;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -96,40 +96,46 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 
 	protected DebugConnectionDescriptor getSshConnectionDescriptor(CloudFoundryApplicationModule appModule,
 			CloudFoundryServer cloudServer, int appInstance, int remoteDebugPort, IProgressMonitor monitor)
-					throws CoreException {
+			throws CoreException {
 
-		String url = cloudServer.getUrl();
-		String userName = cloudServer.getUsername();
-		String password = cloudServer.getPassword();
-		boolean selfSigned = cloudServer.getSelfSignedCertificate();
+		CFInfo cloudInfo = cloudServer.getBehaviour().getCloudInfo();
+		if (cloudInfo instanceof CloudInfoSsh) {
+			SshClientSupport ssh = SshClientSupport.create(cloudServer.getBehaviour().getClient(monitor),
+					(CloudInfoSsh) cloudInfo, cloudServer.getProxyConfiguration(),
+					cloudServer.isSelfSigned());
 
-		SshClientSupport ssh = SshClientSupport.create(
-				CloudFoundryServerBehaviour.createExternalClientLogin(url, userName, password, selfSigned, monitor),
-				new CloudCredentials(userName, password), null, selfSigned);
+			try {
+				printToConsole(appModule, cloudServer,
+						NLS.bind(Messages.SshDebugLaunchConfigDelegate_CONNECTING_FOR_USER,
+								appModule.getDeployedApplicationName()),
+						false);
 
-		try {
-			printToConsole(appModule, cloudServer, NLS.bind(Messages.SshDebugLaunchConfigDelegate_CONNECTING_FOR_USER,
-					appModule.getDeployedApplicationName()), false);
-			
-			Session session = ssh.connect(appModule.getApplication(), cloudServer, appInstance);
+				Session session = ssh.connect(appModule.getApplication(), cloudServer, appInstance);
 
-			printToConsole(appModule, cloudServer, NLS.bind(Messages.SshDebugLaunchConfigDelegate_CONNECTION_SUCCESSFUL,
-					appModule.getDeployedApplicationName()), false);
+				printToConsole(appModule, cloudServer,
+						NLS.bind(Messages.SshDebugLaunchConfigDelegate_CONNECTION_SUCCESSFUL,
+								appModule.getDeployedApplicationName()),
+						false);
 
-			int localDebuggerPort = session.setPortForwardingL(0, "localhost", remoteDebugPort); //$NON-NLS-1$
+				int localDebuggerPort = session.setPortForwardingL(0, "localhost", remoteDebugPort); //$NON-NLS-1$
 
-			printToConsole(appModule, cloudServer,
-					NLS.bind(Messages.SshDebugLaunchConfigDelegate_PORT_FORWARDING_SUCCESSFUL, remoteDebugPort,
-							localDebuggerPort),
-					false);
+				printToConsole(appModule, cloudServer,
+						NLS.bind(Messages.SshDebugLaunchConfigDelegate_PORT_FORWARDING_SUCCESSFUL, remoteDebugPort,
+								localDebuggerPort),
+						false);
 
-			return new DebugConnectionDescriptor("localhost", localDebuggerPort); //$NON-NLS-1$
+				return new DebugConnectionDescriptor("localhost", localDebuggerPort); //$NON-NLS-1$
 
+			}
+			catch (JSchException e) {
+				throw CloudErrorUtil.toCoreException("SSH connection error " + e.getMessage());//$NON-NLS-1$
+			}
 		}
-		catch (JSchException e) {
-			throw CloudErrorUtil.asCoreException("SSH connection error " + e.getMessage() //$NON-NLS-1$
-			, e, false);
+		else {
+			throw CloudErrorUtil.toCoreException(
+					"Unable to resolve SSH connection information from the Cloud Foundry target. Please ensure SSH is supported.");//$NON-NLS-1$
 		}
+
 	}
 
 	protected EnvironmentVariable getDebugEnvironment(ApplicationDeploymentInfo info) {
@@ -145,7 +151,7 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 	@Override
 	protected DebugConnectionDescriptor getDebugConnectionDescriptor(CloudFoundryApplicationModule appModule,
 			CloudFoundryServer cloudServer, int appInstance, int remoteDebugPort, IProgressMonitor monitor)
-					throws CoreException {
+			throws CoreException {
 		setEnvironmentVariable(appModule, cloudServer, remoteDebugPort, monitor);
 
 		return getSshConnectionDescriptor(appModule, cloudServer, appInstance, remoteDebugPort, monitor);

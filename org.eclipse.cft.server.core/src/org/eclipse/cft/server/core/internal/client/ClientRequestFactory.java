@@ -28,8 +28,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
+import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
@@ -38,14 +40,17 @@ import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
+import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudServicesUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.EnvironmentVariable;
+import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -55,9 +60,16 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
 import org.springframework.web.client.RestClientException;
 
+/**
+ * A general pre-Diego Client request factory based off the v1 Cloud Foundry
+ * Java client.
+ *
+ */
 public class ClientRequestFactory {
 
 	protected final CloudFoundryServerBehaviour behaviour;
+
+	protected CFInfo cachedInfo;
 
 	public ClientRequestFactory(CloudFoundryServerBehaviour behaviour) {
 		this.behaviour = behaviour;
@@ -428,7 +440,7 @@ public class ClientRequestFactory {
 	 * <p/>
 	 * Information that may be MISSING from the list for each app: service
 	 * bindings, mapped URLs, and app instances.
-	 * @return request 
+	 * @return request
 	 * @throws CoreException
 	 */
 	public BaseClientRequest<List<CloudApplication>> getBasicApplications() throws CoreException {
@@ -636,9 +648,29 @@ public class ClientRequestFactory {
 		return new BehaviourRequest<List<String>>(Messages.ClientRequestFactory_BUILDPACKS, behaviour) {
 			@Override
 			protected List<String> doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				return BuildpackSupport.create(getCloudServer(), client, progress).getBuildpacks();
+				return BuildpackSupport.create(client, getCloudInfo(), getCloudServer().getProxyConfiguration(),
+						getCloudServer().isSelfSigned()).getBuildpacks();
 			}
 		};
+	}
+
+	public CFInfo getCloudInfo() throws CoreException {
+		// cache the info to avoid frequent network connection to Cloud Foundry.
+		if (cachedInfo == null) {
+			CloudFoundryServer cloudServer = behaviour.getCloudFoundryServer();
+			cachedInfo = new CFInfo(new CloudCredentials(cloudServer.getUsername(), cloudServer.getPassword()),
+					cloudServer.getUrl(), cloudServer.getProxyConfiguration(), cloudServer.isSelfSigned());
+		}
+		return cachedInfo;
+	}
+
+	public boolean supportsSsh() {
+		return false;
+	}
+
+	public AdditionalV1Operations createAdditionalV1Operations(CloudFoundryOperations client, CloudSpace sessionSpace,
+			CFInfo cloudInfo, HttpProxyConfiguration httpProxyConfiguration, boolean selfSigned) throws CoreException {
+		return new AdditionalV1Operations(client, sessionSpace, getCloudInfo(), httpProxyConfiguration, selfSigned);
 	}
 
 }

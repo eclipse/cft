@@ -16,21 +16,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.JsonUtil;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.client.diego.CloudInfoDiego;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
 
 public class BuildpackSupport extends CFClientV1Support {
 
-	public BuildpackSupport(CloudFoundryOperations cfClient, CloudInfoDiego cloudInfo, boolean trustSelfSigned,
-			HttpProxyConfiguration httpProxyConfiguration) {
-		super(cfClient, /* no session space required */ null, cloudInfo, trustSelfSigned, httpProxyConfiguration);
+	public BuildpackSupport(CloudFoundryOperations cfClient, CFInfo cloudInfo,
+			HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSigned) {
+		super(cfClient, /* no session space required */ null, cloudInfo, httpProxyConfiguration, trustSelfSigned);
 	}
 
 	public List<String> getBuildpacks() {
@@ -53,18 +49,8 @@ public class BuildpackSupport extends CFClientV1Support {
 		return buildpacks;
 	}
 
-	public static BuildpackSupport create(CloudFoundryServer cloudServer, CloudFoundryOperations client,
-			IProgressMonitor monitor) throws CoreException {
-
-		String userName = cloudServer.getUsername();
-		String password = cloudServer.getPassword();
-		boolean selfSigned = cloudServer.getSelfSignedCertificate();
-		HttpProxyConfiguration proxyConf = null;
-
-		CloudInfoDiego cloudInfo = new CloudInfoDiego(new CloudCredentials(userName, password),
-				client.getCloudControllerUrl().toString(), proxyConf, selfSigned);
-
-		return new BuildpackSupport(client, cloudInfo, selfSigned, proxyConf);
+	public static BuildpackSupport create(CloudFoundryOperations client, CFInfo cloudInfo,
+			HttpProxyConfiguration proxyConf, boolean selfSigned) {
+		return new BuildpackSupport(client, cloudInfo, proxyConf, selfSigned);
 	}
-
 }

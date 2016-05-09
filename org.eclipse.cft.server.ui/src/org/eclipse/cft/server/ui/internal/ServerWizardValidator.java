@@ -136,7 +136,7 @@ public abstract class ServerWizardValidator implements ServerValidator {
 					// Now check if for this server URL there is a stored
 					// value
 					// indicating whether to user self-signed certs or not.
-					boolean storedSelfSign = cfServer.getSelfSignedCertificate();
+					boolean storedSelfSign = cfServer.isSelfSigned();
 
 					if (!storedSelfSign) {
 						String message = NLS.bind(Messages.WARNING_SELF_SIGNED_PROMPT_USER, cfServer.getUrl());
@@ -144,7 +144,7 @@ public abstract class ServerWizardValidator implements ServerValidator {
 						if (MessageDialog.openQuestion(Display.getDefault().getActiveShell(),
 								Messages.TITLE_SELF_SIGNED_PROMPT_USER, message)) {
 							storedSelfSign = true;
-							cfServer.setSelfSignedCertificate(storedSelfSign);
+							cfServer.setSelfSigned(storedSelfSign);
 						}
 					}
 
@@ -191,7 +191,7 @@ public abstract class ServerWizardValidator implements ServerValidator {
 			String userName = cfServer.getUsername();
 			String password = cfServer.getPassword();
 			String url = cfServer.getUrl();
-			boolean acceptSelfSigned = cfServer.getSelfSignedCertificate();
+			boolean acceptSelfSigned = cfServer.isSelfSigned();
 
 			// If credentials changed, clear the space descriptor. If a server
 			// validation is required later on

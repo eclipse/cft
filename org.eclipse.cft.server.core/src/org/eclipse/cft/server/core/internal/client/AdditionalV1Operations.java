@@ -38,13 +38,13 @@ import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
-import org.eclipse.cft.server.core.internal.client.diego.CloudInfoDiego;
+import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
 import org.eclipse.core.runtime.CoreException;
 import org.springframework.http.HttpStatus;
 
 /**
  * Work-around for limitations in v1 cloudfoundry-client-lib (1.1.4 and
- * earlier), primarily private methods that cannot be overridden.
+ * earlier), including methods in the client that cannot be overridden.
  * <p/>
  * This is only used until v2 of the client is adopted by CFT. It should not be
  * used outside of CFT framework as it will be deprecated.
@@ -54,9 +54,9 @@ public class AdditionalV1Operations extends CFClientV1Support {
 
 	private CloudEntityResourceMapper resourceMapper = new CloudEntityResourceMapper();
 
-	public AdditionalV1Operations(CloudFoundryOperations client, CloudSpace sessionSpace, CloudInfoDiego cloudInfo,
-			boolean trustSelfSigned, HttpProxyConfiguration httpProxyConfiguration) {
-		super(client, sessionSpace, cloudInfo, trustSelfSigned, httpProxyConfiguration);
+	public AdditionalV1Operations(CloudFoundryOperations client, CloudSpace sessionSpace, CFInfo cloudInfo,
+			HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSigned) {
+		super(client, sessionSpace, cloudInfo, httpProxyConfiguration, trustSelfSigned);
 	}
 
 	/**

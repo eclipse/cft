@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
@@ -43,7 +42,6 @@ import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.SelfSignedStore;
-import org.eclipse.cft.server.core.internal.client.diego.CloudInfoDiego;
 import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -183,8 +181,6 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 
 	private String serverTypeId;
 	
-	private CloudInfoDiego cloudInfo;
-
 	private ServerCredentialsStore credentialsStore;
 
 	private boolean secureStoreDirty;
@@ -195,13 +191,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 
 	private CloudFoundrySpace cloudSpace;
 
-	private CloudFoundryServerTarget serverTarget;
-
-	private CloudFoundryTargetManager targetManager;
-
 	public CloudFoundryServer() {
-		// Set a default target manager
-		setTargetManager(CloudFoundryPlugin.getTargetManager());
 	}
 
 	public void updateApplicationModule(CloudFoundryApplicationModule module) {
@@ -851,12 +841,12 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	 * @return true if server uses self-signed certificates. False otherwise,
 	 * including if server preference can't be resolved.
 	 */
-	public boolean getSelfSignedCertificate() {
-		return getSelfSignedCertificate(getUrl());
+	public boolean isSelfSigned() {
+		return isSelfSigned(getUrl());
 	}
 
-	public void setSelfSignedCertificate(boolean isSelfSigned) {
-		setSelfSignedCertificate(isSelfSigned, getUrl());
+	public void setSelfSigned(boolean isSelfSigned) {
+		setSelfSigned(isSelfSigned, getUrl());
 	}
 
 	private void updateServerId() {
@@ -1391,7 +1381,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	 * @param isSelfSigned true if server uses self-signed certificate
 	 * @param cloudServerURL non-null Cloud Foundry server URL
 	 */
-	public static void setSelfSignedCertificate(boolean isSelfSigned, String cloudServerURL) {
+	public static void setSelfSigned(boolean isSelfSigned, String cloudServerURL) {
 		try {
 			new SelfSignedStore(cloudServerURL).setSelfSignedCert(isSelfSigned);
 		}
@@ -1400,7 +1390,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		}
 	}
 
-	public static boolean getSelfSignedCertificate(String cloudServerURL) {
+	public static boolean isSelfSigned(String cloudServerURL) {
 		try {
 			return new SelfSignedStore(cloudServerURL).isSelfSignedCert();
 		}
@@ -1477,41 +1467,9 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		}
 	}
 	
-	public synchronized void setTargetManager(CloudFoundryTargetManager targetManager) {
-		// Target manager cannot be null.
-		if (targetManager != null) {
-			this.targetManager = targetManager;
-		}
+	public HttpProxyConfiguration getProxyConfiguration() {
+		// Default returns nothing as proxy configuration is not yet supported.
+		// May be removed and replaced with v2 client equivalent
+		return null;
 	}
-
-	/**
-	 * 
-	 * @return never null.
-	 */
-	public synchronized CloudFoundryServerTarget getTarget() {
-		if (serverTarget == null) {
-			serverTarget = targetManager.getTarget(this);
-		}
-		return serverTarget;
-	}
-
-	public synchronized CloudInfoDiego getCloudInfo() {
-		if (cloudInfo == null) {
-			HttpProxyConfiguration proxyConf = null;
-			// Must use external means of finding Api version as the v2 CF
-			// java-client-lib does not have API to obtain the CC version.
-			cloudInfo = new CloudInfoDiego(new CloudCredentials(getUsername(), getPassword()), getUrl(), proxyConf,
-					getSelfSignedCertificate());
-		}
-		return cloudInfo;
-	}
-	
-	public synchronized boolean supportsSsh() {
-		CloudInfoDiego info = getCloudInfo();
-
-		return info.getSshClientId() != null && info.getSshHost() != null && info.getSshHost().getHost() != null
-				&& info.getSshHost().getFingerPrint() != null;
-	}
-	
-	
 }

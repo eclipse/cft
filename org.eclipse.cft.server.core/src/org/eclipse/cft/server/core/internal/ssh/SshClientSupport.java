@@ -19,7 +19,6 @@ import java.util.List;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.CloudOperationException;
@@ -28,7 +27,7 @@ import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CFClientV1Support;
-import org.eclipse.cft.server.core.internal.client.diego.CloudInfoDiego;
+import org.eclipse.cft.server.core.internal.client.diego.CloudInfoSsh;
 import org.eclipse.core.runtime.CoreException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,9 +44,9 @@ public class SshClientSupport extends CFClientV1Support {
 
 	private String sshClientId;
 
-	public SshClientSupport(CloudFoundryOperations cfClient, CloudInfoDiego cloudInfo, boolean trustSelfSigned,
-			HttpProxyConfiguration httpProxyConfiguration) {
-		super(cfClient, /* no session space required */ null, cloudInfo, trustSelfSigned, httpProxyConfiguration);
+	public SshClientSupport(CloudFoundryOperations cfClient, CloudInfoSsh cloudInfo,
+			HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSigned) {
+		super(cfClient, /* no session space required */ null, cloudInfo, httpProxyConfiguration, trustSelfSigned);
 		this.sshClientId = cloudInfo.getSshClientId();
 	}
 
@@ -88,16 +87,12 @@ public class SshClientSupport extends CFClientV1Support {
 	}
 
 	public SshHost getSshHost() {
-		return cloudInfo.getSshHost();
+		return getCloudInfo().getSshHost();
 	}
 
-	public static SshClientSupport create(final CloudFoundryOperations client, CloudCredentials creds,
+	public static SshClientSupport create(final CloudFoundryOperations client, CloudInfoSsh cloudInfo,
 			HttpProxyConfiguration proxyConf, boolean selfSigned) {
-
-		CloudInfoDiego cloudInfo = new CloudInfoDiego(creds, client.getCloudControllerUrl().toString(), proxyConf,
-				selfSigned);
-
-		return new SshClientSupport(client, cloudInfo, selfSigned, proxyConf);
+		return new SshClientSupport(client, cloudInfo, proxyConf, selfSigned);
 	}
 
 	public Session connect(CloudApplication app, CloudFoundryServer cloudServer, int appInstance) throws CoreException {
@@ -125,6 +120,11 @@ public class SshClientSupport extends CFClientV1Support {
 			throw CloudErrorUtil.asCoreException("SSH connection error " + e.getMessage() //$NON-NLS-1$
 					, e, false);
 		}
+	}
+
+	@Override
+	protected CloudInfoSsh getCloudInfo() {
+		return (CloudInfoSsh) super.getCloudInfo();
 	}
 
 	protected UserInfo getUserInfo(final String accessToken) {

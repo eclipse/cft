@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,14 +23,23 @@ package org.eclipse.cft.server.core.internal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.osgi.util.NLS;
+
 public class CloudFoundryTargetManager {
 
+	// Ordered list of targets with highest priority first
 	List<CloudFoundryServerTarget> targets = new ArrayList<CloudFoundryServerTarget>();
 
 	public CloudFoundryTargetManager() {
 
 	}
 
+	/**
+	 * Targets are priorities in the order that they are added, with first added
+	 * having highest priority
+	 * @param target
+	 */
 	public synchronized void addTarget(CloudFoundryServerTarget target) {
 		if (target != null && !targets.contains(target)) {
 			targets.add(target);
@@ -43,30 +52,20 @@ public class CloudFoundryTargetManager {
 	 * @return non-null server target. If a specific one for the given server
 	 * vendor is not found, a default one is returned
 	 */
-	public synchronized CloudFoundryServerTarget getTarget(CloudFoundryServer cloudServer) {
+	public synchronized CloudFoundryServerTarget getTarget(CloudFoundryServer cloudServer) throws CoreException {
 		// Fetch by server URL first
-		CloudFoundryServerTarget serverTarget = null;
-		String serverUrl = cloudServer.getUrl();
+		CloudFoundryServerTarget cftarget = null;
 		for (CloudFoundryServerTarget target : targets) {
-			if (serverUrl.contains(target.getServerUri())) {
-				serverTarget = target;
+			if (target.supports(cloudServer.getServer())) {
+				cftarget = target;
 				break;
 			}
 		}
 
-		// Find a target definition that supports SSH
-		if (serverTarget == null && cloudServer.supportsSsh()) {
-			for (CloudFoundryServerTarget target : targets) {
-				if (target.supportsSsh()) {
-					serverTarget = target;
-					break;
-				}
-			}
+		if (cftarget == null) {
+			throw CloudErrorUtil.toCoreException(NLS.bind(Messages.CloudFoundryTargetManager_NO_TARGET_DEFINITION_FOUND,
+					cloudServer.getServer().getId()));
 		}
-
-		if (serverTarget == null) {
-			serverTarget = CloudFoundryServerTarget.DEFAULT;
-		}
-		return serverTarget;
+		return cftarget;
 	}
 }

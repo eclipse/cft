@@ -287,7 +287,7 @@ public class CloudFoundryAccountSection extends ServerEditorSection implements C
 				final String space = spaceText.getText();
 				try {
 					CFUiUtil.validateCredentials(userName, password, url, false,
-							cfServer.getSelfSignedCertificate(), null);
+							cfServer.isSelfSigned(), null);
 
 					if (org != null && space != null) {
 						validateLabel.setForeground(validateLabel.getDisplay().getSystemColor(SWT.COLOR_BLUE));

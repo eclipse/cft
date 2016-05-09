@@ -79,7 +79,7 @@ public class RegisterAccountWizard extends Wizard {
 				public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
 					try {
 						CloudFoundryServerBehaviour.register(url, email, password,
-								cloudServer.getSelfSignedCertificate(), monitor);
+								cloudServer.isSelfSigned(), monitor);
 					}
 					catch (CoreException e) {
 						throw new InvocationTargetException(e);

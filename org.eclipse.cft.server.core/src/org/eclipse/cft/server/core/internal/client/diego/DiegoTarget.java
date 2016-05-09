@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,25 +20,27 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client.diego;
 
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudFoundryServerTarget;
+import org.eclipse.cft.server.core.internal.CloudServerUtil;
 import org.eclipse.cft.server.core.internal.client.ClientRequestFactory;
-import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.wst.server.core.IServer;
 
-public class DiegoCloudFoundryTarget extends CloudFoundryServerTarget {
+public class DiegoTarget extends CloudFoundryServerTarget {
 
 	@Override
-	public String getServerUri() {
-		return ALL_SERVERS;
+	public ClientRequestFactory createRequestFactory(IServer server) throws CoreException {
+		CloudFoundryServer cloudServer = CloudServerUtil.getCloudServer(server);
+		return new DiegoRequestFactory(cloudServer.getBehaviour());
 	}
 
 	@Override
-	public ClientRequestFactory getRequestFactory(CloudFoundryServerBehaviour behaviour) {
-		return new DiegoRequestFactory(behaviour);
-	}
-
-	@Override
-	public boolean supportsSsh() {
-		return true;
+	public boolean supports(IServer server) throws CoreException {
+		// To check if Server is "Diego", check if the server supports
+		// SSH. If so, assume it is a Diego target
+		// as SSH is only available in Diego or more recent Cloud Foundry
+		return createRequestFactory(server).supportsSsh();
 	}
 
 }

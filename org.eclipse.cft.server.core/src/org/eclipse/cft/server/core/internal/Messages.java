@@ -218,6 +218,8 @@ public class Messages extends NLS {
 	public static String CloudFoundryServerBehaviour_UPDATE_SERVICE_BINDING;
 
 	public static String CloudFoundryServerBehaviour_WAITING_APP_START;
+	
+	public static String CloudFoundryTargetManager_NO_TARGET_DEFINITION_FOUND;
 
 	public static String CloudRebelAppHandler_ERROR;
 
