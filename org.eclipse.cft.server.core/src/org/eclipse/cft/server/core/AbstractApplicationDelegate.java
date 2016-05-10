@@ -82,7 +82,7 @@ public abstract class AbstractApplicationDelegate {
 	 * determine what resources have changed prior to the Cloud Foundry
 	 * framework pushing any changes to the application.
 	 * <p/>
-	 * For Java Web type applications (Spring, Grails, Java Web), it is not
+	 * For Java Web type applications (Spring, Java Web), it is not
 	 * necessary to provide an explicit application archive, as the Cloud
 	 * Foundry plugin framework generates .war files for such applications and
 	 * uses a built-in default application archive that reads the .war file.

@@ -35,7 +35,7 @@ import org.eclipse.wst.server.core.IServer;
 
 /**
  * Java Web applications are the standard type of applications supported on
- * Cloud Foundry. They include Spring, Grails, Lift and Java Web.
+ * Cloud Foundry. They include Spring, Lift and Java Web.
  * <p/>
  * This application delegate supports the above Java Web frameworks.
  */

@@ -47,7 +47,7 @@ import org.eclipse.wst.server.core.model.IModuleResource;
  * resources have changed prior to publishing any changes to the application,
  * and to generate an input stream for all files that need to be published.
  * <p/>
- * For Java Web type applications (Spring, Grails, Java web), it is not
+ * For Java Web type applications (Spring, Java web), it is not
  * necessary to provide a explicit application archive, as the Cloud Foundry
  * plugin framework generates .war files for such applications and uses a
  * built-in default application archive that works on this .war files.

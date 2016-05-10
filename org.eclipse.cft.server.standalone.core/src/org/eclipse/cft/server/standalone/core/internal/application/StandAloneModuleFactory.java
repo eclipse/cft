@@ -75,7 +75,7 @@ public class StandAloneModuleFactory extends ProjectModuleFactoryDelegate {
 
 	protected boolean canCreateModule(IProject project) {
 		// Check if it is a Java project that isn't already supported by another
-		// framework (Spring, Grails, etc..), as those
+		// framework (Spring, etc..), as those
 		// modules are created separately.
 		return canHandle(project);
 	}

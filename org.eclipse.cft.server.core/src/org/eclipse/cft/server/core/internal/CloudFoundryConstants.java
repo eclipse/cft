@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,17 +22,11 @@ package org.eclipse.cft.server.core.internal;
 
 public class CloudFoundryConstants {
 
-	public static final String GRAILS_NATURE = "com.springsource.sts.grails.core.nature"; //$NON-NLS-1$
-
 	public static final String LIFT = "lift/1.0"; //$NON-NLS-1$
 
 	public static final String JAVA_WEB = "java_web"; //$NON-NLS-1$
 
 	public static final String SPRING = "spring"; //$NON-NLS-1$
-
-	public static final String GRAILS = "grails"; //$NON-NLS-1$
-
-	public static final String ID_GRAILS_APP = "grails.app"; //$NON-NLS-1$
 
 	public static final String ID_WEB_MODULE = "jst.web"; //$NON-NLS-1$
 	
