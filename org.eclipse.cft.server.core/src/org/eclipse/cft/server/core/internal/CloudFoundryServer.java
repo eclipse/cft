@@ -559,7 +559,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 			if (remove != null && remove.length > 0) {
 				if (getData() != null) {
 					for (IModule module : remove) {
-						getData().tagAsDeployed(module);
+						getData().moduleAdditionCompleted(module);
 					}
 				}
 
@@ -580,7 +580,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 					for (IModule module : add) {
 						// avoid automatic deletion before module has been
 						// deployed
-						getData().tagAsUndeployed(module);
+						getData().moduleBeingAdded(module);
 					}
 				}
 			}
@@ -956,7 +956,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 					}
 					allModules.add(cloudModule);
 				}
-				else if (getData() != null && getData().isUndeployed(module)) {
+				else if (getData() != null && getData().isModuleBeingAdded(module)) {
 					// deployment is still in progress
 					allModules.add(cloudModule);
 				}
@@ -1189,7 +1189,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 				// if cloud application does not exist, first check that it
 				// is not currently being deployed. Otherwise
 				// delete it, as it means it no longer exists in the Cloud space
-				else if (!getData().isUndeployed(wstModule)) {
+				else if (!getData().isModuleBeingAdded(wstModule)) {
 
 					// Remove the WST module from WST server if it is still
 					// present
@@ -1345,10 +1345,10 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		return Status.OK_STATUS;
 	}
 
-	public void tagAsDeployed(IModule module) {
+	public void moduleAdditionCompleted(IModule module) {
 		synchronized (this) {
 			if (getData() != null) {
-				getData().tagAsDeployed(module);
+				getData().moduleAdditionCompleted(module);
 			}
 		}
 	}

@@ -56,7 +56,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 		// a module refresh event
 		String prefix = "testInstanceUpdate";
 
-		String expectedAppName = harness.getDefaultWebAppName(prefix);
+		String expectedAppName = harness.getWebAppName(prefix);
 
 		createWebApplicationProject();
 		boolean startApp = true;
@@ -109,7 +109,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
 		String prefix = "testEnvVarUpdate";
 
-		String expectedAppName = harness.getDefaultWebAppName(prefix);
+		String expectedAppName = harness.getWebAppName(prefix);
 
 		createWebApplicationProject();
 		boolean startApp = true;
@@ -154,7 +154,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 	public void testAppURLUpdate() throws Exception {
 
 		String prefix = "testAppURLUpdate";
-		final String expectedAppName = harness.getDefaultWebAppName(prefix);
+		final String expectedAppName = harness.getWebAppName(prefix);
 
 		createWebApplicationProject();
 		boolean startApp = true;
@@ -299,7 +299,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 	public void testPushApplicationStopMode() throws Exception {
 
 		String prefix = "testPushApplicationStopMode";
-		String expectedAppName = harness.getDefaultWebAppName(prefix);
+		String expectedAppName = harness.getWebAppName(prefix);
 		IProject project = createWebApplicationProject();
 		boolean startApp = false;
 		getTestFixture().configureForApplicationDeployment(expectedAppName,
@@ -321,7 +321,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
 		String prefix = "testPushApplicationStartMode";
 
-		String expectedAppName = harness.getDefaultWebAppName(prefix);
+		String expectedAppName = harness.getWebAppName(prefix);
 		IProject project = createWebApplicationProject();
 		boolean startApp = true;
 

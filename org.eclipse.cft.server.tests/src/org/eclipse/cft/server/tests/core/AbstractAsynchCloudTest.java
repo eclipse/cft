@@ -58,7 +58,7 @@ public abstract class AbstractAsynchCloudTest extends AbstractCloudFoundryTest {
 	 */
 	protected void asynchExecuteOperation(final ICloudFoundryOperation op, String testPrefix, int expectedEventType)
 			throws Exception {
-		String expectedAppName = testPrefix != null ? harness.getDefaultWebAppName(testPrefix) : null;
+		String expectedAppName = testPrefix != null ? harness.getWebAppName(testPrefix) : null;
 		IRunnableWithProgress runnable = new IRunnableWithProgress() {
 
 			@Override
@@ -146,7 +146,7 @@ public abstract class AbstractAsynchCloudTest extends AbstractCloudFoundryTest {
 	protected CloudFoundryApplicationModule deployApplicationWithModuleRefresh(String appPrefix, boolean startApp,
 			String buildpack) throws Exception {
 
-		String appName = harness.getDefaultWebAppName(appPrefix);
+		String appName = harness.getWebAppName(appPrefix);
 		ModulesRefreshListener listener = ModulesRefreshListener.getListener(appName, cloudServer,
 				CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
 		CloudFoundryApplicationModule appModule = deployApplication(appPrefix, startApp, buildpack);

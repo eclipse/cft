@@ -194,7 +194,7 @@ public class StartOperation extends RestartOperation {
 					CloudFoundryPlugin.trace("Application " + deploymentName //$NON-NLS-1$
 							+ " pushed to Cloud Foundry server."); //$NON-NLS-1$
 
-					cloudServer.tagAsDeployed(getModule());
+					cloudServer.moduleAdditionCompleted(getModule());
 
 					return null;
 				}

@@ -36,8 +36,10 @@ import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServicesUtil;
+import org.eclipse.cft.server.core.internal.ModuleCache.ServerData;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.tests.util.CloudFoundryTestUtil;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -71,7 +73,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		String prefix = "testApplicationDeploymentInfo";
 
-		String expectedAppName = harness.getDefaultWebAppName(prefix);
+		String expectedAppName = harness.getWebAppName(prefix);
 
 		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
@@ -141,8 +143,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		// Configure the test fixture for deployment.
 		// This step is a substitute for the Application deployment wizard
-		String projectName = harness.getDefaultWebAppProjectName();
-		String expectedAppName = harness.getDefaultWebAppName(appPrefix);
+		String projectName = harness.getProjectName();
+		String expectedAppName = harness.getWebAppName(appPrefix);
 		getTestFixture().configureForApplicationDeployment(expectedAppName,
 				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, false);
 
@@ -174,8 +176,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		// Configure the test fixture for deployment.
 		// This step is a substitute for the Application deployment wizard
-		String projectName = harness.getDefaultWebAppProjectName();
-		String expectedAppName = harness.getDefaultWebAppName(appPrefix);
+		String projectName = harness.getProjectName();
+		String expectedAppName = harness.getWebAppName(appPrefix);
 		getTestFixture().configureForApplicationDeployment(expectedAppName,
 				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, false);
 
@@ -211,7 +213,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(prefix);
 		assertNotNull("Expected non-null Cloud Foundry application module", appModule);
 
-		IModule module = getModule(harness.getDefaultWebAppProjectName());
+		IModule module = getModule(harness.getProjectName());
 
 		// Now CHECK that the expected conditions in the helper method assert to
 		// expected values
@@ -230,6 +232,91 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 	}
 
+	public void testBug492609_ModuleDeployBuildpackError() throws Exception {
+		// Tests that module is NOT created when there is a buildpack error.
+		// I.e.
+		// the error handlers correctly cleans up the module if app failed to be
+		// created in CF
+		String prefix = "testModuleBuildpackError";
+		createWebApplicationProject();
+
+		boolean startApp = true;
+		String expectedAppName = harness.getWebAppName(prefix);
+
+		// Must use the project name, as IModules are created mapped to project
+		// names, rather than the CF app name (which can be different)
+		String moduleName = harness.getProjectName();
+
+		String wrongBuildpack = "WRONG_BUILDPACK_HHH";
+		Exception expectedError = null;
+		try {
+			deployApplication(prefix, startApp, wrongBuildpack);
+		}
+		catch (Exception e) {
+			expectedError = e;
+		}
+
+		assertNotNull("Expected error to occur during deployment with wrong buildpack", expectedError);
+
+		// BUG TEST: verify that the module is removed from the cache that
+		// tracks modules being added as well,
+		// as this was the source of the bug
+		// Without the fix, the check below fails, as it is able to find a
+		// module in the cache, so this does test that the
+		// fix indeed works
+		ServerData cache = CloudFoundryPlugin.getModuleCache().getData(cloudServer.getServerOriginal());
+		List<IModule> modulesBeingAdded = cache.getModulesBeingAdded();
+		IModule beingAdded = null;
+		for (IModule mod : modulesBeingAdded) {
+			if (mod.getName().equals(moduleName) ||
+			/*
+			 * should not be the case that mods are created with the different
+			 * CF app name, but test anyway to ensure no modules for the app are
+			 * in the cache
+			 */
+					mod.getName().equals(expectedAppName)) {
+				beingAdded = mod;
+				break;
+			}
+		}
+		assertNull("Expected IModule to not exist in Server module cache.", beingAdded);
+
+		// Also make sure the module cannot be found in WTP itself
+		IModule module = getModule(moduleName);
+		assertNull("Expected IModule to not exist after buildpack error.", module);
+
+		CloudFoundryApplicationModule cloudAppModule = cloudServer.getExistingCloudModule(expectedAppName);
+		assertNull("Expected cloud module to not exist after buildpack error.", cloudAppModule);
+
+		// Verify the application is indeed not in Cloud Foundry. In other
+		// words, list of modules
+		// in server must be synched with what is in CF
+		CloudFoundryOperations externalClient = testFixture.createExternalClient();
+
+		Exception notfound = null;
+		try {
+			// 404 error is thrown if app cannot be found
+			externalClient.getApplication(expectedAppName);
+		}
+		catch (Exception e) {
+			notfound = e;
+		}
+
+		assertNotNull("Expected application not found error", notfound);
+
+		List<CloudApplication> apps = serverBehavior.getApplications(new NullProgressMonitor());
+		CloudApplication foundApp = null;
+		for (CloudApplication app : apps) {
+			if (app.getName().equals(expectedAppName)) {
+				foundApp = app;
+				break;
+			}
+		}
+
+		assertNull("Expected application not to be found in Cloud Foundry " + expectedAppName, foundApp);
+
+	}
+
 	public void testCreateDeployAppHelpersStopMode() throws Exception {
 		String prefix = "testCDAppHelpersStopMode";
 		createWebApplicationProject();
@@ -244,7 +331,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		// Now CHECK that the expected conditions in the helper method assert to
 		// expected values
-		IModule module = getModule(harness.getDefaultWebAppProjectName());
+		IModule module = getModule(harness.getProjectName());
 
 		appModule = assertCloudFoundryModuleExists(module, prefix);
 
@@ -325,7 +412,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		// The following are the expected conditions for the server behaviour to
 		// determine that the app is running
-		String appName = harness.getDefaultWebAppName(prefix);
+		String appName = harness.getWebAppName(prefix);
 
 		// Verify start states in the module are correct
 		assertTrue(appModule.getState() == IServer.STATE_STARTED);
@@ -370,7 +457,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		// The following are the expected conditions for the server behaviour to
 		// determine that the app is running
-		String appName = harness.getDefaultWebAppName(prefix);
+		String appName = harness.getWebAppName(prefix);
 
 		// Verify start states in the module are correct
 		assertTrue(appModule.getState() == IServer.STATE_STARTED);
@@ -451,7 +538,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 	public void testDeleteModuleExternally() throws Exception {
 
 		String prefix = "testDeleteModuleExternally";
-		String appName = harness.getDefaultWebAppName(prefix);
+		String appName = harness.getWebAppName(prefix);
 		createWebApplicationProject();
 
 		boolean startApp = true;
@@ -500,8 +587,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		// Cloud module should have been created.
 		Collection<CloudFoundryApplicationModule> appModules = cloudServer.getExistingCloudModules();
-		assertEquals(harness.getDefaultWebAppName(appPrefix),
-				appModules.iterator().next().getDeployedApplicationName());
+		assertEquals(harness.getWebAppName(appPrefix), appModules.iterator().next().getDeployedApplicationName());
 
 		serverBehavior.disconnect(new NullProgressMonitor());
 

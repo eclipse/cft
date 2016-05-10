@@ -91,6 +91,13 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 			getBehaviour().getOperationsScheduler().updateOnPublish(getModule());
 		}
 		catch (OperationCanceledException e) {
+			// [492609] - Modules are not correctly marked as "completed" when
+			// cancellation occurs.
+			// This results in the internal server module cache going out of
+			// synch with Cloud Foundry. By telling the cache that module addition has been completed, the cache
+			// can be correctly removed
+			getBehaviour().getCloudFoundryServer().moduleAdditionCompleted(getModule());
+			
 			// ignore so webtools does not show an exception
 			((Server) getBehaviour().getServer()).setModuleState(getModules(), IServer.STATE_UNKNOWN);
 
@@ -115,9 +122,20 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 						false, false);
 			}
 		}
-		catch (CoreException e) {
+		catch (Throwable e) {
 
-			((Server) getBehaviour().getServer()).setModulePublishState(getModules(), IServer.PUBLISH_STATE_UNKNOWN);
+			// [492609] - Modules are not correctly marked as "completed" when
+			// error occurs.
+			// This results in the internal server module cache going out of
+			// synch with Cloud Foundry
+			// when errors occur during application deployment, making deletion
+			// of the application fail
+			// as the internal cache does not get correctly updated below since
+			// the cache retains obsolete module information when error occurs and still assumes
+			// the module is still being added and will prevent it from being
+			// deleted. By telling the cache that module addition has been completed, the cache
+			// can be correctly updated
+			getBehaviour().getCloudFoundryServer().moduleAdditionCompleted(getModule());
 
 			// [486691] - On error, update the module to ensure that the it is
 			// in a consistent state with the IServer.
@@ -125,13 +143,14 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 			// NOT to be deployed
 			// but still exist in the Cloud can result in unexpected behaviour
 			// when deleting the module and attempting the publish operation
-			// again (for example, archiving failing or failure to properly prompt for deployment details)
+			// again (for example, archiving failing or failure to properly
+			// prompt for deployment details)
 			getBehaviour().operations().updateModule(getModule()).run(monitor);
 
 			CloudFoundryApplicationModule appModule = getBehaviour().getCloudFoundryServer()
 					.getExistingCloudModule(getModule());
-			if (appModule != null) {
-				appModule.setError(e);
+			if (appModule != null && e instanceof CoreException) {
+				appModule.setError((CoreException)e);
 			}
 			throw e;
 		}

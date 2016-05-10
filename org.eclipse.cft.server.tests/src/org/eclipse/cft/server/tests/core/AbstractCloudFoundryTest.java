@@ -157,7 +157,7 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 		// only
 		// creates a "pre-deployment" WST IModule for the given project.
 		IProject project = harness.createDefaultProjectAndAddModule();
-		String projectName = harness.getDefaultWebAppProjectName();
+		String projectName = harness.getProjectName();
 
 		assertEquals(project.getName(), projectName);
 
@@ -188,7 +188,7 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 		// used as opposed to the
 		// app name, as the project name and app name may differ, and the
 		// IModule is mapped to the project.
-		IModule module = getModule(harness.getDefaultWebAppProjectName());
+		IModule module = getModule(harness.getProjectName());
 
 		// Once the application is started, verify that the Cloud module is
 		// valid,
@@ -225,7 +225,7 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 		// The deployed application name in the Cloud module MUST match the
 		// expected application name
-		assertEquals(harness.getDefaultWebAppName(appPrefix), appModule.getDeployedApplicationName());
+		assertEquals(harness.getWebAppName(appPrefix), appModule.getDeployedApplicationName());
 
 		return appModule;
 	}
@@ -259,9 +259,9 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 	protected CloudFoundryApplicationModule deployApplication(String appPrefix, int memory, boolean startApp,
 			List<EnvironmentVariable> variables, List<CFServiceInstance> services, String buildpack) throws Exception {
 
-		String projectName = harness.getDefaultWebAppProjectName();
+		String projectName = harness.getProjectName();
 
-		String expectedAppName = harness.getDefaultWebAppName(appPrefix);
+		String expectedAppName = harness.getWebAppName(appPrefix);
 
 		if (buildpack != null) {
 			debug("Using buildpack: " + buildpack + " for app " + expectedAppName);

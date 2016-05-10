@@ -97,7 +97,7 @@ public class MapToProjectOperation implements ICloudFoundryOperation {
 		ModuleCache.ServerData data = moduleCache.getData(cloudServer.getServerOriginal());
 
 		// if it is being deployed, do not perform remap
-		if (data.isUndeployed(appModule.getLocalModule())) {
+		if (data.isModuleBeingAdded(appModule.getLocalModule())) {
 			throw CloudErrorUtil
 					.toCoreException("Unable to unlink the module. It is currently being published. Please wait until the publish operation is complete before relinking the project."); //$NON-NLS-1$
 		}

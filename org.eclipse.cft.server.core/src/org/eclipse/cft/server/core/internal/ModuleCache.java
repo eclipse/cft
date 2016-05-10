@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,7 +30,6 @@ import java.util.Set;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -61,9 +60,9 @@ public class ModuleCache {
 		private IServer server;
 
 		/**
-		 * Modules added in this session.
+		 * Modules actively being added.
 		 */
-		private final List<IModule> undeployedModules = new ArrayList<IModule>();
+		private final List<IModule> modulesBeingAdded = new ArrayList<IModule>();
 
 		private final Map<String, CloudFoundryApplicationModule> mapProject = new HashMap<String, CloudFoundryApplicationModule>();
 
@@ -119,8 +118,8 @@ public class ModuleCache {
 			return password;
 		}
 
-		public synchronized boolean isUndeployed(IModule module) {
-			return undeployedModules.contains(module);
+		public synchronized boolean isModuleBeingAdded(IModule module) {
+			return modulesBeingAdded.contains(module);
 		}
 
 		public synchronized void remove(CloudFoundryApplicationModule module) {
@@ -157,12 +156,20 @@ public class ModuleCache {
 			this.password = password;
 		}
 
-		public synchronized void tagAsDeployed(IModule module) {
-			undeployedModules.remove(module);
+		public synchronized void moduleAdditionCompleted(IModule module) {
+			modulesBeingAdded.remove(module);
 		}
 
-		public synchronized void tagAsUndeployed(IModule module) {
-			undeployedModules.add(module);
+		public synchronized void moduleBeingAdded(IModule module) {
+			modulesBeingAdded.add(module);
+		}
+		
+		/**
+		 * 
+		 * @return copy of the cache of modules being added. Used for testing only
+		 */
+		public synchronized List<IModule> getModulesBeingAdded() {
+			return new ArrayList<IModule>(modulesBeingAdded);
 		}
 
 		public synchronized void tagForReplace(CloudFoundryApplicationModule appModule) {

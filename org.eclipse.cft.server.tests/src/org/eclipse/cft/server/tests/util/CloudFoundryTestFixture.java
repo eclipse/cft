@@ -85,7 +85,7 @@ import org.osgi.framework.Bundle;
  */
 public class CloudFoundryTestFixture {
 
-	public static final String DYNAMIC_WEBAPP_NAME = "basic-dynamic-webapp";
+	public static final String DYNAMIC_WEBPROJECT_NAME = "basic-dynamic-webapp";
 
 	public static final String PASSWORD_PROPERTY = "password";
 
@@ -168,7 +168,7 @@ public class CloudFoundryTestFixture {
 		 * @throws Exception
 		 */
 		public IProject createDefaultProjectAndAddModule() throws Exception {
-			IProject project = createProject(getDefaultWebAppProjectName());
+			IProject project = createProject(getProjectName());
 			projectCreated = true;
 			addModule(project);
 			return project;
@@ -381,15 +381,21 @@ public class CloudFoundryTestFixture {
 		 * @throws CoreException
 		 */
 		public String getExpectedDefaultURL(String appPrefix) throws CoreException {
-			return getDefaultWebAppName(appPrefix) + '.' + getDomain();
+			return getWebAppName(appPrefix) + '.' + getDomain();
 		}
 
-		public String getDefaultWebAppProjectName() {
-			return DYNAMIC_WEBAPP_NAME;
+		/**
+		 *
+		 * @return name of the application project. this may NOT be the same as
+		 * the CF application name as users have option to specify a different
+		 * app name when deploying.
+		 */
+		public String getProjectName() {
+			return DYNAMIC_WEBPROJECT_NAME;
 		}
 
-		public String getDefaultWebAppName(String appPrefix) {
-			return appPrefix + '_' + randomPrefix + '_' + getDefaultWebAppProjectName();
+		public String getWebAppName(String appPrefix) {
+			return appPrefix + '_' + randomPrefix + '_' + getProjectName();
 		}
 
 		public TestServlet startMockServer() throws Exception {
@@ -483,8 +489,7 @@ public class CloudFoundryTestFixture {
 	}
 
 	public void configureForApplicationDeployment(String fullApplicationName, int memory, boolean startApp,
-			List<EnvironmentVariable> variables, List<CFServiceInstance> services, String buildpack)
-			throws Exception {
+			List<EnvironmentVariable> variables, List<CFServiceInstance> services, String buildpack) throws Exception {
 		CloudFoundryPlugin
 				.setCallback(new TestCallback(fullApplicationName, memory, startApp, variables, services, buildpack));
 	}
