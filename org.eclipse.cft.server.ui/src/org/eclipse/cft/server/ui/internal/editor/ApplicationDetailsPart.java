@@ -47,6 +47,7 @@ import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
 import org.eclipse.cft.server.core.internal.debug.CloudFoundryProperties;
 import org.eclipse.cft.server.core.internal.debug.DebugOperationType;
 import org.eclipse.cft.server.core.internal.jrebel.CloudRebelAppHandler;
+import org.eclipse.cft.server.core.internal.jrebel.JRebelIntegrationUtility;
 import org.eclipse.cft.server.rse.internal.ConfigureRemoteCloudFoundryAction;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.CFUiUtil;
@@ -409,7 +410,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 
 		if (jrebelManualAppUrlUpdate != null) {
 			// URL updating only is enabled when app is running
-			jrebelManualAppUrlUpdate.setEnabled(CloudRebelAppHandler.isJRebelEnabled(module));
+			jrebelManualAppUrlUpdate.setEnabled(JRebelIntegrationUtility.isJRebelEnabled(module));
 		}
 
 		// The rest of the refresh requires appModule to be non-null
@@ -737,7 +738,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 	}
 
 	private void createJRebelSection(Composite parent) {
-		if (!CloudRebelAppHandler.isJRebelIDEInstalled()) {
+		if (!JRebelIntegrationUtility.isJRebelIDEInstalled()) {
 			return;
 		}
 		Label label = createLabel(parent, Messages.ApplicationDetailsPart_TEXT_JREBEL, SWT.CENTER);

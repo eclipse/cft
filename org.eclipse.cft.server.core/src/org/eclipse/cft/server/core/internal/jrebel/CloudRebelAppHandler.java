@@ -42,7 +42,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.Job;
@@ -142,7 +141,7 @@ public abstract class CloudRebelAppHandler implements CloudServerListener {
 						requestEntity, String.class);
 
 				return responseEntity != null && responseEntity.getHeaders() != null
-						&& responseEntity.getHeaders().containsKey("x-rebel-response");//$NON-NLS-1$ 
+						&& responseEntity.getHeaders().containsKey("x-rebel-response");//$NON-NLS-1$
 			}
 		}
 		catch (RestClientException e) {
@@ -158,9 +157,8 @@ public abstract class CloudRebelAppHandler implements CloudServerListener {
 	@Override
 	public void serverChanged(CloudServerEvent event) {
 
-		if (event.getServer() != null
-				&& (event.getType() == CloudServerEvent.EVENT_JREBEL_REMOTING_UPDATE || shouldReplaceRemotingUrl(event
-						.getType()))) {
+		if (event.getServer() != null && (event.getType() == CloudServerEvent.EVENT_JREBEL_REMOTING_UPDATE
+				|| shouldReplaceRemotingUrl(event.getType()))) {
 
 			List<IModule> modules = new ArrayList<IModule>();
 
@@ -194,7 +192,7 @@ public abstract class CloudRebelAppHandler implements CloudServerListener {
 			// remoting check may
 			// require multiple requests to the Cloud and may be a slow running
 			// operation
-			if (isJRebelEnabled(module)) {
+			if (JRebelIntegrationUtility.isJRebelEnabled(module)) {
 
 				Job job = new Job(NLS.bind(Messages.CloudRebelAppHandler_UPDATING_JREBEL_REMOTING, module.getName())) {
 
@@ -244,13 +242,12 @@ public abstract class CloudRebelAppHandler implements CloudServerListener {
 	protected void updateJRebelRemoting(CloudFoundryServer cloudServer, int cloudEventType, IModule module,
 			List<String> oldUrls, List<String> currentUrls, IProgressMonitor monitor) throws CoreException {
 
-		Bundle bundle = getJRebelBundle();
+		Bundle bundle = JRebelIntegrationUtility.getJRebelBundle();
 		if (bundle != null) {
 			Throwable error = null;
 			try {
 
-				Class<?> providerClass = bundle
-						.loadClass("org.zeroturnaround.eclipse.jrebel.remoting.RebelRemotingProvider"); //$NON-NLS-1$
+				Class<?> providerClass = JRebelIntegrationUtility.getRebelRemotingProvider(bundle);
 
 				if (providerClass != null) {
 
@@ -265,9 +262,7 @@ public abstract class CloudRebelAppHandler implements CloudServerListener {
 						// static method
 						IProject project = module.getProject();
 						Object remoteProjectObj = getRemotingProject.invoke(null, project);
-						if (remoteProjectObj != null
-								&& remoteProjectObj.getClass().getName()
-										.equals("org.zeroturnaround.eclipse.jrebel.remoting.RemotingProject")) { //$NON-NLS-1$
+						if (JRebelIntegrationUtility.isRemotingProject(remoteProjectObj)) {
 
 							// This includes ALL URLs, not just the one
 							// pertaining to the application project. It may
@@ -374,32 +369,31 @@ public abstract class CloudRebelAppHandler implements CloudServerListener {
 									}
 
 									if (changed) {
-										Method setRebelRemotingUrls = remoteProjectObj.getClass().getDeclaredMethod(
-												"setRemoteUrls", URL[].class); //$NON-NLS-1$
+										Method setRebelRemotingUrls = remoteProjectObj.getClass()
+												.getDeclaredMethod("setRemoteUrls", URL[].class); //$NON-NLS-1$
 
 										if (setRebelRemotingUrls != null) {
 											setRebelRemotingUrls.setAccessible(true);
 											setRebelRemotingUrls.invoke(remoteProjectObj,
 													new Object[] { updatedRebelUrls.toArray(new URL[0]) });
-											printToConsole(appModule, cloudServer, NLS.bind(
-													Messages.CloudRebelAppHandler_UPDATED_URL, updatedRebelUrls));
+											printToConsole(appModule, cloudServer, NLS
+													.bind(Messages.CloudRebelAppHandler_UPDATED_URL, updatedRebelUrls));
 										}
 									}
 									else {
-										printToConsole(appModule, cloudServer, Messages.CloudRebelAppHandler_UP_TO_DATE);
+										printToConsole(appModule, cloudServer,
+												Messages.CloudRebelAppHandler_UP_TO_DATE);
 									}
 								}
 								else {
-									throw CloudErrorUtil
-											.toCoreException("No Cloud application deployment URL found for " + module.getName() + ". Unable to automatically set a deployment URL in JRebel remoting."); //$NON-NLS-1$ //$NON-NLS-2$
+									throw CloudErrorUtil.toCoreException(
+											"No Cloud application deployment URL found for " + module.getName() //$NON-NLS-1$
+													+ ". Unable to automatically set a deployment URL in JRebel remoting."); //$NON-NLS-1$
 								}
 							}
 						}
 					}
 				}
-			}
-			catch (ClassNotFoundException e) {
-				error = e;
 			}
 			catch (SecurityException e) {
 				error = e;
@@ -418,7 +412,10 @@ public abstract class CloudRebelAppHandler implements CloudServerListener {
 			}
 
 			if (error != null) {
-				throw CloudErrorUtil.toCoreException(error);
+				throw CloudErrorUtil.toCoreException(
+						"Unable to update JRebel Remoting. The version of CFT may not be compatible with the installed JRebel IDE version. Error: " //$NON-NLS-1$
+								+ error.getMessage(),
+						error);
 			}
 		}
 	}
@@ -442,43 +439,5 @@ public abstract class CloudRebelAppHandler implements CloudServerListener {
 			message = Messages.CloudRebelAppHandler_MESSAGE_PREFIX + " - " + message + '\n'; //$NON-NLS-1$
 			CloudFoundryPlugin.getCallback().printToConsole(server, appModule, message, false, error);
 		}
-	}
-
-	public static boolean isJRebelEnabled(IModule module) {
-		IProject project = module != null ? module.getProject() : null;
-
-		try {
-			return project != null && project.isAccessible()
-					&& project.hasNature("org.zeroturnaround.eclipse.remoting.remotingNature") //$NON-NLS-1$
-					&& project.hasNature("org.zeroturnaround.eclipse.jrebelNature"); //$NON-NLS-1$
-		}
-		catch (CoreException e) {
-			CloudFoundryPlugin.logError(e);
-		}
-		return false;
-	}
-
-	/**
-	 * 
-	 * @return true if JRebel bundle is found. False otherwise
-	 */
-	public static Bundle getJRebelBundle() {
-		Bundle bundle = null;
-		try {
-			bundle = Platform.getBundle("org.zeroturnaround.eclipse.remoting"); //$NON-NLS-1$
-		}
-		catch (Throwable e) {
-			CloudFoundryPlugin.logError(e);
-		}
-
-		return bundle;
-	}
-
-	/**
-	 * 
-	 * @return true if JRebel is installed in Eclipse. False otherwise.
-	 */
-	public static boolean isJRebelIDEInstalled() {
-		return getJRebelBundle() != null;
 	}
 }
