@@ -68,9 +68,10 @@ public class JRebelIntegrationUtility {
 	public static Bundle getJRebelBundle() {
 		Bundle bundle = null;
 		try {
-			bundle = Platform.getBundle("org.zeroturnaround.eclipse"); //$NON-NLS-1$
+			// First try loading the old JRebel plugin.
+			bundle = Platform.getBundle("org.zeroturnaround.eclipse.remoting"); //$NON-NLS-1$
 			if (bundle == null) {
-				bundle = Platform.getBundle("org.zeroturnaround.eclipse.remoting"); //$NON-NLS-1$
+				bundle = Platform.getBundle("org.zeroturnaround.eclipse"); //$NON-NLS-1$
 			}
 		}
 		catch (Throwable e) {
