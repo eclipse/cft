@@ -22,6 +22,9 @@ package org.eclipse.cft.server.core.internal.jrebel;
 
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
@@ -143,37 +146,50 @@ public class ReflectionHandler {
 
 	}
 
-	public boolean addServerUrl(Method addServerUrlsMethod, URI uri, String serverName) {
-		Throwable t = null;
-		try {
-			addServerUrlsMethod.invoke(null, uri, serverName);
-			return true;
-		}
-		catch (Throwable e) {
-			t = e;
-		}
+	public boolean addServerUrl(Method addServerUrlsMethod, Map<String, URI> serverUrls) {
+		if (serverUrls != null && !serverUrls.isEmpty()) {
+			Throwable t = null;
 
-		if (t != null) {
-			handleError(addServerUrlsMethod.getName(), addServerUrlsMethod.getDeclaringClass().getName(), t);
+			try {
+				addServerUrlsMethod.setAccessible(true);
+
+				for (Entry<String, URI> entry : serverUrls.entrySet()) {
+					addServerUrlsMethod.invoke(null, entry.getValue(), entry.getKey());
+				}
+				return true;
+			}
+			catch (Throwable e) {
+				t = e;
+			}
+
+			if (t != null) {
+				handleError(addServerUrlsMethod.getName(), addServerUrlsMethod.getDeclaringClass().getName(), t);
+			}
 		}
 
 		return false;
 	}
 
-	public boolean removeServerUrl(Method removeServerUrlMethod, URI uri) {
-		Throwable t = null;
+	public boolean removeServerUrl(Method removeServerUrlMethod, List<URI> uris) {
+		if (uris != null && !uris.isEmpty()) {
+			Throwable t = null;
 
-		try {
-			removeServerUrlMethod.invoke(null, uri);
-			return true;
-		}
-		catch (Throwable e) {
-			t = e;
+			try {
+				removeServerUrlMethod.setAccessible(true);
+				for (URI uri : uris) {
+					removeServerUrlMethod.invoke(null, uri);
+				}
+				return true;
+			}
+			catch (Throwable e) {
+				t = e;
+			}
+
+			if (t != null) {
+				handleError(removeServerUrlMethod.getName(), removeServerUrlMethod.getDeclaringClass().getName(), t);
+			}
 		}
 
-		if (t != null) {
-			handleError(removeServerUrlMethod.getName(), removeServerUrlMethod.getDeclaringClass().getName(), t);
-		}
 		return false;
 	}
 

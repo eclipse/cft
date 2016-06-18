@@ -24,9 +24,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
@@ -95,51 +98,8 @@ public class CloudRebelServerUrlHandler implements CFRebelServerUrlHandler {
 					return false;
 				}
 
-				if (oldUrls != null && !oldUrls.isEmpty()) {
-					Collection<String> toRemove = toRemove(oldUrls, currentUrls);
-
-					if (!toRemove.isEmpty()) {
-						Method removeServerUrlsMethod = reflectionHandler.getRemoveServerUrlMethod(integrationClass);
-
-						if (removeServerUrlsMethod != null) {
-							removeServerUrlsMethod.setAccessible(true);
-
-							for (String url : toRemove) {
-								if (url != null) {
-									URI uri = asUri(url);
-									if (uri != null && reflectionHandler.removeServerUrl(removeServerUrlsMethod, uri)) {
-										CFRebelConsoleUtil.printToConsole(module, cloudServer,
-												NLS.bind(Messages.CFRebelServerIntegration_REMOVED_URL, url));
-
-										updated = true;
-									}
-								}
-							}
-						}
-					}
-				}
-
-				if (currentUrls != null && !currentUrls.isEmpty()) {
-
-					Method addServerUrlsMethod = reflectionHandler.getAddServerUrlMethod(integrationClass);
-
-					if (addServerUrlsMethod != null) {
-						addServerUrlsMethod.setAccessible(true);
-
-						for (String url : currentUrls) {
-							if (url != null) {
-								URI uri = asUri(url);
-								if (uri != null
-										&& reflectionHandler.addServerUrl(addServerUrlsMethod, uri, uri.toString())) {
-									CFRebelConsoleUtil.printToConsole(module, cloudServer,
-											NLS.bind(Messages.CFRebelServerIntegration_UPDATED_URL, url));
-									updated = true;
-								}
-							}
-						}
-					}
-
-				}
+				updated = removeUrls(updated, integrationClass);
+				updated = addUrls(updated, integrationClass);
 			}
 
 			if (!updated) {
@@ -147,6 +107,63 @@ public class CloudRebelServerUrlHandler implements CFRebelServerUrlHandler {
 						Messages.CFRebelServerIntegration_NO_URL_UPDATES_PERFORMED);
 			}
 
+			return updated;
+		}
+
+		private boolean addUrls(boolean updated, Class<?> integrationClass) {
+			if (currentUrls != null && !currentUrls.isEmpty()) {
+
+				Method addServerUrlsMethod = reflectionHandler.getAddServerUrlMethod(integrationClass);
+
+				if (addServerUrlsMethod != null) {
+
+					Map<String, URI> serverUrls = new HashMap<String, URI>();
+					for (String url : currentUrls) {
+						if (url != null) {
+							URI uri = asUri(url);
+							if (uri != null) {
+								serverUrls.put(uri.toString(), uri);
+							}
+						}
+					}
+
+					if (reflectionHandler.addServerUrl(addServerUrlsMethod, serverUrls)) {
+						updated = true;
+						CFRebelConsoleUtil.printToConsole(module, cloudServer,
+								NLS.bind(Messages.CFRebelServerIntegration_UPDATED_URL, currentUrls));
+					}
+				}
+			}
+			return updated;
+		}
+
+		private boolean removeUrls(boolean updated, Class<?> integrationClass) {
+			if (oldUrls != null && !oldUrls.isEmpty()) {
+				Collection<String> toRemove = toRemove(oldUrls, currentUrls);
+
+				if (!toRemove.isEmpty()) {
+					Method removeServerUrlsMethod = reflectionHandler.getRemoveServerUrlMethod(integrationClass);
+
+					if (removeServerUrlsMethod != null) {
+
+						List<URI> urisToRemove = new ArrayList<URI>();
+						for (String url : toRemove) {
+							if (url != null) {
+								URI uri = asUri(url);
+								if (uri != null) {
+									urisToRemove.add(uri);
+								}
+							}
+						}
+
+						if (reflectionHandler.removeServerUrl(removeServerUrlsMethod, urisToRemove)) {
+							CFRebelConsoleUtil.printToConsole(module, cloudServer,
+									NLS.bind(Messages.CFRebelServerIntegration_REMOVED_URL, oldUrls));
+							updated = true;
+						}
+					}
+				}
+			}
 			return updated;
 		}
 
