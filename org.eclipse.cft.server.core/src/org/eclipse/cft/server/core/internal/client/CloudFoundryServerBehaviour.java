@@ -1028,11 +1028,16 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		CloudFoundryServer server = getCloudFoundryServer();
 		HttpProxyConfiguration httpProxyConfiguration = server.getProxyConfiguration();
 		CloudSpace sessionSpace = null;
+		CloudFoundrySpace storedSpace = server.getCloudFoundrySpace();
 
-		if (server.getCloudFoundrySpace() != null) {
-			sessionSpace = server.getCloudFoundrySpace().getSpace();
-			if (sessionSpace == null && server.getCloudFoundrySpace().getSpaceName() != null) {
-				sessionSpace = client.getSpace(server.getCloudFoundrySpace().getSpaceName());
+		// Fetch the session spac if it is not available from the server, as it is required for the additional v1 operations
+		if (storedSpace != null) {
+			sessionSpace = storedSpace.getSpace();
+			if (sessionSpace == null && storedSpace.getOrgName() != null && storedSpace.getSpaceName() != null) {
+				CloudOrgsAndSpaces spacesFromCF = internalGetCloudSpaces(client);
+				if (spacesFromCF != null) {
+					sessionSpace = spacesFromCF.getSpace(storedSpace.getOrgName(), storedSpace.getSpaceName());
+				}
 			}
 		}
 
