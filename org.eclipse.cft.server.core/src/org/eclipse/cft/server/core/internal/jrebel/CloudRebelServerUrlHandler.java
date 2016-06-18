@@ -158,7 +158,7 @@ public class CloudRebelServerUrlHandler implements CFRebelServerUrlHandler {
 
 						if (reflectionHandler.removeServerUrl(removeServerUrlsMethod, urisToRemove)) {
 							CFRebelConsoleUtil.printToConsole(module, cloudServer,
-									NLS.bind(Messages.CFRebelServerIntegration_REMOVED_URL, oldUrls));
+									NLS.bind(Messages.CFRebelServerIntegration_REMOVED_URL, toRemove));
 							updated = true;
 						}
 					}
