@@ -221,18 +221,24 @@ public class Messages extends NLS {
 	
 	public static String CloudFoundryTargetManager_NO_TARGET_DEFINITION_FOUND;
 
-	public static String CloudRebelAppHandler_ERROR;
+	public static String CFRebelServerIntegration_ERROR;
 
-	public static String CloudRebelAppHandler_UPDATING_JREBEL_REMOTING;
+	public static String CFRebelServerIntegration_UPDATING_JREBEL_REMOTING;
 
-	public static String CloudRebelAppHandler_MESSAGE_PREFIX;
+	public static String CFRebelServerIntegration_MESSAGE_PREFIX;
 
-	public static String CloudRebelAppHandler_TIME_OUT_RESOLVING_REMOTING_AGENT;
+	public static String CFRebelServerIntegration_UPDATED_URL;
 
-	public static String CloudRebelAppHandler_UPDATED_URL;
-
-	public static String CloudRebelAppHandler_UP_TO_DATE;
+	public static String CFRebelServerIntegration_REMOVED_URL;
 	
+	public static String CFRebelServerIntegration_UPDATING_APP_MODULE;
+
+	public static String CFRebelServerIntegration_UPDATED_APP_MODULE;
+	
+	public static String CFRebelServerIntegration_ERROR_INCOMPATIBLE_JREBEL;
+	
+	public static String CFRebelServerIntegration_NO_URL_UPDATES_PERFORMED;
+
 	public static String CloudServerUtil_NOT_CLOUD_SERVER_ERROR;
 
 	public static String CommandOptions_DESCRIPTION_VARIABLES_FOR_TUNNEL;

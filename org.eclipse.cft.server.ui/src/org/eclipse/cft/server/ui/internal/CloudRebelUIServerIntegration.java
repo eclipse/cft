@@ -30,10 +30,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
@@ -41,7 +39,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
-import org.eclipse.cft.server.core.internal.jrebel.CloudRebelAppHandler;
+import org.eclipse.cft.server.core.internal.jrebel.CFRebelServerIntegration;
 import org.eclipse.cft.server.core.internal.jrebel.JRebelIntegrationUtility;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -64,23 +62,23 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-public class CloudRebelUIHandler extends CloudRebelAppHandler {
+public class CloudRebelUIServerIntegration extends CFRebelServerIntegration {
 
-	private static CloudRebelAppHandler handler;
+	private static CFRebelServerIntegration integration;
 
-	public CloudRebelUIHandler() {
+	public CloudRebelUIServerIntegration() {
 	}
 
 	public void register() {
-		if (handler == null && JRebelIntegrationUtility.isJRebelIDEInstalled()) {
-			handler = this;
-			ServerEventHandler.getDefault().addServerListener(handler);
+		if (integration == null && JRebelIntegrationUtility.isJRebelIDEInstalled()) {
+			integration = this;
+			ServerEventHandler.getDefault().addServerListener(integration);
 		}
 	}
 
 	@Override
-	protected void handleRebelProject(CloudServerEvent event, IModule module, IProgressMonitor monitor)
-			throws CoreException {
+	protected void handleRebelProject(CloudServerEvent event, IModule module, String consoleMessage,
+			IProgressMonitor monitor) throws CoreException {
 
 		IProject project = module.getProject();
 		// Only replace rebel xml file if a manual Remoting
@@ -90,7 +88,7 @@ public class CloudRebelUIHandler extends CloudRebelAppHandler {
 			updateRebelXML(project, monitor);
 		}
 
-		super.handleRebelProject(event, module, monitor);
+		super.handleRebelProject(event, module, consoleMessage, monitor);
 	}
 
 	protected void updateRebelXML(IProject project, IProgressMonitor monitor) {
@@ -159,7 +157,7 @@ public class CloudRebelUIHandler extends CloudRebelAppHandler {
 										Element excludeElement = (Element) node;
 										Attr attr = excludeElement.getAttributeNode("name"); //$NON-NLS-1$
 										if (attr != null && attr.getNodeValue() != null) {
-											if (attr.getNodeValue().equals(libFolderName)) { 
+											if (attr.getNodeValue().equals(libFolderName)) {
 												existingExcludeLib = excludeElement;
 											}
 											else if (attr.getNodeValue().equals(javaBuildpackFolderName)) {
@@ -173,13 +171,13 @@ public class CloudRebelUIHandler extends CloudRebelAppHandler {
 							Element updatedExcludeLib = null;
 							if (existingExcludeLib == null) {
 								updatedExcludeLib = doc.createElement("exclude"); //$NON-NLS-1$
-								updatedExcludeLib.setAttribute("name", libFolderName); //$NON-NLS-1$ 
+								updatedExcludeLib.setAttribute("name", libFolderName); //$NON-NLS-1$
 								javaProjectOutputElement.appendChild(updatedExcludeLib);
 							}
 							Element updatedExcludeJavabuildpack = null;
 							if (existingExcludeJavabuildpack == null) {
 								updatedExcludeJavabuildpack = doc.createElement("exclude"); //$NON-NLS-1$
-								updatedExcludeJavabuildpack.setAttribute("name", javaBuildpackFolderName); //$NON-NLS-1$ 
+								updatedExcludeJavabuildpack.setAttribute("name", javaBuildpackFolderName); //$NON-NLS-1$
 								javaProjectOutputElement.appendChild(updatedExcludeJavabuildpack);
 							}
 							if (updatedExcludeLib != null || updatedExcludeJavabuildpack != null) {
@@ -198,10 +196,8 @@ public class CloudRebelUIHandler extends CloudRebelAppHandler {
 									public void run() {
 										Shell shell = CFUiUtil.getShell();
 
-										proceed[0] = shell != null
-												&& !shell.isDisposed()
-												&& MessageDialog.openQuestion(
-														shell,
+										proceed[0] = shell != null && !shell.isDisposed()
+												&& MessageDialog.openQuestion(shell,
 														Messages.CloudRebelUIHandler_TEXT_REPLACE_REBEL_XML_TITLE,
 														NLS.bind(
 																Messages.CloudRebelUIHandler_TEXT_REPLACE_REBEL_XML_BODY,
@@ -212,7 +208,7 @@ public class CloudRebelUIHandler extends CloudRebelAppHandler {
 								if (proceed[0]) {
 									// If replacing the exist rebel.xml file, be
 									// sure to switch off automatic rebel.xml
-									// generation									
+									// generation
 									JRebelIntegrationUtility.setAutoGeneratedXMLDisabledProperty(project);
 
 									Transformer transformer = TransformerFactory.newInstance().newTransformer();
@@ -256,8 +252,8 @@ public class CloudRebelUIHandler extends CloudRebelAppHandler {
 				if (classpath != null) {
 					for (IClasspathEntry entry : classpath) {
 						if (entry != null && entry.getEntryKind() == IClasspathEntry.CPE_SOURCE) {
-							String outputPath = entry.getOutputLocation() != null ? entry.getOutputLocation()
-									.toString() : null;
+							String outputPath = entry.getOutputLocation() != null ? entry.getOutputLocation().toString()
+									: null;
 							if (outputPath != null && !outputPaths.contains(outputPath)
 									&& !outputPath.contains("target/test-classes")) {//$NON-NLS-1$
 								outputPaths.add(outputPath);
@@ -266,8 +262,8 @@ public class CloudRebelUIHandler extends CloudRebelAppHandler {
 					}
 				}
 
-				String outputPath = javaProject.getOutputLocation() != null ? javaProject.getOutputLocation()
-						.toString() : null;
+				String outputPath = javaProject.getOutputLocation() != null ? javaProject.getOutputLocation().toString()
+						: null;
 				if (outputPath != null && !outputPaths.contains(outputPath)) {
 					outputPaths.add(outputPath);
 				}

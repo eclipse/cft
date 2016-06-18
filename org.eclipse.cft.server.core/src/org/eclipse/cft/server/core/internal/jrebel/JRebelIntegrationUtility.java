@@ -21,6 +21,7 @@
 package org.eclipse.cft.server.core.internal.jrebel;
 
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Platform;
@@ -68,11 +69,7 @@ public class JRebelIntegrationUtility {
 	public static Bundle getJRebelBundle() {
 		Bundle bundle = null;
 		try {
-			// First try loading the old JRebel plugin.
-			bundle = Platform.getBundle("org.zeroturnaround.eclipse.remoting"); //$NON-NLS-1$
-			if (bundle == null) {
-				bundle = Platform.getBundle("org.zeroturnaround.eclipse"); //$NON-NLS-1$
-			}
+			bundle = Platform.getBundle("org.zeroturnaround.eclipse"); //$NON-NLS-1$
 		}
 		catch (Throwable e) {
 			CloudFoundryPlugin.logError(e);
@@ -90,36 +87,15 @@ public class JRebelIntegrationUtility {
 	}
 
 	public static boolean isRemotingProject(Object remoteProjectObj) {
-		return remoteProjectObj != null && (remoteProjectObj.getClass().getName()
-				.equals("org.zeroturnaround.eclipse.jrebel.remoting.RemotingProject") //$NON-NLS-1$
-				|| remoteProjectObj.getClass().getName().equals("org.zeroturnaround.eclipse.jrebel.RemotingProject") //$NON-NLS-1$
-		);
+		return remoteProjectObj != null && remoteProjectObj.getClass().getName()
+				.equals("org.zeroturnaround.eclipse.jrebel.remoting.RemotingProject"); //$NON-NLS-1$
 	}
 
-	public static Class<?> getRebelRemotingProvider(Bundle bundle) {
-		Class<?> providerClass = null;
-		try {
-			providerClass = bundle.loadClass("org.zeroturnaround.eclipse.jrebel.remoting.RebelRemotingProvider"); //$NON-NLS-1$
-		}
-		catch (Throwable e) {
-			// Not found, try a different qualified type
-		}
+	public static ReflectionHandler createReflectionHandler() {
+		return new ReflectionHandler();
+	}
 
-		if (providerClass == null) {
-			try {
-				providerClass = bundle.loadClass("org.zeroturnaround.eclipse.jrebel.RebelRemotingProvider"); //$NON-NLS-1$
-			}
-			catch (Throwable e) {
-				// JRebel may not be installed or is out of date.
-			}
-
-		}
-
-		if (providerClass == null) {
-			CloudFoundryPlugin.logError(
-					"Unable to find a JRebel Remoting Provider. This version of CFT may not be compatible with the installed version of JRebel IDE."); //$NON-NLS-1$
-		}
-
-		return providerClass;
+	public static boolean shouldReplaceRemotingUrl(int eventType) {
+		return eventType == CloudServerEvent.EVENT_APP_URL_CHANGED;
 	}
 }

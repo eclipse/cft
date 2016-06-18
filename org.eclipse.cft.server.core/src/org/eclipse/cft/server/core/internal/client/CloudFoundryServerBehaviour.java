@@ -70,7 +70,7 @@ import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.application.CachingApplicationArchive;
 import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
 import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
-import org.eclipse.cft.server.core.internal.jrebel.CloudRebelAppHandler;
+import org.eclipse.cft.server.core.internal.jrebel.CFRebelServerIntegration;
 import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
 import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
 import org.eclipse.core.runtime.CoreException;
@@ -1075,9 +1075,9 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		super.initialize(monitor);
 		// Set a default target manager
 		setTargetManager(CloudFoundryPlugin.getTargetManager());
-		CloudRebelAppHandler appHandler = CloudFoundryPlugin.getCallback().getJRebelHandler();
-		if (appHandler != null) {
-			appHandler.register();
+		CFRebelServerIntegration integration = CloudFoundryPlugin.getCallback().getJRebelServerIntegration();
+		if (integration != null) {
+			integration.register();
 		}
 		getServer().addServerListener(serverListener, ServerEvent.SERVER_CHANGE);
 
