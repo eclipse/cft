@@ -31,6 +31,7 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipFile;
 
 import org.eclipse.cft.server.core.CFApplicationArchive;
+import org.eclipse.cft.server.core.internal.CFConsoleHandler;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -39,12 +40,15 @@ import org.eclipse.cft.server.core.internal.application.JavaWebApplicationDelega
 import org.eclipse.cft.server.core.internal.application.ZipArchive;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.standalone.core.internal.application.ICloudFoundryArchiver;
+import org.eclipse.cft.server.standalone.core.internal.application.StandaloneConsole;
 import org.eclipse.cft.server.standalone.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -82,6 +86,8 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 
 	private CloudFoundryApplicationModule appModule;
 
+	private IModule actualModule;
+
 	private CloudFoundryServer cloudServer;
 
 	private boolean initialized = false;
@@ -92,13 +98,24 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 
 	public void initialize(IModule module, IServer server) throws CoreException {
 		this.cloudServer = CloudServerUtil.getCloudServer(server);
+		this.actualModule = module;
+		Assert.isNotNull(module,
+				"Unable to package standalone application. No WTP module found for application. Refresh server and try again."); //$NON-NLS-1$
 
 		this.appModule = cloudServer.getExistingCloudModule(module);
+
+		Assert.isNotNull(appModule,
+				"Unable to package standalone application. No cloud application module found. Refresh server and try again."); //$NON-NLS-1$
+		
 		// Need to know whether initalized or not to mimic the earlier behavior
 		// where the it was
 		// initialized within the constructor. Now it is being created from an
 		// extension point.
 		initialized = true;
+	}
+
+	protected CFConsoleHandler getConsole() {
+		return StandaloneConsole.getDefault();
 	}
 
 	public CFApplicationArchive getApplicationArchive(IProgressMonitor monitor) throws CoreException {
@@ -108,9 +125,21 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 			throw CloudErrorUtil.toCoreException(Messages.JavaCloudFoundryArchiver_ERROR_ARCHIVER_NOT_INITIALIZED);
 		}
 
+		// Bug 495814: Maven projects may go out of synch with filesystem,
+		// especially if they are built
+		// outside of Eclipse. This may result in missing dependencies and
+		// resources in the packaged jar
+		refreshProject(monitor);
+
+		IProject project = getProject();
+		String projectName = project != null ? project.getName() : "UNKNOWN PROJECT"; //$NON-NLS-1$
+
 		CFApplicationArchive archive = JavaWebApplicationDelegate.getArchiveFromManifest(appModule, cloudServer);
 
-		if (archive == null) {
+		if (archive != null) {
+			getConsole().printToConsole(actualModule, cloudServer,
+					NLS.bind(Messages.JavaCloudFoundryArchiver_FOUND_ARCHIVE_FROM_MANIFEST, archive.getName()));
+		} else {
 
 			File packagedFile = null;
 
@@ -123,6 +152,11 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 			JavaPackageFragmentRootHandler rootResolver = getPackageFragmentRootHandler(javaProject, monitor);
 
 			IType mainType = rootResolver.getMainType(monitor);
+
+			if (mainType != null) {
+				getConsole().printToConsole(actualModule, cloudServer, NLS
+						.bind(Messages.JavaCloudFoundryArchiver_PACKAGING_MAIN_TYPE, mainType.getFullyQualifiedName()));
+			}
 
 			final IPackageFragmentRoot[] roots = rootResolver.getPackageFragmentRoots(monitor);
 
@@ -211,6 +245,9 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 			}
 
 			try {
+				getConsole().printToConsole(actualModule, cloudServer,
+						NLS.bind(Messages.JavaCloudFoundryArchiver_PACKAGING_APPLICATION, projectName));
+
 				packagedFile = packageApplication(jarPackageData, monitor);
 			} catch (CoreException e) {
 				handleApplicationDeploymentFailure(
@@ -219,9 +256,16 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 
 			if (packagedFile == null || !packagedFile.exists()) {
 				handleApplicationDeploymentFailure(Messages.JavaCloudFoundryArchiver_ERROR_NO_PACKAGED_FILE_CREATED);
+			} else {
+				getConsole().printToConsole(actualModule, cloudServer,
+						NLS.bind(Messages.JavaCloudFoundryArchiver_PACKAGING_APPLICATION_COMPLETED, projectName,
+								packagedFile.getAbsolutePath()));
 			}
 
 			if (isBoot) {
+				getConsole().printToConsole(actualModule, cloudServer,
+						Messages.JavaCloudFoundryArchiver_REPACKAGING_SPRING_BOOT_APP);
+
 				bootRepackage(roots, packagedFile);
 			}
 
@@ -235,6 +279,10 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 		}
 
 		return archive;
+	}
+
+	protected IProject getProject() {
+		return CloudFoundryProjectUtil.getProject(appModule);
 	}
 
 	/**
@@ -292,6 +340,16 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 
 		return null;
 
+	}
+
+	protected void refreshProject(IProgressMonitor monitor) throws CoreException {
+
+		IProject project = getProject();
+		if (project != null && project.isAccessible()) {
+			getConsole().printToConsole(actualModule, cloudServer,
+					NLS.bind(Messages.JavaCloudFoundryArchiver_REFRESHING_PROJECT, project.getName()));
+			project.refreshLocal(IResource.DEPTH_INFINITE, monitor);
+		}
 	}
 
 	protected IJarBuilder getDefaultLibJarBuilder() {
@@ -416,8 +474,10 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 		if (errorMessage == null) {
 			errorMessage = Messages.JavaCloudFoundryArchiver_ERROR_CREATE_PACKAGED_FILE;
 		}
-		throw CloudErrorUtil.toCoreException(errorMessage + " - " //$NON-NLS-1$
-				+ appModule.getDeployedApplicationName() + ". Unable to package application for deployment."); //$NON-NLS-1$
+		errorMessage = errorMessage + " - " //$NON-NLS-1$
+				+ appModule.getDeployedApplicationName() + ". Unable to package application for deployment."; //$NON-NLS-1$
+		getConsole().printErrorToConsole(actualModule, cloudServer, errorMessage);
+		throw CloudErrorUtil.toCoreException(errorMessage);
 	}
 
 	protected void handleApplicationDeploymentFailure() throws CoreException {

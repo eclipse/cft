@@ -20,30 +20,25 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.jrebel;
 
-import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.CFConsoleHandler;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
-import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.wst.server.core.IModule;
 
 public class CFRebelConsoleUtil {
 
+	private static final CFConsoleHandler rebelConsoleHander = new CFConsoleHandler(
+			Messages.CFRebelServerIntegration_MESSAGE_PREFIX);
+
 	public static void printToConsole(IModule module, CloudFoundryServer server, String message) {
-		printToConsole(module, server, message, false);
+		rebelConsoleHander.printToConsole(module, server, message, false);
 	}
 
 	public static void printErrorToConsole(IModule module, CloudFoundryServer server, String message) {
-		printToConsole(module, server, message, true);
+		rebelConsoleHander.printErrorToConsole(module, server, message);
 	}
 
 	public static void printToConsole(IModule module, CloudFoundryServer server, String message, boolean error) {
-		if (server != null) {
-			CloudFoundryApplicationModule appModule = server.getExistingCloudModule(module);
-
-			if (appModule != null) {
-				message = Messages.CFRebelServerIntegration_MESSAGE_PREFIX + " - " + message + '\n'; //$NON-NLS-1$
-				CloudFoundryPlugin.getCallback().printToConsole(server, appModule, message, false, error);
-			}
-		}
+		rebelConsoleHander.printToConsole(module, server, message, error);
 	}
 }

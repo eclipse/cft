@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2014, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,9 @@ import org.eclipse.osgi.util.NLS;
 public class Messages extends NLS {
 	private static final String BUNDLE_NAME =  CloudFoundryJavaStandalonePlugin.PLUGIN_ID + ".internal.Messages"; //$NON-NLS-1$
 
+	
+	public static String StandaloneConsole_PREFIX;
+	
 	static {
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, Messages.class);

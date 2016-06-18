@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2014, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,10 +24,22 @@ package org.eclipse.cft.server.standalone.ui.internal;
 import org.eclipse.osgi.util.NLS;
 
 public class Messages extends NLS {
-	private static final String BUNDLE_NAME =  CloudFoundryJavaStandaloneUIPlugin.PLUGIN_ID + ".internal.Messages"; //$NON-NLS-1$
+	private static final String BUNDLE_NAME = CloudFoundryJavaStandaloneUIPlugin.PLUGIN_ID + ".internal.Messages"; //$NON-NLS-1$
+
+	public static String JavaCloudFoundryArchiver_REPACKAGING_SPRING_BOOT_APP;
+
+	public static String JavaCloudFoundryArchiver_PACKAGING_APPLICATION_COMPLETED;
+
+	public static String JavaCloudFoundryArchiver_PACKAGING_APPLICATION;
+
+	public static String JavaCloudFoundryArchiver_PACKAGING_MAIN_TYPE;
+
+	public static String JavaCloudFoundryArchiver_FOUND_ARCHIVE_FROM_MANIFEST;
+
+	public static String JavaCloudFoundryArchiver_REFRESHING_PROJECT;
 
 	public static String JavaCloudFoundryArchiver_ERROR_ARCHIVER_NOT_INITIALIZED;
-	
+
 	public static String JavaCloudFoundryArchiver_ERROR_CREATE_CF_ARCHIVE;
 
 	public static String JavaCloudFoundryArchiver_ERROR_CREATE_PACKAGED_FILE;
