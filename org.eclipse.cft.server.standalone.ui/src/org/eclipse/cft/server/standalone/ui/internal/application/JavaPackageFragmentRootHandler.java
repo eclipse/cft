@@ -324,8 +324,16 @@ public class JavaPackageFragmentRootHandler {
 					outputLocation = root.getJavaProject().getOutputLocation();
 				}
 
-				IPath location = ResourcesPlugin.getWorkspace().getRoot()
-						.findMember(outputLocation).getLocation();
+				// Bug 495816 - output location may not be relative to workspace project
+				// therefore check that the resource exists before updating path location
+				IResource resource = ResourcesPlugin.getWorkspace().getRoot()
+						.findMember(outputLocation);
+				
+				IPath location = null;
+				if (resource != null && resource.getLocation() != null) {
+					location = resource.getLocation();
+				}
+
 				if (entry.equals(location)) {
 					return true;
 				}
