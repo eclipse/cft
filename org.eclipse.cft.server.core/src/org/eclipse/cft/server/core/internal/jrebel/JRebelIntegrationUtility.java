@@ -21,7 +21,9 @@
 package org.eclipse.cft.server.core.internal.jrebel;
 
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
+import org.eclipse.cft.server.core.internal.pivotal.PivotalConstants;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Platform;
@@ -38,13 +40,18 @@ import org.osgi.framework.Bundle;
  */
 public class JRebelIntegrationUtility {
 
-	public static boolean isJRebelEnabled(IModule module) {
+	public static boolean isJRebelEnabled(IModule module, CloudFoundryServer cloudServer) {
 		IProject project = module != null ? module.getProject() : null;
 
-		return project != null && project.isAccessible()
-				&& (hasNature(project, "org.zeroturnaround.eclipse.remoting.remotingNature") //$NON-NLS-1$
-						|| hasNature(project, "org.zeroturnaround.eclipse.remotingNature")) //$NON-NLS-1$
+		return supportedServer(cloudServer) && project != null && project.isAccessible()
+				&& hasNature(project, "org.zeroturnaround.eclipse.remoting.remotingNature") //$NON-NLS-1$
 				&& hasNature(project, "org.zeroturnaround.eclipse.jrebelNature"); //$NON-NLS-1$
+	}
+
+	private static boolean supportedServer(CloudFoundryServer cloudServer) {
+		// Only supported JRebel integration on Pivotal Web Services for now
+		return cloudServer != null && cloudServer.getUrl() != null
+				&& cloudServer.getUrl().contains(PivotalConstants.PIVOTAL_WEB_SERVICES_URI);
 	}
 
 	public static boolean hasNature(IProject project, String nature) {

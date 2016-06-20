@@ -92,7 +92,8 @@ public abstract class CFRebelServerIntegration implements CloudServerListener {
 			// remoting check may
 			// require multiple requests to the Cloud and may be a slow running
 			// operation
-			if (JRebelIntegrationUtility.isJRebelEnabled(module)) {
+			CloudFoundryServer cloudServer = event != null ?  event.getServer() : null;
+			if (JRebelIntegrationUtility.isJRebelEnabled(module, cloudServer)) {
 
 				final String consoleMessage = NLS.bind(Messages.CFRebelServerIntegration_UPDATING_JREBEL_REMOTING,
 						module.getName());

@@ -409,7 +409,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 
 		if (jrebelManualAppUrlUpdate != null) {
 			// URL updating only is enabled when app is running
-			jrebelManualAppUrlUpdate.setEnabled(JRebelIntegrationUtility.isJRebelEnabled(module));
+			jrebelManualAppUrlUpdate.setEnabled(JRebelIntegrationUtility.isJRebelEnabled(module, cloudServer));
 		}
 
 		// The rest of the refresh requires appModule to be non-null
