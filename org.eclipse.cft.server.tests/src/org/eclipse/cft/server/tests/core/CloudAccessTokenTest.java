@@ -39,7 +39,7 @@ public class CloudAccessTokenTest extends AbstractCloudFoundryTest {
 
 	public void testFailingRequestAccessTokenErrorClient() throws Exception {
 		CloudFoundryOperations client = getTestFixture().createExternalClient();
-		CloudFoundryLoginHandler handler = new CloudFoundryLoginHandler(client);
+		CloudFoundryLoginHandler handler = new CloudFoundryLoginHandler(client, cloudServer);
 
 		handler.login(new NullProgressMonitor());
 

@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.CFServiceInstance;
@@ -63,6 +64,9 @@ import org.eclipse.wst.server.core.model.IModuleResource;
 import org.eclipse.wst.server.core.util.ModuleFile;
 import org.eclipse.wst.server.core.util.ModuleFolder;
 import org.eclipse.wst.server.core.util.PublishHelper;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Christian Dupuis
@@ -485,4 +489,24 @@ public class CloudUtil {
 		}
 		return null;
 	}
+	
+	/** Create new cloud credentials with passcode and token value, based on which is available. */
+	public static CloudCredentials createSsoCredentials(String passcode, String tokenValue) {
+		CloudCredentials credentials = null;
+		if (tokenValue != null && !tokenValue.isEmpty()) {
+			try {
+				OAuth2AccessToken token = new ObjectMapper().readValue(tokenValue, OAuth2AccessToken.class);
+				credentials = new CloudCredentials(passcode, token);
+				
+			}
+			catch (IOException e) {
+				// ignore
+			}
+		}
+		if (credentials == null) {
+			credentials = new CloudCredentials(passcode);
+		}
+		return credentials;
+	}
+
 }

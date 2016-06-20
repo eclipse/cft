@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -42,10 +42,11 @@ public class CloudServerSpacesDelegate extends CloudSpacesDelegate {
 		super(cloudServer);
 	}
 
+	
 	protected CloudSpacesDescriptor internalUpdateDescriptor(String urlText, String userName, String password,
-			boolean selfSigned, IRunnableContext context) throws CoreException {
+			boolean selfSigned, IRunnableContext context, boolean sso, String passcode, String tokenValue) throws CoreException {
 		CloudSpacesDescriptor spacesDescriptor = super.internalUpdateDescriptor(urlText, userName, password,
-				selfSigned, context);
+				selfSigned, context, sso, passcode, tokenValue);
 		internalDescriptorChanged();
 
 		return spacesDescriptor;

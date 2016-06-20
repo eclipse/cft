@@ -45,8 +45,8 @@ public class SshClientSupport extends CFClientV1Support {
 	private String sshClientId;
 
 	public SshClientSupport(CloudFoundryOperations cfClient, CloudInfoSsh cloudInfo,
-			HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSigned) {
-		super(cfClient, /* no session space required */ null, cloudInfo, httpProxyConfiguration, trustSelfSigned);
+			HttpProxyConfiguration httpProxyConfiguration, CloudFoundryServer server, boolean trustSelfSigned) {
+		super(cfClient, /* no session space required */ null, cloudInfo, httpProxyConfiguration, server, trustSelfSigned);
 		this.sshClientId = cloudInfo.getSshClientId();
 	}
 
@@ -91,8 +91,8 @@ public class SshClientSupport extends CFClientV1Support {
 	}
 
 	public static SshClientSupport create(final CloudFoundryOperations client, CloudInfoSsh cloudInfo,
-			HttpProxyConfiguration proxyConf, boolean selfSigned) {
-		return new SshClientSupport(client, cloudInfo, proxyConf, selfSigned);
+			HttpProxyConfiguration proxyConf, CloudFoundryServer cfServer, boolean selfSigned) {
+		return new SshClientSupport(client, cloudInfo, proxyConf, cfServer, selfSigned);
 	}
 
 	public Session connect(CloudApplication app, CloudFoundryServer cloudServer, int appInstance) throws CoreException {

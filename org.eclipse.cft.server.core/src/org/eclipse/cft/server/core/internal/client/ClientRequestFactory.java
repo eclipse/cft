@@ -60,7 +60,11 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.RestClientException;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * A general pre-Diego Client request factory based off the v1 Cloud Foundry
@@ -329,11 +333,24 @@ public class ClientRequestFactory {
 		};
 	}
 
+	/** Log-in to server and store token as needed */
 	public BaseClientRequest<?> connect() throws CoreException {
+		final CloudFoundryServer cloudServer = behaviour.getCloudFoundryServer();
+		
 		return new BehaviourRequest<Void>("Login to " + behaviour.getCloudFoundryServer().getUrl(), behaviour) { //$NON-NLS-1$
 			@Override
 			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				client.login();
+				OAuth2AccessToken token = client.login();
+				if(cloudServer.isSso()) {
+					try {
+						String tokenValue = new ObjectMapper().writeValueAsString(token);
+						cloudServer.setAndSaveToken(tokenValue);
+					}
+					catch (JsonProcessingException e) {
+						CloudFoundryPlugin.logWarning(e.getMessage());
+					}
+				}
+
 				return null;
 			}
 		};
@@ -650,8 +667,8 @@ public class ClientRequestFactory {
 		return new BehaviourRequest<List<String>>(Messages.ClientRequestFactory_BUILDPACKS, behaviour) {
 			@Override
 			protected List<String> doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				return BuildpackSupport.create(client, getCloudInfo(), getCloudServer().getProxyConfiguration(),
-						getCloudServer().isSelfSigned()).getBuildpacks();
+				return BuildpackSupport.create(client, getCloudInfo(), getCloudServer().getProxyConfiguration(), 
+						behaviour.getCloudFoundryServer(), getCloudServer().isSelfSigned()).getBuildpacks();
 			}
 		};
 	}
@@ -672,7 +689,7 @@ public class ClientRequestFactory {
 
 	public AdditionalV1Operations createAdditionalV1Operations(CloudFoundryOperations client, CloudSpace sessionSpace,
 			CFInfo cloudInfo, HttpProxyConfiguration httpProxyConfiguration, boolean selfSigned) throws CoreException {
-		return new AdditionalV1Operations(client, sessionSpace, getCloudInfo(), httpProxyConfiguration, selfSigned);
+		return new AdditionalV1Operations(client, sessionSpace, getCloudInfo(), httpProxyConfiguration, behaviour.getCloudFoundryServer(), selfSigned);
 	}
 
 }

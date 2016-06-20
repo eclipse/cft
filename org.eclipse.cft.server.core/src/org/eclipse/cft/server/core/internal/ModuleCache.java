@@ -57,6 +57,9 @@ public class ModuleCache {
 		/** Cached password in case secure store fails. */
 		private String password;
 
+		/** Cached token. */
+		private String token;
+		
 		private IServer server;
 
 		/**
@@ -117,6 +120,10 @@ public class ModuleCache {
 		public synchronized String getPassword() {
 			return password;
 		}
+			
+		public synchronized String getToken() {
+			return token;
+		}
 
 		public synchronized boolean isModuleBeingAdded(IModule module) {
 			return modulesBeingAdded.contains(module);
@@ -154,6 +161,10 @@ public class ModuleCache {
 
 		public synchronized void setPassword(String password) {
 			this.password = password;
+		}
+
+		public synchronized void setToken(String token) {
+			this.token = token;
 		}
 
 		public synchronized void moduleAdditionCompleted(IModule module) {

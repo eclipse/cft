@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -101,7 +101,7 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 		CFInfo cloudInfo = cloudServer.getBehaviour().getCloudInfo();
 		if (cloudInfo instanceof CloudInfoSsh) {
 			SshClientSupport ssh = SshClientSupport.create(cloudServer.getBehaviour().getClient(monitor),
-					(CloudInfoSsh) cloudInfo, cloudServer.getProxyConfiguration(),
+					(CloudInfoSsh) cloudInfo, cloudServer.getProxyConfiguration(), cloudServer,
 					cloudServer.isSelfSigned());
 
 			try {

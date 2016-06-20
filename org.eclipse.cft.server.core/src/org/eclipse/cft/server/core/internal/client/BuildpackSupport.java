@@ -20,15 +20,17 @@ import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.JsonUtil;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
 
 public class BuildpackSupport extends CFClientV1Support {
 
 	public BuildpackSupport(CloudFoundryOperations cfClient, CFInfo cloudInfo,
-			HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSigned) {
-		super(cfClient, /* no session space required */ null, cloudInfo, httpProxyConfiguration, trustSelfSigned);
+			HttpProxyConfiguration httpProxyConfiguration, CloudFoundryServer cfServer, boolean trustSelfSigned) {
+		super(cfClient, /* no session space required */ null, cloudInfo, httpProxyConfiguration, cfServer, trustSelfSigned);
 	}
 
+	@SuppressWarnings("unchecked")
 	public List<String> getBuildpacks() {
 		List<String> buildpacks = new ArrayList<String>();
 		String json = restTemplate.getForObject(getUrl("/v2/buildpacks"), String.class); //$NON-NLS-1$
@@ -50,7 +52,7 @@ public class BuildpackSupport extends CFClientV1Support {
 	}
 
 	public static BuildpackSupport create(CloudFoundryOperations client, CFInfo cloudInfo,
-			HttpProxyConfiguration proxyConf, boolean selfSigned) {
-		return new BuildpackSupport(client, cloudInfo, proxyConf, selfSigned);
+			HttpProxyConfiguration proxyConf, CloudFoundryServer cfServer, boolean selfSigned) {
+		return new BuildpackSupport(client, cloudInfo, proxyConf, cfServer, selfSigned);
 	}
 }
