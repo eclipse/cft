@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,7 @@ import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryLoginHandler;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.SubMonitor;
@@ -51,7 +52,7 @@ public abstract class ClientRequest<T> extends BaseClientRequest<T> {
 	public ClientRequest(String label) {
 		super(label);
 	}
-
+	
 	/**
 	 * Attempts to execute the client request by first checking proxy settings,
 	 * and if unauthorised/forbidden exceptions thrown the first time, will
@@ -70,7 +71,15 @@ public abstract class ClientRequest<T> extends BaseClientRequest<T> {
 			return super.runAndWait(client, subProgress);
 		}
 		catch (CoreException ce) {
-			CloudFoundryLoginHandler handler = new CloudFoundryLoginHandler(client);
+			
+			CloudFoundryServer server = null;
+			if(this instanceof BehaviourRequest) {
+				// Optionally, child requests may provide a cloud server for use by the login handler
+				BehaviourRequest<?> br = (BehaviourRequest<T>)this;
+				server = br.getCloudServer();
+			}
+			
+			CloudFoundryLoginHandler handler = new CloudFoundryLoginHandler(client, server);
 
 			CoreException accessError = null;
 			String accessErrorMessage = null;

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -37,10 +37,14 @@ public class ServerCredentialsStore {
 	private static final String KEY_PASSWORD = "password"; //$NON-NLS-1$
 
 	private static final String KEY_USERNAME = "username"; //$NON-NLS-1$
+	
+	private static final String KEY_TOKEN = "token"; //$NON-NLS-1$
 
 	private boolean initialized;
 
 	private String password;
+
+	private String token;
 
 	private AtomicBoolean securePreferencesDisabled = new AtomicBoolean(false);
 
@@ -77,6 +81,7 @@ public class ServerCredentialsStore {
 			try {
 				preferences.put(KEY_USERNAME, username, true);
 				preferences.put(KEY_PASSWORD, password, true);
+				preferences.put(KEY_TOKEN, token, true);
 				return true;
 			}
 			catch (StorageException e) {
@@ -109,6 +114,16 @@ public class ServerCredentialsStore {
 		initialize();
 		this.username = username;
 	}
+	
+	public String getToken() {
+		initialize();
+		return token;
+	}
+
+	public void setToken(String token) {
+		initialize();
+		this.token = token;
+	}
 
 	private void disableSecurePreferences(StorageException e) {
 		if (!securePreferencesDisabled.getAndSet(true)) {
@@ -139,6 +154,7 @@ public class ServerCredentialsStore {
 		initialized = true;
 		username = readProperty(KEY_USERNAME);
 		password = readProperty(KEY_PASSWORD);
+		token = readProperty(KEY_TOKEN);
 	}
 	
 	private String readProperty(String property) {

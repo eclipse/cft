@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,9 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class CloudFoundryLoginHandler {
 
 	private final CloudFoundryOperations operations;
@@ -35,13 +38,17 @@ public class CloudFoundryLoginHandler {
 
 	private static final int DEFAULT_PROGRESS_TICKS = 100;
 
+	// Optional
+	private CloudFoundryServer server;
+	
 	/**
 	 * 
 	 * @param operations must not be null
 	 * @param cloudServer can be null if no server has been created yet
 	 */
-	public CloudFoundryLoginHandler(CloudFoundryOperations operations) {
+	public CloudFoundryLoginHandler(CloudFoundryOperations operations, CloudFoundryServer server) {
 		this.operations = operations;
+		this.server = server;
 	}
 
 	/**
@@ -71,7 +78,21 @@ public class CloudFoundryLoginHandler {
 				// CoreException.
 				// as they are uncaught exceptions and can be inspected directly
 				// by the shouldRetryOnError(..) method.
-				return operations.login();
+				OAuth2AccessToken token = operations.login();
+				
+				if(server != null && server.isSso()) {
+					// Store the SSO token in the server
+					try {
+						String tokenValue = new ObjectMapper().writeValueAsString(token);
+						server.setAndSaveToken(tokenValue);
+					}
+					catch (JsonProcessingException e) {
+						CloudFoundryPlugin.logWarning(e.getMessage());
+					}					
+				}
+				
+				return token;
+				
 			}
 
 			@Override

@@ -42,6 +42,8 @@ import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint;
 import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint.CloudServerURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.CloudUtil;
+import org.eclipse.cft.server.core.internal.client.CloudFoundryClientFactory;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
 import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
@@ -264,9 +266,10 @@ public class CFUiUtil {
 	 * determined
 	 * @throws OperationCanceledException if validation is cancelled.
 	 */
-	public static void validateCredentials(final String userName, final String password, final String urlText,
-			final boolean displayURL, final boolean selfSigned, IRunnableContext context)
-			throws CoreException, OperationCanceledException {
+	public static void validateCredentials(final CloudFoundryServer cfServer, final String userName, final String password, final String urlText,
+			final boolean displayURL, final boolean selfSigned, IRunnableContext context) throws CoreException,
+			OperationCanceledException {
+
 		try {
 			ICoreRunnable coreRunner = new ICoreRunnable() {
 				public void run(IProgressMonitor monitor) throws CoreException {
@@ -274,7 +277,7 @@ public class CFUiUtil {
 					if (displayURL) {
 						url = getUrlFromDisplayText(urlText);
 					}
-					CloudFoundryServerBehaviour.validate(url, userName, password, selfSigned, monitor);
+					CloudFoundryServerBehaviour.validate(cfServer, url, userName, password, selfSigned, false, null, null, monitor);
 				}
 			};
 			if (context != null) {
@@ -289,6 +292,38 @@ public class CFUiUtil {
 		}
 	}
 
+	/*
+	 * Validates the given SSO credentials. Throws {@link CoreException} if error
+	 * occurred during validation.
+	 */
+	public static void validateSsoCredentials(final CloudFoundryServer cfServer, final String urlText,
+			final boolean displayURL, final boolean selfSigned, IRunnableContext context, 
+			final String passcode, final String tokenValue) throws CoreException,
+			OperationCanceledException {
+
+		try {
+			ICoreRunnable coreRunner = new ICoreRunnable() {
+				public void run(IProgressMonitor monitor) throws CoreException {
+					String url = urlText;
+					if (displayURL) {
+						url = getUrlFromDisplayText(urlText);
+					}
+					CloudFoundryServerBehaviour.validate(cfServer, url, null, null, selfSigned, true, passcode, tokenValue, monitor);
+				}
+			};
+			if (context != null) {
+				runForked(coreRunner, context);
+			}
+			else {
+				runForked(coreRunner);
+			}
+		}
+		catch (CoreException ce) {
+			throw CloudErrorUtil.checkSSLPeerUnverifiedException(ce);
+		}
+	}
+
+	
 	/**
 	 * Runnable context can be null. If so, default Eclipse progress service
 	 * will be used as a runnable context. Display URL should be true if the
@@ -305,8 +340,8 @@ public class CFUiUtil {
 	 * @return spaces descriptor, or null if it couldn't be determined
 	 * @throws CoreException
 	 */
-	public static CloudOrgsAndSpaces getCloudSpaces(final String userName, final String password, final String urlText,
-			final boolean displayURL, final boolean selfSigned, IRunnableContext context) throws CoreException {
+	public static CloudOrgsAndSpaces getCloudSpaces(final CloudFoundryServer cfServer, final String userName, final String password, final String urlText,
+			final boolean displayURL, final boolean selfSigned, IRunnableContext context, final boolean sso, final String passcode, final String tokenValue) throws CoreException {
 
 		try {
 			final CloudOrgsAndSpaces[] supportsSpaces = new CloudOrgsAndSpaces[1];
@@ -316,8 +351,15 @@ public class CFUiUtil {
 					if (displayURL) {
 						url = getUrlFromDisplayText(urlText);
 					}
-					supportsSpaces[0] = CloudFoundryServerBehaviour.getCloudSpacesExternalClient(
-							new CloudCredentials(userName, password), url, selfSigned, monitor);
+					if (sso) {
+						CloudCredentials credentials = CloudUtil.createSsoCredentials(passcode, tokenValue);
+						if (credentials == null) {
+							credentials = new CloudCredentials(passcode);
+						}
+						supportsSpaces[0] = CloudFoundryServerBehaviour.getCloudSpacesExternalClient(cfServer, credentials , url, selfSigned, sso, passcode, tokenValue, monitor);
+					} else {
+						supportsSpaces[0] = CloudFoundryServerBehaviour.getCloudSpacesExternalClient(cfServer, new CloudCredentials(userName, password), url, selfSigned, monitor);
+					}
 				}
 			};
 			if (context != null) {
@@ -828,4 +870,24 @@ public class CFUiUtil {
 		}
 
 	}
+	
+	public static String getPromptText(CloudFoundryServer cfServer) {
+		String ssoUrl = "";
+		String href = null;
+		if (cfServer.getUrl() != null && !cfServer.getUrl().isEmpty()) {
+			try {
+				href = CloudFoundryClientFactory.getSsoUrl(cfServer.getUrl(), cfServer.isSelfSigned());
+				if (href != null && !href.isEmpty()) {
+					ssoUrl = Messages.bind(Messages.PASSCODE_PROMPT2, href);
+				} else {
+					ssoUrl = Messages.PASSCODE_IS_NOT_SUPPORTED;
+				}
+			}
+			catch (Exception e1) {
+				CloudFoundryServerUiPlugin.logError(e1);
+			}
+		}
+		return ssoUrl;
+	}
+
 }

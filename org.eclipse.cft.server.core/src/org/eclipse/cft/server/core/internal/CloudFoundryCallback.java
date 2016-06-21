@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -133,4 +133,7 @@ public abstract class CloudFoundryCallback {
 	public ApplicationDebugLauncher getDebugLauncher(CloudFoundryServer cloudServer) {
 		return null;
 	}
+	
+	/** Returns true if login succeeds, false otherwise.*/
+	public abstract boolean ssoLoginUserPrompt(CloudFoundryServer cloudServer);
 }

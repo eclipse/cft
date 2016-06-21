@@ -38,6 +38,7 @@ import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
 import org.eclipse.core.runtime.CoreException;
 import org.springframework.http.HttpStatus;
@@ -55,8 +56,8 @@ public class AdditionalV1Operations extends CFClientV1Support {
 	private CloudEntityResourceMapper resourceMapper = new CloudEntityResourceMapper();
 
 	public AdditionalV1Operations(CloudFoundryOperations client, CloudSpace sessionSpace, CFInfo cloudInfo,
-			HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSigned) {
-		super(client, sessionSpace, cloudInfo, httpProxyConfiguration, trustSelfSigned);
+			HttpProxyConfiguration httpProxyConfiguration, CloudFoundryServer cfServer, boolean trustSelfSigned) {
+		super(client, sessionSpace, cloudInfo, httpProxyConfiguration, cfServer, trustSelfSigned);
 	}
 
 	/**

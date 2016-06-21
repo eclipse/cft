@@ -456,7 +456,9 @@ public class Messages extends NLS {
 	public static String ShowConsoleEditorAction_TEXT_SHOW_CONSOLE;
 
 	public static String SERVER_WIZARD_VALIDATOR_CLICK_TO_VALIDATE;
-
+	
+	public static String SSO_SERVER_WIZARD_VALIDATOR_CLICK_TO_VALIDATE;
+	
 	public static String ServerHandler_QUERY_RUNTIME_EXISTS;
 
 	public static String ServerHandler_QUERY_SERVER_EXISTS;
@@ -626,6 +628,12 @@ public class Messages extends NLS {
 	public static String CloudFoundryCredentialsPart_TEXT_CREDENTIAL_WIZ_TITLE;
 
 	public static String CloudFoundryCredentialsPart_TEXT_REGISTER_BUTTON;
+
+	public static String SSO_SERVER;
+	
+	public static String PASSCODE_PROMPT1;
+	
+	public static String PASSCODE_PROMPT2;
 
 	public static String CloudFoundryCredentialsPart_TEXT_VALIDATE_BUTTON;
 
@@ -851,6 +859,13 @@ public class Messages extends NLS {
 	public static String ConnectCommand_JOB_CONN_SERVER;
 
 	public static String ConnectCommand_ERROR_CONNECT;
+	
+	public static String ConnectSsoServerDialog_CONNECT_BUTTON;
+
+	public static String ConnectSsoServerDialog_CONNECT_TITLE;
+
+	public static String ConnectSsoServerDialog_Passcode_is_required;
+
 
 	public static String DisablePublishSection_TEXT_PUBLISHING;
 
@@ -994,6 +1009,13 @@ public class Messages extends NLS {
 	public static String TableColumn_VARIABLE;
 	public static String TableColumn_VALUE;
 
+	
+	public static String LABEL_PASSCODE;
+
+	public static String PASSCODE_IS_NOT_SUPPORTED;
+
+
+	
 	private static final String BUNDLE_NAME =  CloudFoundryServerUiPlugin.PLUGIN_ID + ".internal.Messages"; //$NON-NLS-1$
 
 	static {

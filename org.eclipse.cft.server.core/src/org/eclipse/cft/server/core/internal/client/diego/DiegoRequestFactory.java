@@ -157,7 +157,7 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 				}
 
 				SshClientSupport ssh = SshClientSupport.create(client, getCloudInfo(),
-						cloudServer.getProxyConfiguration(), cloudServer.isSelfSigned());
+						cloudServer.getProxyConfiguration(), cloudServer, cloudServer.isSelfSigned());
 
 				Session session = ssh.connect(app, cloudServer, instanceIndex);
 

@@ -210,6 +210,11 @@ public class CloudFoundryPlugin extends Plugin {
 			// TODO Auto-generated method stub
 
 		}
+
+		@Override
+		public boolean ssoLoginUserPrompt(CloudFoundryServer cloudServer) {		
+			return false;
+		}
 	}
 
 	private static class AppStateTrackerEntry {

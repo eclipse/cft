@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copied from Spring Tool Suite. Original license:
  * 
- * Copyright (c) 2015 Pivotal Software, Inc.
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -18,12 +18,17 @@ import java.net.URI;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.RestTemplate;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Contains helper methods to allow access to certain components of an existing
@@ -43,8 +48,10 @@ public class CFClientV1Support {
 
 	protected final CloudSpace existingSessionConnection;
 
+	protected final CloudFoundryServer cfServer;
+	
 	public CFClientV1Support(CloudFoundryOperations cfClient, CloudSpace existingSessionConnection, CFInfo cloudInfo,
-			HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSigned) {
+			HttpProxyConfiguration httpProxyConfiguration, CloudFoundryServer cfServer, boolean trustSelfSigned) {
 		this.cloudInfo = cloudInfo;
 		this.oauth = getHeaderProvider(cfClient);
 		this.existingSessionConnection = existingSessionConnection;
@@ -54,6 +61,8 @@ public class CFClientV1Support {
 		restTemplate.setRequestFactory(authorize(requestFactory));
 
 		this.authorizationUrl = cloudInfo.getAuthorizationUrl();
+		
+		this.cfServer = cfServer;
 	}
 
 	/**
@@ -87,6 +96,18 @@ public class CFClientV1Support {
 		AuthorizationHeaderProvider oauth = new AuthorizationHeaderProvider() {
 			public String getAuthorizationHeader() {
 				OAuth2AccessToken token = cfClient.login();
+				
+				if(cfServer != null && cfServer.isSso()) {
+					// In the SSO case, store the token for later use
+					try {
+						String tokenValue = new ObjectMapper().writeValueAsString(token);
+						cfServer.setAndSaveToken(tokenValue);
+					}
+					catch (JsonProcessingException e) {
+						CloudFoundryPlugin.logWarning(e.getMessage());
+					}					
+				}
+				
 				return token.getTokenType() + " " + token.getValue(); //$NON-NLS-1$
 			}
 		};
