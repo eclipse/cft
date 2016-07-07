@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.swt.SWT;
@@ -43,7 +44,9 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorSite;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.IFormColors;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.FormToolkit;
@@ -115,8 +118,20 @@ public class CloudFoundryServerStatusSection extends ServerEditorSection impleme
 				Job job = new Job(Messages.CloudFoundryServerStatusSection_JOB_CONN_SERVER) {
 					
 					@Override
-					protected IStatus run(IProgressMonitor monitor) {
+					protected IStatus run(final IProgressMonitor monitor) {
 						try {
+							Display.getDefault().syncExec(new Runnable() {
+								public void run() {
+									IEditorPart editor = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor();
+									if (editor != null && editor.isDirty()) {
+										boolean ok = MessageDialog.openQuestion(getShell(), "Save?", "The editor has a unsaved changes. Do you want to save that?");
+										if (ok) {
+											editor.doSave(monitor);
+										}
+									}
+								}
+							});
+
 							cfServer.getBehaviour().connect(monitor);
 						}
 						catch (CoreException e) {
@@ -143,6 +158,10 @@ public class CloudFoundryServerStatusSection extends ServerEditorSection impleme
 					protected IStatus run(IProgressMonitor monitor) {
 						try {
 							cfServer.getBehaviour().disconnect(monitor);
+							
+							if(cfServer.isSso()) {
+								cfServer.getBehaviour().resetClient(monitor);
+							}
 						}
 						catch (CoreException e) {
 							StatusManager.getManager().handle(new Status(Status.ERROR, CloudFoundryServerUiPlugin.PLUGIN_ID, "", e), StatusManager.LOG); //$NON-NLS-1$

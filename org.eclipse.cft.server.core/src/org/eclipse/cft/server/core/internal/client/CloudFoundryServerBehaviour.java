@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.cloudfoundry.client.lib.ApplicationLogListener;
 import org.cloudfoundry.client.lib.CloudCredentials;
@@ -53,6 +54,7 @@ import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
+import org.eclipse.cft.server.core.internal.BehaviourOperationsScheduler;
 import org.eclipse.cft.server.core.internal.CachingApplicationArchive;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryLoginHandler;
@@ -62,7 +64,6 @@ import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ModuleResourceDeltaWrapper;
-import org.eclipse.cft.server.core.internal.BehaviourOperationsScheduler;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
@@ -93,6 +94,7 @@ import org.eclipse.wst.server.core.model.IModuleFile;
 import org.eclipse.wst.server.core.model.IModuleResource;
 import org.eclipse.wst.server.core.model.IModuleResourceDelta;
 import org.eclipse.wst.server.core.model.ServerBehaviourDelegate;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClientException;
 
 /**
@@ -175,7 +177,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public boolean canControlModule(IModule[] module) {
 		return module.length == 1;
 	}
-
+	
+	/** When calling connect(...) the client field of CloudFoundryServerBehavoiur must already be set. */
 	public void connect(IProgressMonitor monitor) throws CoreException {
 		final CloudFoundryServer cloudServer = getCloudFoundryServer();
 
@@ -191,6 +194,21 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 		ServerEventHandler.getDefault().fireServerEvent(
 				new CloudServerEvent(getCloudFoundryServer(), CloudServerEvent.EVENT_SERVER_CONNECTED));
+	}
+	
+	/** The user is providing us with a new passcode, so acquire the token */
+	public boolean regenerateSsoLogin(String passcode, IProgressMonitor monitor) throws CoreException {
+		
+		final CloudFoundryServer cloudServer = getCloudFoundryServer();
+		
+		// Log in and acquire the token
+		createExternalClientLogin(cloudServer, cloudServer.getUrl(), null, null, cloudServer.getSelfSignedCertificate(), true, cloudServer.getPasscode(), null, monitor);
+		
+		// Ensure that client field is set, before connect call
+		CloudFoundryOperations result = getClient(null, true, monitor);
+
+		return result != null;
+
 	}
 
 	/**
@@ -728,7 +746,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public CloudFoundryOperations resetClient(CloudCredentials credentials, IProgressMonitor monitor)
 			throws CoreException {
 		internalResetClient();
-		return getClient(credentials, monitor);
+		return getClient(credentials, false, monitor);
 	}
 
 	protected void internalResetClient() {
@@ -958,6 +976,34 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		getRequestFactory().register(email, password).run(monitor);
 	}
 
+	/** Called by getClient(...) to prompt the user and reacquire token with passcode, if an exception occurs while connecting with SSO */
+	private void reestablishSsoSessionIfNeeded(CloudFoundryException e, CloudFoundryServer cloudServer)  throws CoreException {
+		// Status Code: 401 / Description = Invalid Auth Token, or;
+		// Status Code: 403 / Description: Access token denied.
+		if(cloudServer.isSso() && 
+				(e.getStatusCode() == HttpStatus.UNAUTHORIZED  || e.getStatusCode() == HttpStatus.FORBIDDEN)				
+				) {
+			boolean result = CloudFoundryPlugin.getCallback().ssoLoginUserPrompt(cloudServer);
+			if(client != null) {
+				// Success: another thread has established the client.
+				return;
+			}
+			
+			if(result) {
+				// Client is null but the login did succeed, so recreate w/ new token stored in server
+				CloudCredentials credentials = CloudUtil.createSsoCredentials(cloudServer.getPasscode(), cloudServer.getToken());				
+				client = createClientWithCredentials(cloudServer.getUrl(), credentials, cloudServer.getCloudFoundrySpace(), cloudServer.getSelfSignedCertificate());
+				return;
+			}
+		} 
+		
+		// Otherwise, rethrow the exception
+		throw e;
+		
+	}
+	
+	private final ReentrantLock clientLock = new ReentrantLock();
+
 	/**
 	 * Gets the active client used by the behaviour for server operations.
 	 * However, clients are created lazily, and invoking it multipe times does
@@ -969,30 +1015,60 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * This API is not suitable to changing credentials. User appropriate API
 	 * for the latter like {@link #updatePassword(String, IProgressMonitor)}
 	 */
-	protected synchronized CloudFoundryOperations getClient(CloudCredentials credentials, IProgressMonitor monitor)
+	protected CloudFoundryOperations getClient(CloudCredentials credentials, boolean ignoreLock, IProgressMonitor monitor)
 			throws CoreException {
-		if (client == null) {
-			CloudFoundryServer cloudServer = getCloudFoundryServer();
-
-			String url = cloudServer.getUrl();
-			if (!cloudServer.hasCloudSpace()) {
-				throw CloudErrorUtil.toCoreException(
-						NLS.bind(Messages.ERROR_FAILED_CLIENT_CREATION_NO_SPACE, cloudServer.getServerId()));
+		
+		boolean weOwnLock = false;
+		
+		try {
+			
+			// The lock 'clientLock' exists to ensure that only one attempt to create a client occurs at a time.
+			// However: attempts by the user to log-in w/ SSO should skip to the front of the line, as it enables all other requests to complete.
+			// Thus the SSO log-in dialog passes true here, all others (including non-SSO) must pass false.
+			if(!ignoreLock) {
+				clientLock.lock();
+				weOwnLock = true;
 			}
-
-			CloudFoundrySpace cloudFoundrySpace = cloudServer.getCloudFoundrySpace();
-
-			if (credentials != null) {
-				client = createClient(url, credentials, cloudFoundrySpace, cloudServer.getSelfSignedCertificate());
+			
+			if (client == null) {
+				CloudFoundryServer cloudServer = getCloudFoundryServer();
+	
+				String url = cloudServer.getUrl();
+				if (!cloudServer.hasCloudSpace()) {
+					throw CloudErrorUtil.toCoreException(
+							NLS.bind(Messages.ERROR_FAILED_CLIENT_CREATION_NO_SPACE, cloudServer.getServerId()));
+				}
+	
+				CloudFoundrySpace cloudFoundrySpace = cloudServer.getCloudFoundrySpace();
+	
+				if (credentials != null) {
+					client = createClientWithCredentials(url, credentials, cloudFoundrySpace, cloudServer.getSelfSignedCertificate());
+				}
+				else {
+					if(getCloudFoundryServer().isSso()) {
+						try {
+							credentials = CloudUtil.createSsoCredentials(cloudServer.getPasscode(), cloudServer.getToken());
+							client = createClientWithCredentials(url, credentials, cloudFoundrySpace, cloudServer.getSelfSignedCertificate());
+						} catch(CloudFoundryException e) {
+							// On auth fail, rerequest from user if the exception indicated a token issue
+							reestablishSsoSessionIfNeeded(e, cloudServer);
+						}
+						
+					} else {
+						String userName = cloudServer.getUsername();
+						String password = cloudServer.getPassword();
+						credentials = new CloudCredentials(userName, password);
+						client = createClientWithCredentials(url, credentials, cloudFoundrySpace, cloudServer.getSelfSignedCertificate()  );
+					}
+				}
 			}
-			else {
-				String userName = getCloudFoundryServer().getUsername();
-				String password = getCloudFoundryServer().getPassword();
-				client = createClient(url, userName, password, cloudFoundrySpace,
-						cloudServer.getSelfSignedCertificate());
+			return client;
+			
+		} finally { // end try
+			if(weOwnLock) {
+				clientLock.unlock();
 			}
 		}
-		return client;
 	}
 
 	/**
@@ -1002,7 +1078,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @throws CoreException
 	 */
 	public synchronized CloudFoundryOperations getClient(IProgressMonitor monitor) throws CoreException {
-		return getClient((CloudCredentials) null, monitor);
+		return getClient((CloudCredentials) null, false, monitor);
 	}
 
 	@Override
@@ -1015,6 +1091,11 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		getServer().addServerListener(serverListener, ServerEvent.SERVER_CHANGE);
 
 		try {
+			// This code will just throw an exception for an sso server
+			if (getCloudFoundryServer().isSso() && getCloudFoundryServer().getToken() == null) {
+				return;
+			}
+
 			getApplicationUrlLookup().refreshDomains(monitor);
 
 			// Important: Must perform a refresh operation
@@ -1333,11 +1414,16 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * 
 	 * @return resolved orgs and spaces for the given credential and server URL.
 	 */
-	public static CloudOrgsAndSpaces getCloudSpacesExternalClient(CloudCredentials credentials, final String url,
-			boolean selfSigned, IProgressMonitor monitor) throws CoreException {
+	public static CloudOrgsAndSpaces getCloudSpacesExternalClient(CloudFoundryServer cfServer, CloudCredentials credentials, final String url,
+			boolean selfSigned, IProgressMonitor monitor) throws CoreException {		
+		return getCloudSpacesExternalClient(cfServer, credentials, url, selfSigned, false, null, null, monitor);
+	}
+	
+	public static CloudOrgsAndSpaces getCloudSpacesExternalClient(CloudFoundryServer cfServer, CloudCredentials credentials, final String url,
+			boolean selfSigned, final boolean sso, final String passcode, String tokenValue, IProgressMonitor monitor) throws CoreException {
 
-		final CloudFoundryOperations operations = CloudFoundryServerBehaviour.createExternalClientLogin(url,
-				credentials.getEmail(), credentials.getPassword(), selfSigned, monitor);
+		final CloudFoundryOperations operations = CloudFoundryServerBehaviour.createExternalClientLogin(cfServer, url,
+				credentials.getEmail(), credentials.getPassword(), selfSigned, sso, passcode, tokenValue, monitor);
 
 		return new ClientRequest<CloudOrgsAndSpaces>("Getting orgs and spaces") { //$NON-NLS-1$
 			@Override
@@ -1372,31 +1458,49 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		return null;
 	}
 
-	public static void validate(final String location, String userName, String password, boolean selfSigned,
-			IProgressMonitor monitor) throws CoreException {
-		createExternalClientLogin(location, userName, password, selfSigned, monitor);
+	public static void validate(final CloudFoundryServer server, final String location, String userName, String password, boolean selfSigned,
+			boolean sso, String passcode, String tokenValue, IProgressMonitor monitor) throws CoreException {
+		createExternalClientLogin(server, location, userName, password, selfSigned, sso, passcode, tokenValue, monitor);
 	}
 
-	public static CloudFoundryOperations createExternalClientLogin(final String location, String userName,
+	public static CloudFoundryOperations createExternalClientLogin(final CloudFoundryServer cfServer, final String location, String userName,
 			String password, boolean selfSigned, IProgressMonitor monitor) throws CoreException {
+		return createExternalClientLogin(cfServer, location, userName, password, selfSigned, false, null, null, monitor);
+	}
+	
+	public static CloudFoundryOperations createExternalClientLogin(final CloudFoundryServer cfServer, final String location, String userName,
+			String password, boolean selfSigned, boolean sso, String passcode, String tokenValue, IProgressMonitor monitor) throws CoreException {
+
 		SubMonitor progress = SubMonitor.convert(monitor);
+
 		progress.beginTask("Connecting", IProgressMonitor.UNKNOWN); //$NON-NLS-1$
 		try {
-			final CloudFoundryOperations client = createClient(location, userName, password, selfSigned);
-
+			
+			CloudFoundryOperations client;
+			
+			if(sso) {
+				CloudCredentials credentials = CloudUtil.createSsoCredentials(passcode, tokenValue);
+				client = createClientWithCredentials(location, credentials, null, selfSigned);
+			} else {
+				 client = createClientWithCredentials(location, new CloudCredentials(userName, password), null, selfSigned);				
+			}
+			
+			final CloudFoundryOperations finalClient = client;
+			
 			new ClientRequest<Void>(Messages.VALIDATING_CREDENTIALS) {
 
 				@Override
 				protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-					CloudFoundryLoginHandler operationsHandler = new CloudFoundryLoginHandler(client);
+					CloudFoundryLoginHandler operationsHandler = new CloudFoundryLoginHandler(client, cfServer);
 					int attempts = 5;
-					operationsHandler.login(progress, attempts, CloudOperationsConstants.LOGIN_INTERVAL);
+
+					operationsHandler.login(progress, attempts, CloudOperationsConstants.LOGIN_INTERVAL);					
 					return null;
 				}
 
 				@Override
 				protected CloudFoundryOperations getClient(IProgressMonitor monitor) throws CoreException {
-					return client;
+					return finalClient;
 				}
 
 			}.run(monitor);
@@ -1409,13 +1513,13 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			progress.done();
 		}
 	}
-
+	
 	public static void register(String location, String userName, String password, boolean selfSigned,
 			IProgressMonitor monitor) throws CoreException {
 		SubMonitor progress = SubMonitor.convert(monitor);
 		progress.beginTask("Connecting", IProgressMonitor.UNKNOWN); //$NON-NLS-1$
 		try {
-			CloudFoundryOperations client = createClient(location, userName, password, selfSigned);
+			CloudFoundryOperations client = createClientForRegister(location, userName, password, selfSigned);
 			client.register(userName, password);
 		}
 		catch (RestClientException e) {
@@ -1453,35 +1557,12 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @return
 	 * @throws CoreException
 	 */
-	static CloudFoundryOperations createClient(String location, String userName, String password, boolean selfSigned)
+	private static CloudFoundryOperations createClientForRegister(String location, String userName, String password, boolean selfSigned)
 			throws CoreException {
-		return createClient(location, userName, password, null, selfSigned);
-	}
-
-	/**
-	 * Creates a new client to the given server URL using the specified
-	 * credentials. This does NOT connect the client to the server, nor does it
-	 * set the client as a session client for the server delegate.
-	 * 
-	 * @param serverURL must not be null
-	 * @param userName must not be null
-	 * @param password must not be null
-	 * @param cloudSpace optional, as a valid client can still be created
-	 * without org/space (for example, a client can be used to do an org/space
-	 * lookup.
-	 * @param selfSigned true if connecting to self-signed server. False
-	 * otherwise
-	 * @return Non-null client.
-	 * @throws CoreException if failed to create the client.
-	 */
-	private static CloudFoundryOperations createClient(String serverURL, String userName, String password,
-			CloudFoundrySpace cloudSpace, boolean selfSigned) throws CoreException {
-		if (password == null) {
-			// lost the password, start with an empty one to avoid assertion
-			// error
-			password = ""; //$NON-NLS-1$
-		}
-		return createClient(serverURL, new CloudCredentials(userName, password), cloudSpace, selfSigned);
+		
+		if(password == null) { password = ""; } 
+		
+		return createClientWithCredentials(location, new CloudCredentials(userName, password), null, selfSigned);
 	}
 
 	/**
@@ -1499,7 +1580,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @return non-null client.
 	 * @throws CoreException if failed to create client.
 	 */
-	private static CloudFoundryOperations createClient(String serverURL, CloudCredentials credentials,
+	private static CloudFoundryOperations createClientWithCredentials(String serverURL, CloudCredentials credentials,
 			CloudFoundrySpace cloudSpace, boolean selfSigned) throws CoreException {
 
 		URL url;

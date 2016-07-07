@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,7 +30,6 @@ import java.util.Set;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -58,6 +57,9 @@ public class ModuleCache {
 		/** Cached password in case secure store fails. */
 		private String password;
 
+		/** Cached token. */
+		private String token;
+		
 		private IServer server;
 
 		/**
@@ -118,6 +120,10 @@ public class ModuleCache {
 		public synchronized String getPassword() {
 			return password;
 		}
+			
+		public synchronized String getToken() {
+			return token;
+		}
 
 		public synchronized boolean isUndeployed(IModule module) {
 			return undeployedModules.contains(module);
@@ -155,6 +161,10 @@ public class ModuleCache {
 
 		public synchronized void setPassword(String password) {
 			this.password = password;
+		}
+
+		public synchronized void setToken(String token) {
+			this.token = token;
 		}
 
 		public synchronized void tagAsDeployed(IModule module) {

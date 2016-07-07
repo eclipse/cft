@@ -219,8 +219,9 @@ public class CloudFoundryTestFixture {
 
 		protected void setCloudSpace(CloudFoundryServer cloudServer, String orgName, String spaceName)
 				throws CoreException {
-			CloudOrgsAndSpaces spaces = CloudUiUtil.getCloudSpaces(cloudServer.getUsername(), cloudServer.getPassword(),
-					cloudServer.getUrl(), false, cloudServer.getSelfSignedCertificate(), null);
+			CloudOrgsAndSpaces spaces = CloudUiUtil.getCloudSpaces(cloudServer, cloudServer.getUsername(),
+					cloudServer.getPassword(), cloudServer.getUrl(), false, cloudServer.getSelfSignedCertificate(),
+					null, false, null, null);
 			Assert.isTrue(spaces != null, "Failed to resolve orgs and spaces.");
 			Assert.isTrue(spaces.getDefaultCloudSpace() != null,
 					"No default space selected in cloud space lookup handler.");

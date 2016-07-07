@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -138,6 +138,13 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 
 	private static final String PROPERTY_DEPLOYMENT_NAME = "deployment_name"; //$NON-NLS-1$
 
+	/**
+	 * Attribute key for the token.
+	 */
+	public static final String PROP_SSO_ID = "org.eclipse.cft.sso"; //$NON-NLS-1$
+	
+	public static final String PROP_PASSCODE_ID = "org.eclipse.cft.passcode"; //$NON-NLS-1$
+
 	protected void updateState(Server server, CloudFoundryApplicationModule appModule) throws CoreException {
 		IModule[] localModule = new IModule[] { appModule.getLocalModule() };
 		server.setModuleState(localModule, appModule.getState());
@@ -196,7 +203,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	private CloudFoundrySpace cloudSpace;
 
 	private CloudFoundryServerTarget serverTarget;
-
+	private String token;
 	private CloudFoundryTargetManager targetManager;
 
 	public CloudFoundryServer() {
@@ -454,6 +461,18 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		return new ServerCredentialsStore(getServerId()).getPassword();
 	}
 
+	public String getToken() {
+		if (secureStoreDirty) {
+			return token;
+		}
+		String cachedToken = getData() != null ? getData().getToken() : null;
+		if (cachedToken != null) {
+			return cachedToken;
+		}
+		return new ServerCredentialsStore(getServerId()).getToken();
+	}
+
+	
 	/**
 	 * Public for testing.
 	 */
@@ -516,6 +535,9 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		
 	}
 	
+	public boolean isSso() {
+		return getAttribute(PROP_SSO_ID, false);
+	}
 
 
 	public boolean hasCloudSpace() {
@@ -1307,6 +1329,22 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		store.flush(serverId);
 	}
 
+	
+	public void setAndSaveToken(String token) {
+		this.token = token;
+
+		if (getData() != null) {
+			getData().setToken(token);
+		}
+
+		String serverId = getServerId();
+
+		// Persist token
+		ServerCredentialsStore store = getCredentialsStore();
+		store.setToken(token);
+		store.flush(serverId);
+	}
+	
 	public IStatus doDeleteModules(final Collection<IModule> deletedModules) {
 		IServerWorkingCopy wc = getServer().createWorkingCopy();
 		try {
@@ -1513,5 +1551,18 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 				&& info.getSshHost().getFingerPrint() != null;
 	}
 	
+	public String getPasscode() {
+		return getAttribute(PROP_PASSCODE_ID, "");
+	}
+	
+	public void setPasscode(String passcode) {
+		setAttribute(PROP_PASSCODE_ID, passcode);
+		updateServerId();
+	}
+
+	public void setSso(boolean selection) {
+		setAttribute(PROP_SSO_ID, selection);
+		updateServerId();
+	}
 	
 }

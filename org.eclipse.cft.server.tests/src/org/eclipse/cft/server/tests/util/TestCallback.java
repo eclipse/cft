@@ -180,7 +180,12 @@ public class TestCallback extends CloudFoundryCallback {
 
 	@Override
 	public void applicationStarting(CloudFoundryServer server, CloudFoundryApplicationModule cloudModule) {
-		// TODO Auto-generated method stub
+		// TODO Auto-generated method stub		
+	}
+
+	@Override
+	public boolean ssoLoginUserPrompt(CloudFoundryServer cloudServer) {
+		return false;
 	}
 
 }

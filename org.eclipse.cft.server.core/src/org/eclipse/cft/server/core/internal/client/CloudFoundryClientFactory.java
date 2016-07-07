@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,18 +20,34 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
+import org.cloudfoundry.client.lib.util.CloudUtil;
+import org.cloudfoundry.client.lib.util.JsonUtil;
+import org.cloudfoundry.client.lib.util.RestUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.core.net.proxy.IProxyData;
 import org.eclipse.core.net.proxy.IProxyService;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequest;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.web.client.HttpMessageConverterExtractor;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriTemplate;
 
 /**
  * Create Cloud Foundry clients, including clients that are UAA aware.Note that
@@ -141,4 +157,82 @@ public class CloudFoundryClientFactory {
 		}
 		return null;
 	}
+	
+	private static String getUrl(String url, String path) {
+		return url + (path.startsWith("/") ? path : "/" + path);
+	}
+	
+	private static String getJson(RestTemplate restTemplate, String urlString) {
+		ClientHttpResponse response = null;
+		HttpMethod method = null;
+		try {
+			method = HttpMethod.GET;
+		
+			URI url = new UriTemplate(urlString).expand();
+			ClientHttpRequest request = restTemplate.getRequestFactory().createRequest(url, method);
+			
+			List<MediaType> acceptableMediaTypes = new ArrayList<MediaType>();
+			acceptableMediaTypes.add(MediaType.APPLICATION_JSON);
+			request.getHeaders().setAccept(acceptableMediaTypes );
+			//if (requestCallback != null) {
+			//	requestCallback.doWithRequest(request);
+			//}
+			response = request.execute();
+			if (response.getBody() != null) {
+				HttpMessageConverterExtractor<String> extractor = new HttpMessageConverterExtractor<String>(String.class, restTemplate.getMessageConverters());
+				String data = extractor.extractData(response);
+				return data;
+			};
+		}
+		catch (IOException ex) {
+			throw new ResourceAccessException("I/O error on " + method.name() +
+					" request for \"" + urlString + "\":" + ex.getMessage(), ex);
+		}
+		finally {
+			if (response != null) {
+				response.close();
+			}
+		}
+		return null;
+	}
+
+	public static String getSsoUrl(String apiurl, boolean trustSelfSignedCerts) throws Exception {
+		RestUtil restUtil = new RestUtil();
+		HttpProxyConfiguration httpProxyConfiguration = getProxy(new URL(apiurl));
+		RestTemplate restTemplate = restUtil.createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts);
+		String infoV2Json = restTemplate.getForObject(getUrl(apiurl, "/v2/info"), String.class);
+		Map<String, Object> infoV2Map = JsonUtil.convertJsonToMap(infoV2Json);
+		String authorizationEndpoint = CloudUtil.parse(String.class, infoV2Map.get("authorization_endpoint"));
+		String passcodeJson = getJson(restTemplate, getUrl(authorizationEndpoint, "/login"));
+		Map<String, Object> passcodeMap = JsonUtil.convertJsonToMap(passcodeJson);
+		Object prompts = passcodeMap.get("prompts");
+		if (prompts instanceof Map) {
+			@SuppressWarnings("rawtypes")
+			Object text = ((Map)prompts).get("passcode");
+			if (text instanceof List) {
+				@SuppressWarnings("rawtypes")
+				List list = (List) text;
+				if (list.size() >= 2 && list.get(1) != null) {
+					String message = list.get(1).toString();
+					String[] elements = message.split(" ");
+					for (int i = 0; i < elements.length; i++) {
+						String element = elements[i];
+						if (element != null && element.startsWith("http")) {
+							
+							// Strip trailing parentheses
+							String url = element;
+							while(url.endsWith(")")) {
+								url = url.substring(0,  url.length()-1);
+							}
+							
+							return url;
+						}
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -58,6 +59,9 @@ import org.eclipse.wst.server.core.model.IModuleResource;
 import org.eclipse.wst.server.core.util.ModuleFile;
 import org.eclipse.wst.server.core.util.ModuleFolder;
 import org.eclipse.wst.server.core.util.PublishHelper;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Christian Dupuis
@@ -411,4 +415,23 @@ public class CloudUtil {
 			result.add(status[i]);
 		}
 	}
+	/** Create new cloud credentials with passcode and token value, based on which is available. */
+	public static CloudCredentials createSsoCredentials(String passcode, String tokenValue) {
+		CloudCredentials credentials = null;
+		if (tokenValue != null && !tokenValue.isEmpty()) {
+			try {
+				OAuth2AccessToken token = new ObjectMapper().readValue(tokenValue, OAuth2AccessToken.class);
+				credentials = new CloudCredentials(passcode, token);
+				
+			}
+			catch (IOException e) {
+				// ignore
+			}
+		}
+		if (credentials == null) {
+			credentials = new CloudCredentials(passcode);
+		}
+		return credentials;
+	}
+
 }

@@ -35,6 +35,7 @@ import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
@@ -46,7 +47,11 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.RestClientException;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ClientRequestFactory {
 
@@ -308,11 +313,24 @@ public class ClientRequestFactory {
 		};
 	}
 
+	/** Log-in to server and store token as needed */
 	public BaseClientRequest<?> connect() throws CoreException {
+		final CloudFoundryServer cloudServer = behaviour.getCloudFoundryServer();
+		
 		return new BehaviourRequest<Void>("Login to " + behaviour.getCloudFoundryServer().getUrl(), behaviour) { //$NON-NLS-1$
 			@Override
 			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				client.login();
+				OAuth2AccessToken token = client.login();
+				if(cloudServer.isSso()) {
+					try {
+						String tokenValue = new ObjectMapper().writeValueAsString(token);
+						cloudServer.setAndSaveToken(tokenValue);
+					}
+					catch (JsonProcessingException e) {
+						CloudFoundryPlugin.logWarning(e.getMessage());
+					}
+				}
+
 				return null;
 			}
 		};

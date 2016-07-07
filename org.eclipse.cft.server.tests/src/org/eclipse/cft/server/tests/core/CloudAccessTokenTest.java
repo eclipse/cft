@@ -41,7 +41,7 @@ public class CloudAccessTokenTest extends AbstractCloudFoundryTest {
 
 	public void testFailingRequestAccessTokenErrorClient() throws Exception {
 		CloudFoundryOperations client = getTestFixture().createExternalClient();
-		CloudFoundryLoginHandler handler = new CloudFoundryLoginHandler(client);
+		CloudFoundryLoginHandler handler = new CloudFoundryLoginHandler(client, null);
 
 		OAuth2AccessToken token = handler.login(new NullProgressMonitor());
 		assertNotNull(token);

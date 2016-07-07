@@ -160,6 +160,7 @@ public class BehaviourOperationsScheduler {
 								NLS.bind(Messages.RefreshModulesHandler_EVENT_CLOUD_SERVER_NULL, opToRun.getClass()));
 					}
 					else {
+						cloudServer.setAndSaveToken(null);
 						ServerEventHandler.getDefault().fireError(cloudServer, module,
 								CloudFoundryPlugin.getErrorStatus(Messages.RefreshModulesHandler_REFRESH_FAILURE, t));
 

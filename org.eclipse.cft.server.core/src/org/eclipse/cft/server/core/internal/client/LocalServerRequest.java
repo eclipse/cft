@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -80,11 +80,19 @@ public abstract class LocalServerRequest<T> extends ClientRequest<T> {
 	@Override
 	public T runAndWait(CloudFoundryOperations client, SubMonitor monitor) throws CoreException {
 		CloudFoundryServer cloudServer = getCloudServer();
-		if (cloudServer.getUsername() == null || cloudServer.getUsername().length() == 0
-				|| cloudServer.getPassword() == null || cloudServer.getPassword().length() == 0) {
-			CloudFoundryPlugin.getCallback().getCredentials(cloudServer);
+		
+		if (!cloudServer.isSso()) {
+			// The username/password should not be null in non-sso scenario.
+			if (cloudServer.getUsername() == null || cloudServer.getUsername().length() == 0
+					|| cloudServer.getPassword() == null || cloudServer.getPassword().length() == 0) {
+				CloudFoundryPlugin.getCallback().getCredentials(cloudServer);
+			}
+		} else {
+			if(cloudServer.getToken() == null) {
+				CloudFoundryPlugin.getCallback().ssoLoginUserPrompt(cloudServer);
+			}
 		}
-
+		
 		Server server = (Server) cloudServer.getServer();
 
 		// Any Server request will require the server to be connected, so update

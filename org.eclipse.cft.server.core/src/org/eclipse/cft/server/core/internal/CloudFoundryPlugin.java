@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -210,6 +210,11 @@ public class CloudFoundryPlugin extends Plugin {
 		public void applicationStarting(CloudFoundryServer server, CloudFoundryApplicationModule cloudModule) {
 			// TODO Auto-generated method stub
 
+		}
+
+		@Override
+		public boolean ssoLoginUserPrompt(CloudFoundryServer cloudServer) {		
+			return false;
 		}
 	}
 

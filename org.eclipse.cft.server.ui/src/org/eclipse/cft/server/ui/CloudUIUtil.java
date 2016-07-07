@@ -23,11 +23,9 @@ package org.eclipse.cft.server.ui;
 import java.util.List;
 
 import org.eclipse.cft.server.core.AbstractCloudFoundryUrl;
-import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
 import org.eclipse.cft.server.ui.internal.CloudServerUIUtil;
 import org.eclipse.cft.server.ui.internal.CloudUiUtil;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jface.operation.IRunnableContext;
 
 /**
  * Wrapper class that exposes as API some internal
@@ -82,26 +80,4 @@ public class CloudUIUtil {
 		return CloudServerUIUtil.getUrls(serverTypeId, null);
 	}
 	
-	/**
-	 * Returns all cloud spaces given the input information, to create connections
-	 * to a Cloud Url server.
-	 * 
-	 * Runnable context can be null. If so, default Eclipse progress service
-	 * will be used as a runnable context. Display URL should be true if the
-	 * display URL is passed. If so, and attempt will be made to parse the
-	 * actual URL.
-	 * 
-	 * @param userName must not be null
-	 * @param password must not be null
-	 * @param urlText must not be null. Can be either display or actual URL
-	 * @param displayURL true if URL is display URL
-	 * @param selfSigned true if connecting to a self-signing server. False otherwise
-	 * @param context may be optional
-	 * @return spaces descriptor, or null if it couldn't be determined
-	 * @throws CoreException
-	 */
-	public static CloudOrgsAndSpaces getCloudSpaces(String userName, String password, String urlText,
-			boolean displayURL, boolean selfSigned, IRunnableContext context) throws CoreException {
-		return CloudUiUtil.getCloudSpaces(userName, password, urlText, displayURL, selfSigned, context);
-	}
 }

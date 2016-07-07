@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@ import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
 import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
 import org.eclipse.cft.server.core.internal.jrebel.CloudRebelAppHandler;
 import org.eclipse.cft.server.core.internal.log.CloudLog;
+import org.eclipse.cft.server.ui.internal.actions.ConnectCommand;
 import org.eclipse.cft.server.ui.internal.console.ConsoleManagerRegistry;
 import org.eclipse.cft.server.ui.internal.console.StandardLogContentType;
 import org.eclipse.cft.server.ui.internal.debug.ApplicationDebugUILauncher;
@@ -41,6 +42,7 @@ import org.eclipse.cft.server.ui.internal.wizards.DeleteServicesWizard;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
@@ -254,5 +256,10 @@ public class CloudFoundryUiCallback extends CloudFoundryCallback {
 
 	public ApplicationDebugLauncher getDebugLauncher(CloudFoundryServer cloudServer) {
 		return new ApplicationDebugUILauncher();
+	}
+
+	@Override
+	public boolean ssoLoginUserPrompt(CloudFoundryServer cloudServer) {
+		return ConnectCommand.openConnectDialog(cloudServer, new NullProgressMonitor());
 	}
 }

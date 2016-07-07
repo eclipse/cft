@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2014, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -45,27 +45,34 @@ public class CredentialsWizardValidator extends ServerWizardValidator {
 
 	@Override
 	protected ValidationStatus validateLocally() {
-
-		String userName = getCloudFoundryServer().getUsername();
-		String password = getCloudFoundryServer().getPassword();
-		String url = getCloudFoundryServer().getUrl();
 		String message = null;
-
 		boolean valuesFilled = false;
+		String url = getCloudFoundryServer().getUrl();
 		int validationEventType = ValidationEvents.VALIDATION;
-
-		if (userName == null || userName.trim().length() == 0) {
-			message = Messages.ENTER_AN_EMAIL;
-		}
-		else if (password == null || password.trim().length() == 0) {
-			message = Messages.ENTER_A_PASSWORD;
-		}
-		else if (url == null || url.trim().length() == 0) {
-			message = NLS.bind(Messages.SELECT_SERVER_URL, getSpaceDelegate().getServerServiceName());
-		}
-		else {
+		if (getCloudFoundryServer().isSso()) {
 			valuesFilled = true;
-			message = Messages.SERVER_WIZARD_VALIDATOR_CLICK_TO_VALIDATE;
+			message = Messages.SSO_SERVER_WIZARD_VALIDATOR_CLICK_TO_VALIDATE;
+		} else {
+			String userName = getCloudFoundryServer().getUsername();
+			String password = getCloudFoundryServer().getPassword();
+			
+			if (userName == null || userName.trim().length() == 0) {
+				message = Messages.ENTER_AN_EMAIL;
+			}
+			else if (password == null || password.trim().length() == 0) {
+				message = Messages.ENTER_A_PASSWORD;
+			}
+		}
+		if (url == null || url.trim().length() == 0) {
+			message = NLS.bind(Messages.SELECT_SERVER_URL, getSpaceDelegate().getServerServiceName());
+			valuesFilled = false;
+		} else {
+			valuesFilled = true;
+			if (getCloudFoundryServer().isSso()) {
+				message = Messages.SSO_SERVER_WIZARD_VALIDATOR_CLICK_TO_VALIDATE;
+			} else {
+				message = Messages.SERVER_WIZARD_VALIDATOR_CLICK_TO_VALIDATE;
+			}
 		}
 
 		// Missing values should appear as INFO in the wizard, as to not show an

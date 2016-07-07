@@ -188,7 +188,7 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 				boolean selfSigned = cloudServer.getSelfSignedCertificate();
 
 				SshClientSupport ssh = SshClientSupport.create(CloudFoundryServerBehaviour
-						.createExternalClientLogin(url, userName, password, selfSigned, progress),
+						.createExternalClientLogin(cloudServer, url, userName, password, selfSigned, progress),
 						new CloudCredentials(userName, password), null, selfSigned);
 
 				Session session = ssh.connect(app, cloudServer, instanceIndex);

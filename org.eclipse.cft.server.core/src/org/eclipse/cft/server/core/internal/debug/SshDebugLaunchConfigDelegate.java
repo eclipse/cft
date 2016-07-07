@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -104,7 +104,7 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 		boolean selfSigned = cloudServer.getSelfSignedCertificate();
 
 		SshClientSupport ssh = SshClientSupport.create(
-				CloudFoundryServerBehaviour.createExternalClientLogin(url, userName, password, selfSigned, monitor),
+				CloudFoundryServerBehaviour.createExternalClientLogin(cloudServer, url, userName, password, selfSigned, monitor),
 				new CloudCredentials(userName, password), null, selfSigned);
 
 		try {

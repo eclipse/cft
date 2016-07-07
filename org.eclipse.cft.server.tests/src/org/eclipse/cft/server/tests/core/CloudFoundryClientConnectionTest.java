@@ -64,7 +64,7 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(credentials.userEmail, credentials.password,
 				credentials.organization, credentials.space, httpUrl, credentials.selfSignedCertificate);
 
-		new CloudFoundryLoginHandler(client).login(new NullProgressMonitor());
+		new CloudFoundryLoginHandler(client, null).login(new NullProgressMonitor());
 
 		CloudInfo cloudInfo = client.getCloudInfo();
 		Assert.assertNotNull(cloudInfo);
@@ -82,7 +82,7 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(credentials.userEmail, credentials.password,
 				credentials.organization, credentials.space, httpUrl, credentials.selfSignedCertificate);
 
-		new CloudFoundryLoginHandler(client).login(new NullProgressMonitor());
+		new CloudFoundryLoginHandler(client, null).login(new NullProgressMonitor());
 
 		CloudInfo cloudInfo = client.getCloudInfo();
 		Assert.assertNotNull(cloudInfo);
@@ -107,7 +107,7 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(credentials.userEmail, credentials.password,
 				credentials.organization, credentials.space, credentials.url, credentials.selfSignedCertificate);
 
-		CloudFoundryLoginHandler operationsHandler = new CloudFoundryLoginHandler(client);
+		CloudFoundryLoginHandler operationsHandler = new CloudFoundryLoginHandler(client, null);
 
 		operationsHandler.login(new NullProgressMonitor());
 

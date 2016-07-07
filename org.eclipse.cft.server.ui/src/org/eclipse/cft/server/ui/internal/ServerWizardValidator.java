@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -184,20 +184,22 @@ public abstract class ServerWizardValidator implements ServerValidator {
 		// before attempting a remote validation
 		ValidationStatus validationStatus = validateLocally();
 
-		String userName = cfServer.getUsername();
-		String password = cfServer.getPassword();
-		String url = cfServer.getUrl();
-		boolean acceptSelfSigned = cfServer.getSelfSignedCertificate();
-
 		IStatus eventStatus = null;
 
 		if (validationStatus.getStatus().isOK()) {
+			String userName = cfServer.getUsername();
+			String password = cfServer.getPassword();
+			String url = cfServer.getUrl();
+			boolean acceptSelfSigned = cfServer.getSelfSignedCertificate();
+			boolean sso = cfServer.isSso();
+			String passcode = cfServer.getPasscode();
+			String tokenValue = cfServer.getToken();
 
 			// If credentials changed, clear the space descriptor. If a server
 			// validation is required later on
 			// the new credentials will be validated and a new descriptor will
 			// be obtained.
-			if (!cloudServerSpaceDelegate.matchesCurrentDescriptor(url, userName, password, acceptSelfSigned)) {
+			if (!sso && !cloudServerSpaceDelegate.matchesCurrentDescriptor(url, userName, password, acceptSelfSigned)) {
 				cloudServerSpaceDelegate.clearDescriptor();
 			}
 
@@ -209,7 +211,7 @@ public abstract class ServerWizardValidator implements ServerValidator {
 				// credential validation.
 				if (validateSpace) {
 					cloudServerSpaceDelegate.resolveDescriptor(url, userName, password, acceptSelfSigned,
-							runnableContext, validateAgainstServer);
+							runnableContext, validateAgainstServer, sso, passcode, tokenValue);
 				}
 				else if (validateAgainstServer) {
 					// If validation is requested but not space validation.
@@ -217,8 +219,13 @@ public abstract class ServerWizardValidator implements ServerValidator {
 					// the validation will convert
 					// it to an actual URL)
 					boolean displayURL = true;
-					CloudUiUtil.validateCredentials(userName, password, url, displayURL, acceptSelfSigned,
-							runnableContext);
+					if(sso) {
+						CloudUiUtil.validateSsoCredentials(cfServer, url, displayURL, acceptSelfSigned, runnableContext, passcode, tokenValue);
+					} else {
+						CloudUiUtil.validateCredentials(cfServer, userName, password, url, displayURL, acceptSelfSigned, runnableContext);
+
+					}
+
 				}
 
 			}
