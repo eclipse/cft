@@ -18,6 +18,7 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  *     IBM - Bug 485697 - Implement host name taken check in CF wizards
+ *     IBM - Bug 496428 - Wizard should give an error about underscore being in subdomain
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal;
 
@@ -546,7 +547,9 @@ public class Messages extends NLS {
 	public static String CloudApplicationUrlPart_BUTTON_VALIDATE_LABEL_HOVERHELP;
 
 	public static String CloudApplicationUrlPart_ERROR_HOSTNAME_TAKEN;
-	
+
+	public static String CloudApplicationUrlPart_ERROR_INVALID_UNDERSCORE_CHAR;
+
 	public static String CloudApplicationUrlPart_HOST_CHECK_JOB_DISPLAY_INFO;
 	
 	public static String CloudApplicationUrlPart_ERROR_UNABLE_TO_CHECK_HOSTNAME;

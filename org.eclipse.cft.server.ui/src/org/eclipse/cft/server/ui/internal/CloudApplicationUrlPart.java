@@ -18,6 +18,7 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  *     IBM - Bug 485697 - Implement host name taken check in CF wizards
+ *     IBM - Bug 496428 - Wizard should give an error about underscore being in subdomain
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal;
 
@@ -27,6 +28,7 @@ import java.util.List;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.ValidationEvents;
 import org.eclipse.cft.server.ui.internal.wizards.CloudUIEvent;
 import org.eclipse.cft.server.ui.internal.wizards.IReservedURLTracker;
@@ -328,9 +330,13 @@ public class CloudApplicationUrlPart extends UIPart {
 			updateDomainSelection(domain);
 		}
 
+		String subDomain = appUrl != null ? appUrl.getSubdomain() : null;
 		if (this.validationSource != subDomainText) {
-			String subDomain = appUrl != null ? appUrl.getSubdomain() : null;
 			setTextValue(subDomainText, subDomain);
+		} 
+	    // Validate the subdomain value regardless of how it was changed (from any validationSource)
+		if (subDomain != null && subDomain.contains("_")) {
+			status = CloudFoundryPlugin.getErrorStatus(Messages.CloudApplicationUrlPart_ERROR_INVALID_UNDERSCORE_CHAR);
 		}
 
 		validateButton.setEnabled(status.isOK());
