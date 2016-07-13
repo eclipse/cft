@@ -595,6 +595,22 @@ public class CFUiUtil {
 		return PlatformUI.getWorkbench().getModalDialogShellProvider().getShell();
 	}
 
+	/**
+	 * This method returns a unique, subdomain name of an unused Cloud URL, based on the initial URL value.
+	 * 
+	 * The algorithm to determin the unique, unused subdomain is as follows:
+	 * 1. Check if the initial subdomain is taken.  If it is not taken, it is returned.
+	 * 2. If taken, the initial subdomain will be appended by a dash (-) followed by a hash of the username, org and space. If
+	 *    it is not taken, it is returned. 
+	 * 3. If taken, then it will be appended by a dash and a 1.
+	 * 4. This last integer will be incremented until the hostname is unused.
+	 * 
+	 * @param url
+	 * @param server
+	 * @param monitor
+	 * @return the unused subdomain String
+	 * @throws CoreException
+	 */
 	public static UniqueSubdomain getUniqueSubdomain(String url, CloudFoundryServer server, IProgressMonitor monitor)
 			throws CoreException {
 		if (url == null)
@@ -603,7 +619,7 @@ public class CFUiUtil {
 		ApplicationUrlLookupService lookup = ApplicationUrlLookupService.getCurrentLookup(server);
 		CloudApplicationURL cloudUrl = null;
 		boolean isUniqueURL = true;
-		int intSuffix = 1;
+		int intSuffix = -1;
 
 		UniqueSubdomain result = null;
 
@@ -613,7 +629,16 @@ public class CFUiUtil {
 		}
 
 		List<CloudRoute> routes = null;
-
+		String userName = server.getUsername();
+		String orgName = server.getCloudFoundrySpace().getOrgName();
+		String spaceName = server.getCloudFoundrySpace().getSpaceName();
+		int suffixHash;
+		if (userName != null) {
+		   suffixHash = (userName + orgName + spaceName).hashCode();
+		} else {
+		   suffixHash = (orgName + spaceName).hashCode();
+		}
+		String hashString = String.valueOf(suffixHash).substring(0, 6);
 		do {
 
 			try {
@@ -679,33 +704,26 @@ public class CFUiUtil {
 
 			}
 			else {
+				intSuffix ++;   
 				// The route is taken (as determined either by checking the
 				// route list, or by attempting to reserve)
 
 				isUniqueURL = false;
 				StringBuilder sb = new StringBuilder(url);
 				String subdomain = cloudUrl.getSubdomain();
-				// Get the last integers in the subdomain
-				Pattern p = Pattern.compile("(\\d+)$"); // $NON-NLS-N$
-				Matcher m = p.matcher(subdomain);
-				// If it ends with a number, then simply increment it by one to
-				// get the new candidate subdomain name
-				if (m.find()) {
-					// Examples: subdomain could be MyApp1 or MyApp99 or
-					// MyApp2015
-					String intSuffixString = m.group(1); // The number can be
-															// any length
-					intSuffix = Integer.parseInt(intSuffixString);
-					int beginning = subdomain.indexOf(intSuffixString);
-					int length = intSuffixString.length();
-					// Examples: MyApp1 to MyApp2; MyApp99 to MyApp100;
-					// MyApp2015 to MyApp2016
-					// Increment intSuffix first
-					url = sb.replace(beginning, beginning + length, Integer.toString(++intSuffix)).toString();
-				}
-				else { // Otherwise, simply append 1 to the end of the subdomain
-					// Example: subdomain = MyApp --> MyApp1
-					url = sb.insert(sb.indexOf(subdomain) + subdomain.length(), "1").toString();
+				
+				if (intSuffix == 0) {  // First attempt at a suggested unused name
+					sb = new StringBuilder(url);
+					subdomain = cloudUrl.getSubdomain();    // Example: MyApp1-23526.  If app is actually called MyApp1-23526, then it will be MyApp1-23526-23526
+					url = sb.insert(sb.indexOf(subdomain) + subdomain.length(), "-" + hashString).toString();
+				} else if (intSuffix == 1) { // Second attempt
+					int beginning = subdomain.indexOf(hashString) - 1; // -1 for the dash
+					int length = hashString.length() + 1; // +1 for the dash
+					url = sb.replace(beginning, beginning + length, "-" + hashString + "-1").toString(); // Example: MyApp1-23526-1
+				} else { // All subsequent attempts to find an unused name
+					int beginning = subdomain.indexOf(hashString) - 1; // -1 for the leading dash
+					int length = hashString.length() + 2 + String.valueOf(intSuffix - 1).length(); // + 2 for the two dashes
+					url = sb.replace(beginning, beginning + length, "-" + hashString + "-" + intSuffix).toString(); // Example: MyApp1-23526-2
 				}
 			}
 
