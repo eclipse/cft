@@ -598,7 +598,7 @@ public class CFUiUtil {
 	/**
 	 * This method returns a unique, subdomain name of an unused Cloud URL, based on the initial URL value.
 	 * 
-	 * The algorithm to determin the unique, unused subdomain is as follows:
+	 * The algorithm to determine the unique, unused subdomain is as follows:
 	 * 1. Check if the initial subdomain is taken.  If it is not taken, it is returned.
 	 * 2. If taken, the initial subdomain will be appended by a dash (-) followed by a hash of the username, org and space. If
 	 *    it is not taken, it is returned. 
