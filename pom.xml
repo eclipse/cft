@@ -136,14 +136,39 @@
 				<url>http://download.eclipse.org/eclipse/updates/4.6/</url>
 			</repository>
 			<repository>
-				<id>mars</id>
+				<id>neon</id>
 				<layout>p2</layout>
 				<url>http://download.eclipse.org/releases/neon/</url>
 			</repository>
 			<repository>
 				<id>orbit-neon</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/tools/orbit/downloads/drops/S20151204220443/repository/</url>
+				<url>http://download.eclipse.org/tools/orbit/downloads/drops/R20160520211859/repository/</url>
+			</repository>
+		</repositories>
+	</profile>
+	
+	<profile>
+		<id>e47</id>
+		<properties>
+			<p2.repository.name>CFT for Eclipse 4.7</p2.repository.name>
+		</properties>
+		<repositories>
+			<repository>
+				<id>platform-e47</id>
+				<layout>p2</layout>
+				<url>http://download.eclipse.org/eclipse/updates/4.7/</url>
+			</repository>
+			<repository>
+				<id>oxygen</id>
+				<layout>p2</layout>
+				<url>http://download.eclipse.org/staging/oxygen/</url>
+			</repository>
+			<repository>
+				<id>orbit-oxygen</id>
+				<layout>p2</layout>
+				<!-- NOTE: Still using Neon until Oxygen drops are available -->
+				<url>http://download.eclipse.org/tools/orbit/downloads/drops/R20160520211859/repository/</url>
 			</repository>
 		</repositories>
 	</profile>
