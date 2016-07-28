@@ -569,6 +569,9 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	@Override
 	public void modifyModules(final IModule[] add, IModule[] remove, IProgressMonitor monitor) throws CoreException {
 
+		// Log modify modules parameters
+		CloudFoundryPlugin.logInfo(convertModifyModulesToString(add, remove));
+		
 		final CloudFoundryApplicationModule toReplace = remove != null && remove.length > 0 ? getExistingCloudModule(remove[0])
 				: null;
 		if (toReplace != null && getData().getTaggedForReplace(toReplace) != null) {
@@ -1538,5 +1541,38 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		setAttribute(PROP_SSO_ID, selection);
 		updateServerId();
 	}
+	
+	/** Convert an array of modules to a String for debugging.*/
+	private static String moduleListToString(IModule[] module) {
+		String moduleStr = "{ ";
+		if(module != null) {
+			for(int x = 0; x < module.length; x++) {
+				IModule currModule = module[x];
+				
+				if(currModule == null) { continue; } 
+				
+				moduleStr += currModule.getName()+" ["+currModule.getId()+"/"+(currModule.getModuleType() != null ? currModule.getModuleType().getId() : "")  +"]";
+				
+				if(x+1 < module.length) {
+					moduleStr += ", ";
+				}
+			}
+		}
+		moduleStr = moduleStr.trim() + "}";
+		
+		return moduleStr;
+	}
 
+	/** Convert a call to modifyModules(...) to a String, for debugging */
+	private static String convertModifyModulesToString(IModule[] addModules, IModule[] removeModules) { 
+		try {
+			return "CloudFoundryServer.modifyModules(...): add: "+moduleListToString(addModules) +" remove: "+moduleListToString(removeModules);
+			
+		} catch(Exception t) {
+			// This method is for logging only; we should not throw exceptions to calling methods under any circumstances.
+		}
+		
+		return "";
+	}
+	
 }
