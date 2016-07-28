@@ -118,6 +118,7 @@ public class ClientRequestFactory {
 		return new BehaviourRequest<Void>(NLS.bind(Messages.DELETING_MODULE, appName), behaviour) {
 			@Override
 			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+				CloudFoundryPlugin.logInfo("ClientRequestFactory.deleteApplication(...): appName:"+appName);
 				client.deleteApplication(appName);
 				return null;
 			}

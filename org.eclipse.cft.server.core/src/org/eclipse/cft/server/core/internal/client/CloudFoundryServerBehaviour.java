@@ -1316,6 +1316,10 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	@Override
 	protected void publishModule(int kind, int deltaKind, IModule[] module, IProgressMonitor monitor)
 			throws CoreException {
+	
+		// Log publish module parameters
+		CloudFoundryPlugin.logInfo(convertPublishModuleToString(deltaKind, module));
+		
 		super.publishModule(kind, deltaKind, module, monitor);
 
 		try {
@@ -1841,6 +1845,49 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 		return moduleArchive;
 	}
+
+	/** Convert a call to publishModule(...) to a String, for debugging */
+	private static String convertPublishModuleToString(int deltaKind, IModule[] module) { 
+		try {
+			String deltaKindStr;
+			
+			if(deltaKind == REMOVED) {
+				deltaKindStr = "REMOVED";
+			} else if(deltaKind == ADDED) {
+				deltaKindStr = "ADDED";
+			} else if(deltaKind == CHANGED) {
+				deltaKindStr = "CHANGED";
+			} else if(deltaKind == NO_CHANGE) {
+				deltaKindStr = "NO_CHANGE";
+			} else {
+				deltaKindStr = "Unknown";
+			}
+			
+			String moduleStr = "{ ";
+			if(module != null) {
+				for(int x = 0; x < module.length; x++) {
+					IModule currModule = module[x];
+					
+					if(currModule == null) { continue; } 
+					
+					moduleStr += currModule.getName()+" ["+currModule.getId()+"/"+(currModule.getModuleType() != null ? currModule.getModuleType().getId() : "")  +"]";
+					
+					if(x+1 < module.length) {
+						moduleStr += ", ";
+					}
+				}
+			}
+			moduleStr = moduleStr.trim() + "}";
+			
+			return "CloudFoundryServerBehaviour.publishModule(...): "+deltaKindStr +" "+moduleStr;
+			
+		} catch(Exception t) {
+			// This method is for logging only; we should not throw exceptions to calling methods under any circumstances.
+		}
+		
+		return "";
+	}
+	
 
 	/**
 	 * Keep track on all the publish operation to be completed

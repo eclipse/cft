@@ -512,5 +512,11 @@ public class CloudFoundryPlugin extends Plugin {
 			plugin.getLog().log(getStatus(message, IStatus.WARNING));
 		}
 	}
-
+	
+	public static void logInfo(String message) {
+		if (plugin != null && message != null) {
+			plugin.getLog().log(getStatus(message, IStatus.INFO));
+		}
+	}
+	
 }
