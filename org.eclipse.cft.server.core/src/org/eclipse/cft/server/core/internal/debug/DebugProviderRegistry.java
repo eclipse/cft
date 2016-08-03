@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,13 +20,21 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.debug;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.osgi.util.NLS;
 
 public class DebugProviderRegistry {
+	
+	private static final String DEBUG_PROVIDER_CLASS_ATTR = "class";
 
 	private static final CloudFoundryDebugProvider[] providers = getProviders();
 
@@ -72,6 +80,18 @@ public class DebugProviderRegistry {
 	}
 
 	private static CloudFoundryDebugProvider[] getProviders() {
-		return new CloudFoundryDebugProvider[] { new NgrokDebugProvider(), new SshDebugProvider() };
+		List<CloudFoundryDebugProvider> providers = new ArrayList<CloudFoundryDebugProvider>();
+		IConfigurationElement[] configElements = Platform.getExtensionRegistry().getConfigurationElementsFor("org.eclipse.cft.server.core.debugProvider");
+		for (IConfigurationElement elem : configElements) {
+			try {
+				providers.add((CloudFoundryDebugProvider) elem.createExecutableExtension(DEBUG_PROVIDER_CLASS_ATTR));
+			} catch (Exception e) {
+				CloudFoundryPlugin.logWarning(e.getMessage());
+			}
+		}
+
+		providers.add(new NgrokDebugProvider());
+		providers.add(new SshDebugProvider());
+		return providers.toArray(new CloudFoundryDebugProvider[providers.size()]);
 	}
 }

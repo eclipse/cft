@@ -2,7 +2,7 @@
 <?eclipse version="3.3"?>
 <!--
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@
    <extension-point id="branding" name="Cloud Foundry Service Branding" schema="schema/branding.exsd"/>
    <extension-point id="application" name="Cloud Foundry Supported Application Type" schema="schema/application.exsd"/>
    <extension-point id="appStateTracker" name="Publish Application State Tracker" schema="schema/appStateTracker.exsd"/>
+   <extension-point id="debugProvider" name="Debug Provider" schema="schema/debugProvider.exsd"/>
 
    <!-- Internal extension point that should not be implemented by adopter -->
    <extension-point id="callback" name="UI Callback" schema="schema/callback.exsd"/>
