@@ -20,6 +20,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.debug;
 
+import org.eclipse.cft.server.core.AbstractDebugProvider;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -52,7 +53,7 @@ public abstract class ApplicationDebugLauncher {
 
 	public static void terminateLaunch(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer,
 			int appInstance) throws CoreException {
-		CloudFoundryDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
+		AbstractDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
 		if (provider != null) {
 			String appLaunchId = provider.getApplicationDebugLaunchId(appModule, cloudServer, appInstance);
 			terminateLaunch(appLaunchId);
@@ -60,7 +61,7 @@ public abstract class ApplicationDebugLauncher {
 	}
 
 	public boolean supportsDebug(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer) {
-		CloudFoundryDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
+		AbstractDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
 		return provider != null && provider.isDebugSupported(appModule, cloudServer);
 	}
 
@@ -76,7 +77,7 @@ public abstract class ApplicationDebugLauncher {
 	 */
 	public boolean isConnectedToDebugger(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer,
 			int appInstance) {
-		CloudFoundryDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
+		AbstractDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
 		if (provider != null) {
 			String id = provider.getApplicationDebugLaunchId(appModule, cloudServer, appInstance);
 			return ApplicationDebugLauncher.getActiveLaunch(id) != null;

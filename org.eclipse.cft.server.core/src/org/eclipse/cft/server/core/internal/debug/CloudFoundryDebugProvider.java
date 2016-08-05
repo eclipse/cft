@@ -20,6 +20,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.debug;
 
+import org.eclipse.cft.server.core.AbstractDebugProvider;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
@@ -32,18 +33,8 @@ import org.eclipse.debug.core.ILaunchConfigurationType;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 
-public abstract class CloudFoundryDebugProvider {
-
-	/**
-	 * Return true if debug is supported for the given application running on
-	 * the target cloud server. This is meant to be a fairly quick check
-	 * therefore avoid long-running operations.
-	 * @param appModule
-	 * @param cloudServer
-	 * @return true if debug is supported for the given app. False otherwise
-	 */
-	public abstract boolean isDebugSupported(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer);
-
+public abstract class CloudFoundryDebugProvider extends AbstractDebugProvider {
+	
 	public abstract String getLaunchConfigurationType(CloudFoundryApplicationModule appModule,
 			CloudFoundryServer cloudServer);
 
@@ -97,6 +88,7 @@ public abstract class CloudFoundryDebugProvider {
 					throws CoreException {
 
 		String launchLabel = getLaunchLabel(appModule, cloudServer, appInstance);
+		launchLabel = launchLabel.replaceAll("@", "-");
 
 		String launchType = getLaunchConfigurationType(appModule, cloudServer);
 

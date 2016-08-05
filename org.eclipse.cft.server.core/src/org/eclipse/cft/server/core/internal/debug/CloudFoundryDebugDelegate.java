@@ -23,6 +23,7 @@ package org.eclipse.cft.server.core.internal.debug;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.cft.server.core.AbstractDebugProvider;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -73,7 +74,7 @@ public abstract class CloudFoundryDebugDelegate extends AbstractJavaLaunchConfig
 		int appInstance = getAppInstance(configuration);
 		int remoteDebugPort = getRemoteDebugPort(configuration);
 
-		CloudFoundryDebugProvider provider = DebugProviderRegistry.getExistingProvider(appModule, cloudServer);
+		AbstractDebugProvider provider = DebugProviderRegistry.getExistingProvider(appModule, cloudServer);
 
 		DebugConnectionDescriptor connectionDescriptor = getDebugConnectionDescriptor(appModule, cloudServer,
 				appInstance, remoteDebugPort, monitor);

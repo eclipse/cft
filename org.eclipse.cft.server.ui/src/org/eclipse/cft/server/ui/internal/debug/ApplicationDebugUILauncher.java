@@ -20,11 +20,11 @@
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.debug;
 
+import org.eclipse.cft.server.core.AbstractDebugProvider;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
-import org.eclipse.cft.server.core.internal.debug.CloudFoundryDebugProvider;
 import org.eclipse.cft.server.core.internal.debug.DebugProviderRegistry;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -43,7 +43,7 @@ public class ApplicationDebugUILauncher extends ApplicationDebugLauncher {
 	@Override
 	public void launch(final CloudFoundryApplicationModule appModule, final CloudFoundryServer cloudServer,
 			final int appInstance, final int remoteDebugPort) throws CoreException {
-		final CloudFoundryDebugProvider provider = DebugProviderRegistry.getExistingProvider(appModule, cloudServer);
+		final AbstractDebugProvider provider = DebugProviderRegistry.getExistingProvider(appModule, cloudServer);
 
 		Job job = new Job("Launching debug - " + appModule.getDeployedApplicationName()) { //$NON-NLS-1$
 
