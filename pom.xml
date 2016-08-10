@@ -157,7 +157,7 @@
 			<repository>
 				<id>platform-e47</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/eclipse/updates/4.7/</url>
+				<url>http://download.eclipse.org/eclipse/updates/4.7milestones/</url>
 			</repository>
 			<repository>
 				<id>oxygen</id>
