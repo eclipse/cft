@@ -25,24 +25,21 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.zip.ZipFile;
 
 import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.cft.server.core.internal.CFConsoleHandler;
-import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerUtil;
-import org.eclipse.cft.server.core.internal.application.JavaWebApplicationDelegate;
+import org.eclipse.cft.server.core.internal.application.ICloudFoundryArchiver;
 import org.eclipse.cft.server.core.internal.application.ZipArchive;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.standalone.core.internal.application.ICloudFoundryArchiver;
+import org.eclipse.cft.server.standalone.core.internal.application.DeploymentErrorHandler;
 import org.eclipse.cft.server.standalone.core.internal.application.StandaloneConsole;
 import org.eclipse.cft.server.standalone.ui.internal.Messages;
-import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -50,27 +47,15 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
-import org.eclipse.jdt.internal.ui.jarpackagerfat.FatJarRsrcUrlBuilder;
-import org.eclipse.jdt.ui.jarpackager.IJarBuilder;
-import org.eclipse.jdt.ui.jarpackager.IJarExportRunnable;
 import org.eclipse.jdt.ui.jarpackager.JarPackageData;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
-import org.springframework.boot.loader.tools.Libraries;
-import org.springframework.boot.loader.tools.Library;
-import org.springframework.boot.loader.tools.LibraryCallback;
-import org.springframework.boot.loader.tools.LibraryScope;
-import org.springframework.boot.loader.tools.Repackager;
+import org.eclipse.wst.server.core.model.IModuleResource;
 
 /**
  * Generates a Cloud Foundry client archive represent the Java application that
@@ -84,204 +69,193 @@ import org.springframework.boot.loader.tools.Repackager;
  */
 public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 
-	private CloudFoundryApplicationModule appModule;
-
-	private IModule actualModule;
-
-	private CloudFoundryServer cloudServer;
-
-	private boolean initialized = false;
-
 	private static final String META_FOLDER_NAME = "META-INF"; //$NON-NLS-1$
 
 	private static final String MANIFEST_FILE = "MANIFEST.MF"; //$NON-NLS-1$
-
-	public void initialize(IModule module, IServer server) throws CoreException {
-		this.cloudServer = CloudServerUtil.getCloudServer(server);
-		this.actualModule = module;
-		Assert.isNotNull(module,
-				"Unable to package standalone application. No WTP module found for application. Refresh server and try again."); //$NON-NLS-1$
-
-		this.appModule = cloudServer.getExistingCloudModule(module);
-
-		Assert.isNotNull(appModule,
-				"Unable to package standalone application. No cloud application module found. Refresh server and try again."); //$NON-NLS-1$
-		
-		// Need to know whether initalized or not to mimic the earlier behavior
-		// where the it was
-		// initialized within the constructor. Now it is being created from an
-		// extension point.
-		initialized = true;
-	}
 
 	protected CFConsoleHandler getConsole() {
 		return StandaloneConsole.getDefault();
 	}
 
-	public CFApplicationArchive getApplicationArchive(IProgressMonitor monitor) throws CoreException {
+	protected DeploymentErrorHandler getErrorHandler(IModule actualModule, CloudFoundryApplicationModule appModule,
+			CloudFoundryServer cloudServer, CFConsoleHandler consoleHandler) {
+		return new DeploymentErrorHandler(actualModule, appModule, cloudServer, consoleHandler);
+	}
 
-		if (!initialized) {
-			// Seems like initialize() wasn't invoked prior to this call
-			throw CloudErrorUtil.toCoreException(Messages.JavaCloudFoundryArchiver_ERROR_ARCHIVER_NOT_INITIALIZED);
-		}
+	protected JarArchivingUIHandler getArchivingHandler(CloudFoundryApplicationModule appModule,
+			CloudFoundryServer cloudServer, CFConsoleHandler console, DeploymentErrorHandler errorHandler) {
+		return new JarArchivingUIHandler(appModule, cloudServer, console, errorHandler);
+	}
+
+	public CFApplicationArchive getApplicationArchive(IModule module, IServer server, IModuleResource[] resources,
+			IProgressMonitor monitor) throws CoreException {
+		CloudFoundryServer cloudServer = CloudServerUtil.getCloudServer(server);
+		Assert.isNotNull(module,
+				"Unable to package standalone application. No WTP module found for application. Refresh server and try again."); //$NON-NLS-1$
+
+		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
+
+		Assert.isNotNull(appModule,
+				"Unable to package standalone application. No cloud application module found. Refresh server and try again."); //$NON-NLS-1$
 
 		// Bug 495814: Maven projects may go out of synch with filesystem,
 		// especially if they are built
 		// outside of Eclipse. This may result in missing dependencies and
 		// resources in the packaged jar
-		refreshProject(monitor);
+		refreshProject(module, appModule, cloudServer, monitor);
 
-		IProject project = getProject();
+		IProject project = getProject(appModule);
 		String projectName = project != null ? project.getName() : "UNKNOWN PROJECT"; //$NON-NLS-1$
 
-		CFApplicationArchive archive = JavaWebApplicationDelegate.getArchiveFromManifest(appModule, cloudServer);
+		CFApplicationArchive archive = null;
 
-		if (archive != null) {
-			getConsole().printToConsole(actualModule, cloudServer,
-					NLS.bind(Messages.JavaCloudFoundryArchiver_FOUND_ARCHIVE_FROM_MANIFEST, archive.getName()));
+		CFConsoleHandler console = getConsole();
+		DeploymentErrorHandler errorHandler = getErrorHandler(module, appModule, cloudServer, console);
+		JarArchivingUIHandler archivingHandler = getArchivingHandler(appModule, cloudServer, console, errorHandler);
+
+		File packagedFile = null;
+
+		IJavaProject javaProject = CloudFoundryProjectUtil.getJavaProject(appModule);
+
+		if (javaProject == null) {
+			errorHandler
+					.handleApplicationDeploymentFailure(Messages.JavaCloudFoundryArchiver_ERROR_NO_JAVA_PROJ_RESOLVED);
+		}
+
+		JavaPackageFragmentRootHandler rootResolver = archivingHandler.getPackageFragmentRootHandler(javaProject,
+				monitor);
+
+		IType mainType = rootResolver.getMainType(monitor);
+
+		if (mainType != null) {
+			console.printToConsole(module, cloudServer,
+					NLS.bind(Messages.JavaCloudFoundryArchiver_PACKAGING_MAIN_TYPE, mainType.getFullyQualifiedName()));
+		}
+
+		final IPackageFragmentRoot[] roots = rootResolver.getPackageFragmentRoots(monitor);
+
+		if (roots == null || roots.length == 0) {
+			errorHandler
+					.handleApplicationDeploymentFailure(Messages.JavaCloudFoundryArchiver_ERROR_NO_PACKAGE_FRAG_ROOTS);
+		}
+
+		JarPackageData jarPackageData = archivingHandler.getJarPackageData(roots, mainType, monitor);
+
+		boolean isBoot = CloudFoundryProjectUtil.isSpringBoot(appModule);
+
+		// Search for existing MANIFEST.MF
+		IFile metaFile = getManifest(roots, javaProject);
+
+		// Only use existing manifest files for non-Spring boot, as Spring
+		// boot repackager will
+		// generate it own manifest file.
+		if (!isBoot && metaFile != null) {
+			// If it is not a boot project, use a standard library jar
+			// builder
+			jarPackageData.setJarBuilder(archivingHandler.getDefaultLibJarBuilder());
+
+			jarPackageData.setManifestLocation(metaFile.getFullPath());
+			jarPackageData.setSaveManifest(false);
+			jarPackageData.setGenerateManifest(false);
+			// Check manifest accessibility through the jar package data
+			// API
+			// to verify the packaging won't fail
+			if (!jarPackageData.isManifestAccessible()) {
+				errorHandler.handleApplicationDeploymentFailure(
+						NLS.bind(Messages.JavaCloudFoundryArchiver_ERROR_MANIFEST_NOT_ACCESSIBLE,
+								metaFile.getLocation().toString()));
+			}
+
+			InputStream inputStream = null;
+			try {
+
+				inputStream = new FileInputStream(metaFile.getLocation().toFile());
+				Manifest manifest = new Manifest(inputStream);
+				Attributes att = manifest.getMainAttributes();
+				if (att.getValue("Main-Class") == null) { //$NON-NLS-1$
+					errorHandler.handleApplicationDeploymentFailure(
+							Messages.JavaCloudFoundryArchiver_ERROR_NO_MAIN_CLASS_IN_MANIFEST);
+				}
+			} catch (FileNotFoundException e) {
+				errorHandler.handleApplicationDeploymentFailure(NLS
+						.bind(Messages.JavaCloudFoundryArchiver_ERROR_FAILED_READ_MANIFEST, e.getLocalizedMessage()));
+
+			} catch (IOException e) {
+				errorHandler.handleApplicationDeploymentFailure(NLS
+						.bind(Messages.JavaCloudFoundryArchiver_ERROR_FAILED_READ_MANIFEST, e.getLocalizedMessage()));
+
+			} finally {
+
+				if (inputStream != null) {
+					try {
+						inputStream.close();
+
+					} catch (IOException io) {
+						// Ignore
+					}
+				}
+			}
+
 		} else {
+			// Otherwise generate a manifest file. Note that manifest files
+			// are only generated in the temporary jar meant only for
+			// deployment.
+			// The associated Java project is no modified.
+			jarPackageData.setGenerateManifest(true);
 
-			File packagedFile = null;
+			// This ensures that folders in output folders appear at root
+			// level
+			// Example: src/main/resources, which is in the project's
+			// classpath, contains non-Java templates folder and
+			// has output folder target/classes. If not exporting output
+			// folder,
+			// templates will be packaged in the jar using this path:
+			// resources/templates
+			// This may cause problems with the application's dependencies
+			// if they are looking for just /templates at top level of the
+			// jar
+			// If exporting output folders, templates folder will be
+			// packaged at top level in the jar.
+			jarPackageData.setExportOutputFolders(true);
+		}
 
-			IJavaProject javaProject = CloudFoundryProjectUtil.getJavaProject(appModule);
+		try {
+			console.printToConsole(module, cloudServer,
+					NLS.bind(Messages.JavaCloudFoundryArchiver_PACKAGING_APPLICATION, projectName));
 
-			if (javaProject == null) {
-				handleApplicationDeploymentFailure(Messages.JavaCloudFoundryArchiver_ERROR_NO_JAVA_PROJ_RESOLVED);
-			}
+			packagedFile = archivingHandler.packageApplication(jarPackageData, monitor);
+		} catch (CoreException e) {
+			errorHandler.handleApplicationDeploymentFailure(
+					NLS.bind(Messages.JavaCloudFoundryArchiver_ERROR_JAVA_APP_PACKAGE, e.getMessage()));
+		}
 
-			JavaPackageFragmentRootHandler rootResolver = getPackageFragmentRootHandler(javaProject, monitor);
+		if (packagedFile == null || !packagedFile.exists()) {
+			errorHandler.handleApplicationDeploymentFailure(
+					Messages.JavaCloudFoundryArchiver_ERROR_NO_PACKAGED_FILE_CREATED);
+		} else {
+			console.printToConsole(module, cloudServer,
+					NLS.bind(Messages.JavaCloudFoundryArchiver_PACKAGING_APPLICATION_COMPLETED, projectName,
+							packagedFile.getAbsolutePath()));
+		}
 
-			IType mainType = rootResolver.getMainType(monitor);
+		if (isBoot) {
+			console.printToConsole(module, cloudServer, Messages.JavaCloudFoundryArchiver_REPACKAGING_SPRING_BOOT_APP);
 
-			if (mainType != null) {
-				getConsole().printToConsole(actualModule, cloudServer, NLS
-						.bind(Messages.JavaCloudFoundryArchiver_PACKAGING_MAIN_TYPE, mainType.getFullyQualifiedName()));
-			}
+			archivingHandler.bootRepackage(roots, packagedFile);
+		}
 
-			final IPackageFragmentRoot[] roots = rootResolver.getPackageFragmentRoots(monitor);
-
-			if (roots == null || roots.length == 0) {
-				handleApplicationDeploymentFailure(Messages.JavaCloudFoundryArchiver_ERROR_NO_PACKAGE_FRAG_ROOTS);
-			}
-
-			JarPackageData jarPackageData = getJarPackageData(roots, mainType, monitor);
-
-			boolean isBoot = CloudFoundryProjectUtil.isSpringBoot(appModule);
-
-			// Search for existing MANIFEST.MF
-			IFile metaFile = getManifest(roots, javaProject);
-
-			// Only use existing manifest files for non-Spring boot, as Spring
-			// boot repackager will
-			// generate it own manifest file.
-			if (!isBoot && metaFile != null) {
-				// If it is not a boot project, use a standard library jar
-				// builder
-				jarPackageData.setJarBuilder(getDefaultLibJarBuilder());
-
-				jarPackageData.setManifestLocation(metaFile.getFullPath());
-				jarPackageData.setSaveManifest(false);
-				jarPackageData.setGenerateManifest(false);
-				// Check manifest accessibility through the jar package data
-				// API
-				// to verify the packaging won't fail
-				if (!jarPackageData.isManifestAccessible()) {
-					handleApplicationDeploymentFailure(
-							NLS.bind(Messages.JavaCloudFoundryArchiver_ERROR_MANIFEST_NOT_ACCESSIBLE,
-									metaFile.getLocation().toString()));
-				}
-
-				InputStream inputStream = null;
-				try {
-
-					inputStream = new FileInputStream(metaFile.getLocation().toFile());
-					Manifest manifest = new Manifest(inputStream);
-					Attributes att = manifest.getMainAttributes();
-					if (att.getValue("Main-Class") == null) { //$NON-NLS-1$
-						handleApplicationDeploymentFailure(
-								Messages.JavaCloudFoundryArchiver_ERROR_NO_MAIN_CLASS_IN_MANIFEST);
-					}
-				} catch (FileNotFoundException e) {
-					handleApplicationDeploymentFailure(NLS.bind(
-							Messages.JavaCloudFoundryArchiver_ERROR_FAILED_READ_MANIFEST, e.getLocalizedMessage()));
-
-				} catch (IOException e) {
-					handleApplicationDeploymentFailure(NLS.bind(
-							Messages.JavaCloudFoundryArchiver_ERROR_FAILED_READ_MANIFEST, e.getLocalizedMessage()));
-
-				} finally {
-
-					if (inputStream != null) {
-						try {
-							inputStream.close();
-
-						} catch (IOException io) {
-							// Ignore
-						}
-					}
-				}
-
-			} else {
-				// Otherwise generate a manifest file. Note that manifest files
-				// are only generated in the temporary jar meant only for
-				// deployment.
-				// The associated Java project is no modified.
-				jarPackageData.setGenerateManifest(true);
-
-				// This ensures that folders in output folders appear at root
-				// level
-				// Example: src/main/resources, which is in the project's
-				// classpath, contains non-Java templates folder and
-				// has output folder target/classes. If not exporting output
-				// folder,
-				// templates will be packaged in the jar using this path:
-				// resources/templates
-				// This may cause problems with the application's dependencies
-				// if they are looking for just /templates at top level of the
-				// jar
-				// If exporting output folders, templates folder will be
-				// packaged at top level in the jar.
-				jarPackageData.setExportOutputFolders(true);
-			}
-
-			try {
-				getConsole().printToConsole(actualModule, cloudServer,
-						NLS.bind(Messages.JavaCloudFoundryArchiver_PACKAGING_APPLICATION, projectName));
-
-				packagedFile = packageApplication(jarPackageData, monitor);
-			} catch (CoreException e) {
-				handleApplicationDeploymentFailure(
-						NLS.bind(Messages.JavaCloudFoundryArchiver_ERROR_JAVA_APP_PACKAGE, e.getMessage()));
-			}
-
-			if (packagedFile == null || !packagedFile.exists()) {
-				handleApplicationDeploymentFailure(Messages.JavaCloudFoundryArchiver_ERROR_NO_PACKAGED_FILE_CREATED);
-			} else {
-				getConsole().printToConsole(actualModule, cloudServer,
-						NLS.bind(Messages.JavaCloudFoundryArchiver_PACKAGING_APPLICATION_COMPLETED, projectName,
-								packagedFile.getAbsolutePath()));
-			}
-
-			if (isBoot) {
-				getConsole().printToConsole(actualModule, cloudServer,
-						Messages.JavaCloudFoundryArchiver_REPACKAGING_SPRING_BOOT_APP);
-
-				bootRepackage(roots, packagedFile);
-			}
-
-			// At this stage a packaged file should have been created or found
-			try {
-				archive = new ZipArchive(new ZipFile(packagedFile));
-			} catch (IOException ioe) {
-				handleApplicationDeploymentFailure(
-						NLS.bind(Messages.JavaCloudFoundryArchiver_ERROR_CREATE_CF_ARCHIVE, ioe.getMessage()));
-			}
+		// At this stage a packaged file should have been created or found
+		try {
+			archive = new ZipArchive(new ZipFile(packagedFile));
+		} catch (IOException ioe) {
+			errorHandler.handleApplicationDeploymentFailure(
+					NLS.bind(Messages.JavaCloudFoundryArchiver_ERROR_CREATE_CF_ARCHIVE, ioe.getMessage()));
 		}
 
 		return archive;
 	}
 
-	protected IProject getProject() {
+	protected IProject getProject(CloudFoundryApplicationModule appModule) {
 		return CloudFoundryProjectUtil.getProject(appModule);
 	}
 
@@ -342,170 +316,14 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 
 	}
 
-	protected void refreshProject(IProgressMonitor monitor) throws CoreException {
+	protected void refreshProject(IModule module, CloudFoundryApplicationModule appModule,
+			CloudFoundryServer cloudServer, IProgressMonitor monitor) throws CoreException {
 
-		IProject project = getProject();
+		IProject project = getProject(appModule);
 		if (project != null && project.isAccessible()) {
-			getConsole().printToConsole(actualModule, cloudServer,
+			getConsole().printToConsole(module, cloudServer,
 					NLS.bind(Messages.JavaCloudFoundryArchiver_REFRESHING_PROJECT, project.getName()));
 			project.refreshLocal(IResource.DEPTH_INFINITE, monitor);
 		}
-	}
-
-	protected IJarBuilder getDefaultLibJarBuilder() {
-		return new FatJarRsrcUrlBuilder() {
-
-			public void writeRsrcUrlClasses() throws IOException {
-				// Do not unpack and repackage the Eclipse jar loader
-			}
-		};
-	}
-
-	protected JavaPackageFragmentRootHandler getPackageFragmentRootHandler(IJavaProject javaProject,
-			IProgressMonitor monitor) throws CoreException {
-
-		return new JavaPackageFragmentRootHandler(javaProject, cloudServer);
-	}
-
-	protected void bootRepackage(final IPackageFragmentRoot[] roots, File packagedFile) throws CoreException {
-		Repackager bootRepackager = new Repackager(packagedFile);
-		try {
-			bootRepackager.repackage(new Libraries() {
-
-				public void doWithLibraries(LibraryCallback callBack) throws IOException {
-					for (IPackageFragmentRoot root : roots) {
-
-						if (root.isArchive()) {
-
-							File rootFile = new File(root.getPath().toOSString());
-							if (rootFile.exists()) {
-								callBack.library(new Library(rootFile, LibraryScope.COMPILE));
-							}
-						}
-					}
-				}
-			});
-		} catch (IOException e) {
-			handleApplicationDeploymentFailure(
-					NLS.bind(Messages.JavaCloudFoundryArchiver_ERROR_REPACKAGE_SPRING, e.getMessage()));
-		}
-	}
-
-	protected JarPackageData getJarPackageData(IPackageFragmentRoot[] roots, IType mainType, IProgressMonitor monitor)
-			throws CoreException {
-
-		String filePath = getTempJarPath(appModule.getLocalModule());
-
-		if (filePath == null) {
-			handleApplicationDeploymentFailure();
-		}
-
-		IPath location = new Path(filePath);
-
-		// Note that if no jar builder is specified in the package data
-		// then a default one is used internally by the data that does NOT
-		// package any jar dependencies.
-		JarPackageData packageData = new JarPackageData();
-
-		packageData.setJarLocation(location);
-
-		// Don't create a manifest. A repackager should determine if a generated
-		// manifest is necessary
-		// or use a user-defined manifest.
-		packageData.setGenerateManifest(false);
-
-		// Since user manifest is not used, do not save to manifest (save to
-		// manifest saves to user defined manifest)
-		packageData.setSaveManifest(false);
-
-		packageData.setManifestMainClass(mainType);
-		packageData.setElements(roots);
-		return packageData;
-	}
-
-	protected File packageApplication(final JarPackageData packageData, IProgressMonitor monitor) throws CoreException {
-
-		int progressWork = 10;
-		final SubMonitor subProgress = SubMonitor.convert(monitor, progressWork);
-
-		final File[] createdFile = new File[1];
-
-		final CoreException[] error = new CoreException[1];
-		Display.getDefault().syncExec(new Runnable() {
-
-			@Override
-			public void run() {
-				try {
-
-					Shell shell = CFUiUtil.getShell();
-
-					IJarExportRunnable runnable = packageData.createJarExportRunnable(shell);
-					try {
-						runnable.run(subProgress);
-
-						File file = new File(packageData.getJarLocation().toString());
-						if (!file.exists()) {
-							handleApplicationDeploymentFailure();
-						} else {
-							createdFile[0] = file;
-						}
-
-					} catch (InvocationTargetException e) {
-						throw CloudErrorUtil.toCoreException(e);
-					} catch (InterruptedException ie) {
-						throw CloudErrorUtil.toCoreException(ie);
-					} finally {
-						subProgress.done();
-					}
-				} catch (CoreException e) {
-					error[0] = e;
-				}
-			}
-
-		});
-		if (error[0] != null) {
-			throw error[0];
-		}
-
-		return createdFile[0];
-	}
-
-	protected void handleApplicationDeploymentFailure(String errorMessage) throws CoreException {
-		if (errorMessage == null) {
-			errorMessage = Messages.JavaCloudFoundryArchiver_ERROR_CREATE_PACKAGED_FILE;
-		}
-		errorMessage = errorMessage + " - " //$NON-NLS-1$
-				+ appModule.getDeployedApplicationName() + ". Unable to package application for deployment."; //$NON-NLS-1$
-		getConsole().printErrorToConsole(actualModule, cloudServer, errorMessage);
-		throw CloudErrorUtil.toCoreException(errorMessage);
-	}
-
-	protected void handleApplicationDeploymentFailure() throws CoreException {
-		handleApplicationDeploymentFailure(null);
-	}
-
-	public static String getTempJarPath(IModule module) throws CoreException {
-		try {
-			File tempFolder = File.createTempFile("tempFolderForJavaAppJar", //$NON-NLS-1$
-					null);
-			tempFolder.delete();
-			tempFolder.mkdirs();
-
-			if (!tempFolder.exists()) {
-				throw CloudErrorUtil.toCoreException(
-						NLS.bind(Messages.JavaCloudFoundryArchiver_ERROR_CREATE_TEMP_DIR, tempFolder.getPath()));
-			}
-
-			File targetFile = new File(tempFolder, module.getName() + ".jar"); //$NON-NLS-1$
-			targetFile.deleteOnExit();
-
-			String path = new Path(targetFile.getAbsolutePath()).toString();
-
-			return path;
-
-		} catch (IOException io) {
-			CloudErrorUtil.toCoreException(io);
-		}
-		return null;
 	}
 }
