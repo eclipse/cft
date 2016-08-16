@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -50,7 +50,7 @@ public class ApplicationDebugUILauncher extends ApplicationDebugLauncher {
 			protected IStatus run(IProgressMonitor monitor) {
 				try {
 
-					ILaunchConfiguration launchConfiguration = provider.getLaunchConfiguration(appModule, cloudServer,
+					ILaunchConfiguration launchConfiguration = provider.getLaunchConfiguration(appModule.getLocalModule(), cloudServer.getServer(),
 							appInstance, remoteDebugPort, monitor);
 
 					DebugUITools.launch(launchConfiguration, ILaunchManager.DEBUG_MODE);

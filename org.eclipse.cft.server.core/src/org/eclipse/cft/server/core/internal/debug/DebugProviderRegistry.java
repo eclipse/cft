@@ -49,7 +49,7 @@ public class DebugProviderRegistry {
 		}
 		
 		for (AbstractDebugProvider provider : defaultProviders) {
-			if (provider.isDebugSupported(appModule, cloudServer)) {
+			if (provider.isDebugSupported(appModule.getLocalModule(), cloudServer.getServer())) {
 				return provider;
 			}
 		}
@@ -120,7 +120,7 @@ public class DebugProviderRegistry {
 			if (id != null && id.equals(getServerTypeId())) {
 				String moduleType = appModule.getLocalModule().getModuleType().getId();
 				if (moduleType != null && getModuleTypes().contains(moduleType)) {
-					return getInstance().isDebugSupported(appModule, cloudServer);
+					return getInstance().isDebugSupported(appModule.getLocalModule(), cloudServer.getServer());
 				}
 			}
 			return false;

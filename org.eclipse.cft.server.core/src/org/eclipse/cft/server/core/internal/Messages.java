@@ -160,6 +160,8 @@ public class Messages extends NLS {
 	public static String CloudFoundryApplicationModule_STATE_WAITING_TO_LAUNCH;
 
 	public static String CloudFoundryConstants_LABEL_SIGNUP;
+	
+	public static String CloudFoundryDebugProvider_NO_CLOUD_MODULE_FOUND;
 
 	public static String CloudFoundryLoginHandler_LABEL_PERFORM_CF_OPERATION;
 

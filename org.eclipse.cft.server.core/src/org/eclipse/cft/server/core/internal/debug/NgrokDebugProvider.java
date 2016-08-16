@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -41,6 +41,8 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 
 /**
  * Performs a connection to a given server and module. Handles network timeouts,
@@ -124,9 +126,17 @@ public class NgrokDebugProvider extends CloudFoundryDebugProvider {
 	}
 
 	@Override
-	public boolean isDebugSupported(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer) {
-		IJavaProject javaProject = CloudFoundryProjectUtil.getJavaProject(appModule);
-		return javaProject != null && javaProject.exists() && containsDebugFiles(javaProject);
+	public boolean isDebugSupported(IModule module, IServer server) {
+		try {
+			CloudFoundryServer cloudServer = getCloudServer(server);
+			CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, cloudServer);
+			IJavaProject javaProject = CloudFoundryProjectUtil.getJavaProject(appModule);
+			return javaProject != null && javaProject.exists() && containsDebugFiles(javaProject);
+		}
+		catch (CoreException e) {
+			CloudFoundryPlugin.logWarning(e.getMessage());
+		}
+		return false;
 	}
 
 	public static boolean containsDebugOption(EnvironmentVariable var) {

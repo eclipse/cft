@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -55,14 +55,14 @@ public abstract class ApplicationDebugLauncher {
 			int appInstance) throws CoreException {
 		AbstractDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
 		if (provider != null) {
-			String appLaunchId = provider.getApplicationDebugLaunchId(appModule, cloudServer, appInstance);
+			String appLaunchId = provider.getApplicationDebugLaunchId(appModule.getLocalModule(), cloudServer.getServer(), appInstance);
 			terminateLaunch(appLaunchId);
 		}
 	}
 
 	public boolean supportsDebug(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer) {
 		AbstractDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
-		return provider != null && provider.isDebugSupported(appModule, cloudServer);
+		return provider != null && provider.isDebugSupported(appModule.getLocalModule(), cloudServer.getServer());
 	}
 
 	/**
@@ -79,8 +79,13 @@ public abstract class ApplicationDebugLauncher {
 			int appInstance) {
 		AbstractDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
 		if (provider != null) {
-			String id = provider.getApplicationDebugLaunchId(appModule, cloudServer, appInstance);
-			return ApplicationDebugLauncher.getActiveLaunch(id) != null;
+			try {
+				String id = provider.getApplicationDebugLaunchId(appModule.getLocalModule(), cloudServer.getServer(), appInstance);
+				return ApplicationDebugLauncher.getActiveLaunch(id) != null;
+			}
+			catch (CoreException e) {
+				CloudFoundryPlugin.logWarning(e.getMessage());
+			}
 		}
 		return false;
 	}

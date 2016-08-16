@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,10 +20,15 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.debug;
 
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.CloudServerUtil;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
 
 /**
  * Performs a connection to a given server and module. Handles network timeouts,
@@ -32,9 +37,17 @@ import org.eclipse.jdt.core.IJavaProject;
 public class SshDebugProvider extends CloudFoundryDebugProvider {
 
 	@Override
-	public boolean isDebugSupported(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer) {
-		IJavaProject javaProject = CloudFoundryProjectUtil.getJavaProject(appModule);
-		return javaProject != null && javaProject.exists() && cloudServer.getBehaviour().supportsSsh();
+	public boolean isDebugSupported(IModule module, IServer server) {
+		try {
+			CloudFoundryServer cloudServer = getCloudServer(server);
+			CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, cloudServer);
+			IJavaProject javaProject = CloudFoundryProjectUtil.getJavaProject(appModule);
+			return javaProject != null && javaProject.exists() && cloudServer.getBehaviour().supportsSsh();
+		}
+		catch (CoreException e) {
+			CloudFoundryPlugin.logWarning(e.getMessage());
+		}
+		return false;
 	}
 
 	@Override

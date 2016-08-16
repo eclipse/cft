@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -102,7 +102,7 @@ public abstract class CloudFoundryDebugDelegate extends AbstractJavaLaunchConfig
 		try {
 			connector.connect(argMap, monitor, launch);
 			ApplicationDebugLauncher.addDebuggerConnectionListener(
-					provider.getApplicationDebugLaunchId(appModule, cloudServer, appInstance), launch);
+					provider.getApplicationDebugLaunchId(appModule.getLocalModule(), cloudServer.getServer(), appInstance), launch);
 		}
 		catch (CoreException e) {
 			fireDebugChanged(configuration, e.getStatus());
