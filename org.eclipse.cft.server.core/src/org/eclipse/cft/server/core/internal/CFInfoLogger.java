@@ -41,7 +41,7 @@ public class CFInfoLogger {
 	/** Logging thread - not started until first message of the session. */
 	private CFInfoLoggerThread thread;
 	
-	public CFInfoLogger(File f) throws IOException {
+	public CFInfoLogger(File f) {
 		logFile = f;
 	}
 	
@@ -133,8 +133,11 @@ public class CFInfoLogger {
 		}
 		
 		@SuppressWarnings("unused")
-		public void setThreadIsRunning(boolean threadIsRunning) {
-			this.threadIsRunning = threadIsRunning;
+		public void stopThread() {
+			synchronized(messagesToWrite) {
+				this.threadIsRunning = false;
+				messagesToWrite.notify();
+			}
 		}
 		
 	}
