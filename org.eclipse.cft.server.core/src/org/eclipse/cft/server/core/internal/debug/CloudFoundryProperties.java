@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  *     Keith Chong, IBM - Add additional properties for enabling commands based on org.eclipse.ui.menus
+ *     Tim Etchells, IBM - Add isSSO property.
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.debug;
 
@@ -120,6 +121,15 @@ public enum CloudFoundryProperties {
 			IProject project = modules[0].getProject();
 			return project != null && project.isAccessible();
 
+		}
+	},
+	
+	/**
+	 * Returns whether or not the given server supports SSO.
+	 */	
+	isSSO {
+		public boolean testProperty(IModule[] modules, CloudFoundryServer cloudFoundryServer) {
+			return cloudFoundryServer != null && cloudFoundryServer.isSso();
 		}
 	};
 
