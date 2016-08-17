@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.debug;
 
+import org.eclipse.cft.server.core.AbstractDebugProvider;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -52,16 +53,16 @@ public abstract class ApplicationDebugLauncher {
 
 	public static void terminateLaunch(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer,
 			int appInstance) throws CoreException {
-		CloudFoundryDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
+		AbstractDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
 		if (provider != null) {
-			String appLaunchId = provider.getApplicationDebugLaunchId(appModule, cloudServer, appInstance);
+			String appLaunchId = provider.getApplicationDebugLaunchId(appModule.getLocalModule(), cloudServer.getServer(), appInstance);
 			terminateLaunch(appLaunchId);
 		}
 	}
 
 	public boolean supportsDebug(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer) {
-		CloudFoundryDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
-		return provider != null && provider.isDebugSupported(appModule, cloudServer);
+		AbstractDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
+		return provider != null && provider.isDebugSupported(appModule.getLocalModule(), cloudServer.getServer());
 	}
 
 	/**
@@ -76,10 +77,15 @@ public abstract class ApplicationDebugLauncher {
 	 */
 	public boolean isConnectedToDebugger(CloudFoundryApplicationModule appModule, CloudFoundryServer cloudServer,
 			int appInstance) {
-		CloudFoundryDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
+		AbstractDebugProvider provider = DebugProviderRegistry.getProvider(appModule, cloudServer);
 		if (provider != null) {
-			String id = provider.getApplicationDebugLaunchId(appModule, cloudServer, appInstance);
-			return ApplicationDebugLauncher.getActiveLaunch(id) != null;
+			try {
+				String id = provider.getApplicationDebugLaunchId(appModule.getLocalModule(), cloudServer.getServer(), appInstance);
+				return ApplicationDebugLauncher.getActiveLaunch(id) != null;
+			}
+			catch (CoreException e) {
+				CloudFoundryPlugin.logWarning(e.getMessage());
+			}
 		}
 		return false;
 	}

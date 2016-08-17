@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ package org.eclipse.cft.server.core.internal.debug;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.cft.server.core.AbstractDebugProvider;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -73,7 +74,7 @@ public abstract class CloudFoundryDebugDelegate extends AbstractJavaLaunchConfig
 		int appInstance = getAppInstance(configuration);
 		int remoteDebugPort = getRemoteDebugPort(configuration);
 
-		CloudFoundryDebugProvider provider = DebugProviderRegistry.getExistingProvider(appModule, cloudServer);
+		AbstractDebugProvider provider = DebugProviderRegistry.getExistingProvider(appModule, cloudServer);
 
 		DebugConnectionDescriptor connectionDescriptor = getDebugConnectionDescriptor(appModule, cloudServer,
 				appInstance, remoteDebugPort, monitor);
@@ -101,7 +102,7 @@ public abstract class CloudFoundryDebugDelegate extends AbstractJavaLaunchConfig
 		try {
 			connector.connect(argMap, monitor, launch);
 			ApplicationDebugLauncher.addDebuggerConnectionListener(
-					provider.getApplicationDebugLaunchId(appModule, cloudServer, appInstance), launch);
+					provider.getApplicationDebugLaunchId(appModule.getLocalModule(), cloudServer.getServer(), appInstance), launch);
 		}
 		catch (CoreException e) {
 			fireDebugChanged(configuration, e.getStatus());
