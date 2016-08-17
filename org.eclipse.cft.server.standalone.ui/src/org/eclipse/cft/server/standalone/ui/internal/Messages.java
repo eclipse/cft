@@ -42,8 +42,6 @@ public class Messages extends NLS {
 
 	public static String JavaCloudFoundryArchiver_ERROR_CREATE_CF_ARCHIVE;
 
-	public static String JavaCloudFoundryArchiver_ERROR_CREATE_PACKAGED_FILE;
-
 	public static String JavaCloudFoundryArchiver_ERROR_CREATE_TEMP_DIR;
 
 	public static String JavaCloudFoundryArchiver_ERROR_JAVA_APP_PACKAGE;

@@ -28,6 +28,8 @@ public class Messages extends NLS {
 
 	
 	public static String StandaloneConsole_PREFIX;
+	public static String DeploymentErrorHandler_ERROR_CREATE_PACKAGED_FILE;
+
 	
 	static {
 		// initialize resource bundle

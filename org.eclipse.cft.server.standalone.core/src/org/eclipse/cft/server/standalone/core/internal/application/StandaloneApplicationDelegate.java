@@ -26,6 +26,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
+import org.eclipse.cft.server.core.internal.application.ICloudFoundryArchiver;
 import org.eclipse.cft.server.core.internal.application.ModuleResourceApplicationDelegate;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.runtime.CoreException;
@@ -84,7 +85,7 @@ public class StandaloneApplicationDelegate extends ModuleResourceApplicationDele
 		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, server);
 		CloudFoundryServer cloudServer = getCloudServer(server);
 		ICloudFoundryArchiver archiver = CloudFoundryArchiverRegistry.INSTANCE.createArchiver(appModule, cloudServer);
-		return archiver.getApplicationArchive(monitor);
+		return archiver.getApplicationArchive(module, server, moduleResources, monitor);
 	}
 
 }

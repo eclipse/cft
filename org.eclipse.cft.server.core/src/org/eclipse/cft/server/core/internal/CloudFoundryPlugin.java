@@ -21,6 +21,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -31,6 +32,7 @@ import org.eclipse.cft.server.core.internal.client.CloudFoundryClientFactory;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
 import org.eclipse.cft.server.core.internal.client.diego.DiegoTarget;
 import org.eclipse.core.net.proxy.IProxyService;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtension;
@@ -293,6 +295,8 @@ public class CloudFoundryPlugin extends Plugin {
 
 	private InstanceScope INSTANCE_SCOPE = new InstanceScope();
 
+	private CFInfoLogger infoLogger;
+	
 	/**
 	 * Returns the app state tracker for a given server type. Only the first
 	 * matched tracker will be return in case there are multiple tracker defined
@@ -427,6 +431,17 @@ public class CloudFoundryPlugin extends Plugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
+
+		// Create info logger
+		try {
+			File workspaceInfoLog = ResourcesPlugin.getWorkspace().getRoot().getLocation().append(".metadata").toFile();
+			infoLogger = new CFInfoLogger(new File(workspaceInfoLog, "cft.server.core.log"));
+		} catch (Exception e) {
+			// Logger is optional - print the exception to the console and ignore
+			e.printStackTrace();
+			infoLogger = null;
+		}
+
 	}
 
 	@Override
@@ -514,8 +529,8 @@ public class CloudFoundryPlugin extends Plugin {
 	}
 	
 	public static void logInfo(String message) {
-		if (plugin != null && message != null) {
-			plugin.getLog().log(getStatus(message, IStatus.INFO));
+		if(plugin != null && message != null && plugin.infoLogger != null) {
+			plugin.infoLogger.log(message);
 		}
 	}
 	

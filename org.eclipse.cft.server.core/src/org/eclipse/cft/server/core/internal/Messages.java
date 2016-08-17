@@ -293,6 +293,8 @@ public class Messages extends NLS {
 
 	public static String RestartOperation_STARTING_APP;
 	
+	public static String ERROR_StartOperation_UNSUPPORTED_MODULE_TYPE;
+	
 	public static String PUBLISHING_MODULE;
 
 	public static String StopApplicationOperation_STOPPING_APP;
