@@ -132,7 +132,8 @@ public class StartOperation extends RestartOperation {
 		// created in the
 		// CF server.
 
-		if (!getModules()[0].isExternal()) {
+		IModule actualModule = getModules() != null && getModules().length > 0 ? getModules()[0] : null;
+		if (actualModule != null && !actualModule.isExternal()) {
 
 			String generatingArchiveLabel = NLS.bind(Messages.CONSOLE_GENERATING_ARCHIVE,
 					appModule.getDeployedApplicationName());
@@ -148,8 +149,10 @@ public class StartOperation extends RestartOperation {
 				// An app archive must be always available, so if we reached
 				// this point and we have none
 				// then we must throw an exception.
+				String message = NLS.bind(Messages.ERROR_StartOperation_UNSUPPORTED_MODULE_TYPE, new String[] {
+						deploymentName, actualModule.getModuleType().getId(), cloudServer.getServer().getId() });
 				throw new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID,
-						"Application archive is not available for application: " + deploymentName)); //$NON-NLS-1$
+						message)); 
 			}
 
 			// Tell webtools the module has been published

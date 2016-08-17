@@ -22,6 +22,7 @@ package org.eclipse.cft.server.standalone.core.internal.application;
 
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.application.ICloudFoundryArchiver;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -29,6 +30,11 @@ import org.eclipse.core.runtime.IExtension;
 import org.eclipse.core.runtime.IExtensionPoint;
 import org.eclipse.core.runtime.Platform;
 
+/**
+ * This is deprecated. Archive registry will be moved out of standalone plugin
+ * into core plugin after CFT 1.0.1
+ */
+@Deprecated
 public class CloudFoundryArchiverRegistry {
 
 	public static final CloudFoundryArchiverRegistry INSTANCE = new CloudFoundryArchiverRegistry();
@@ -52,7 +58,6 @@ public class CloudFoundryArchiverRegistry {
 					if (ARCHIVER_ELEMENT.equals(config.getName())) {
 						ICloudFoundryArchiver archiver = (ICloudFoundryArchiver) config
 								.createExecutableExtension(CLASS_ATTR);
-						archiver.initialize(appModule.getLocalModule(), cloudServer.getServer());
 						return archiver;
 					}
 				}

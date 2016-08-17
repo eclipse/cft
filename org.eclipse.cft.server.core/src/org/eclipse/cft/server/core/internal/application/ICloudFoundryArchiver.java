@@ -18,18 +18,18 @@
  *  Contributors:
  *     IBM Corporation - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.standalone.core.internal.application;
+package org.eclipse.cft.server.core.internal.application;
 
 import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
+import org.eclipse.wst.server.core.model.IModuleResource;
 
 public interface ICloudFoundryArchiver {
 
-	public void initialize(IModule module, IServer server) throws CoreException;
-
-	public CFApplicationArchive getApplicationArchive(IProgressMonitor monitor) throws CoreException;
+	public CFApplicationArchive getApplicationArchive(IModule module, IServer server, IModuleResource[] resources,
+			IProgressMonitor monitor) throws CoreException;
 
 }

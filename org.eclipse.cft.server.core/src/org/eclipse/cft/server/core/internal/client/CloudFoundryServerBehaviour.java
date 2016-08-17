@@ -47,7 +47,6 @@ import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
-import org.eclipse.cft.server.core.AbstractApplicationDelegate;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.cft.server.core.CFServiceInstance;
@@ -1750,14 +1749,11 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		// resources. Use incremental publishing if
 		// possible.
 
-		AbstractApplicationDelegate delegate = ApplicationRegistry.getApplicationDelegate(cloudModule.getLocalModule());
+		
+		IModuleResource[] resources = getResources(modules);
 
-		CFApplicationArchive archive = null;
-		if (delegate != null && delegate.providesApplicationArchive(cloudModule.getLocalModule())) {
-			IModuleResource[] resources = getResources(modules);
-
-			archive = getApplicationArchive(cloudModule, monitor, delegate, resources);
-		}
+		CFApplicationArchive archive = ApplicationRegistry.getApplicationArchive(cloudModule.getLocalModule(),
+				getCloudFoundryServer().getServer(), resources, monitor);
 
 		// If no application archive was provided,then attempt an incremental
 		// publish. Incremental publish is only supported for apps without child
@@ -1786,11 +1782,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	}
 
-	private CFApplicationArchive getApplicationArchive(CloudFoundryApplicationModule cloudModule,
-			IProgressMonitor monitor, AbstractApplicationDelegate delegate, IModuleResource[] resources)
-			throws CoreException {
-		return delegate.getApplicationArchive(cloudModule, getCloudFoundryServer().getServer(), resources, monitor);
-	}
+	
 
 	/**
 	 * Note that consoles may be mapped to an application's deployment name. If

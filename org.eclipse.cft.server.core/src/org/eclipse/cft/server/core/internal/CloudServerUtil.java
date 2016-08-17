@@ -25,8 +25,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
 import org.eclipse.wst.server.core.IServerType;
 import org.eclipse.wst.server.core.ServerCore;
@@ -111,6 +113,17 @@ public class CloudServerUtil {
 			return isCloudFoundryServerType(server.getServerType());
 		}
 		return false;
+	}
+
+	public static CloudFoundryApplicationModule getCloudFoundryApplicationModule(IModule module, IServer server)
+			throws CoreException {
+		CloudFoundryServer cloudServer = CloudServerUtil.getCloudServer(server);
+		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
+		if (appModule == null) {
+			throw CloudErrorUtil.toCoreException(NLS.bind(Messages.ApplicationDelegate_NO_CLOUD_MODULE_FOUND,
+					module.getName(), cloudServer.getServer().getId()));
+		}
+		return appModule;
 	}
 
 	/**

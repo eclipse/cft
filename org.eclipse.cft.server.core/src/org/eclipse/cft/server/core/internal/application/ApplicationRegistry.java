@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,14 +26,19 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.cft.server.core.AbstractApplicationDelegate;
+import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtension;
 import org.eclipse.core.runtime.IExtensionPoint;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.wst.server.core.IModule;
+import org.eclipse.wst.server.core.IServer;
+import org.eclipse.wst.server.core.model.IModuleResource;
 
 /**
  * Given WST application module, this registry determines what frameworks and
@@ -53,6 +58,8 @@ public class ApplicationRegistry {
 
 	private static Map<Priority, List<ApplicationProvider>> delegates;
 
+	private static ApplicationArchiverFactory archiverFactory;
+
 	private static final String APPLICATION_DELEGATE_EXT_ELEMENT = "applicationDelegate"; //$NON-NLS-1$
 
 	public static final String DEFAULT_JAVA_WEB_PROVIDER_ID = "org.eclipse.cft.server.application.javaweb"; //$NON-NLS-1$
@@ -66,6 +73,41 @@ public class ApplicationRegistry {
 		}
 
 		return null;
+	}
+
+	public static CFApplicationArchive getApplicationArchive(IModule module, IServer server,
+			IModuleResource[] resources, IProgressMonitor monitor) throws CoreException {
+
+		// Check if manifest archiving is supported before asking the delegates
+		// for an archive
+		ApplicationArchiverFactory factory = getArchiverFactory();
+		if (factory.supportsManifestArchiving(module, server)) {
+			return factory.getManifestApplicationArchiver().getApplicationArchive(module, server, resources, monitor);
+		}
+
+		List<ApplicationProvider> providers = getApplicationProviders(module);
+		if (providers != null) {
+			// Iterate through all the providers and find one that provides an
+			// archive for the given module
+			for (ApplicationProvider applicationProvider : providers) {
+				AbstractApplicationDelegate delegate = applicationProvider.getDelegate();
+				if (delegate != null) {
+					CFApplicationArchive archive = delegate.getApplicationArchive(module, server, resources, monitor);
+					if (archive != null) {
+						return archive;
+					}
+				}
+			}
+		}
+
+		return null;
+	}
+
+	public static ApplicationArchiverFactory getArchiverFactory() {
+		if (archiverFactory == null) {
+			archiverFactory = new ApplicationArchiverFactory();
+		}
+		return archiverFactory;
 	}
 
 	public static AbstractApplicationDelegate getApplicationDelegate(IModule module, CloudFoundryServer cloudServer) {
@@ -160,8 +202,8 @@ public class ApplicationRegistry {
 
 	/**
 	 * Get the application delegate provider based on the provider ID (e.g.
-	 * org.eclipse.cft.server.application.javaweb). This is used in
-	 * case a IModule is not available.
+	 * org.eclipse.cft.server.application.javaweb). This is used in case a
+	 * IModule is not available.
 	 * @param providerID
 	 * @return ApplicationProvider matching the specified providerID, or null if
 	 * not found.
@@ -294,10 +336,11 @@ public class ApplicationRegistry {
 	 * @return true if application URL is required for the given application.
 	 * False otherwise.
 	 */
-	public static boolean shouldSetDefaultUrl(AbstractApplicationDelegate delegate, CloudFoundryApplicationModule appModule) {
-		return delegate == null
-				|| (delegate instanceof ModuleResourceApplicationDelegate ? ((ModuleResourceApplicationDelegate) delegate)
-						.shouldSetDefaultUrl(appModule) : delegate.requiresURL());
+	public static boolean shouldSetDefaultUrl(AbstractApplicationDelegate delegate,
+			CloudFoundryApplicationModule appModule) {
+		return delegate == null || (delegate instanceof ModuleResourceApplicationDelegate
+				? ((ModuleResourceApplicationDelegate) delegate).shouldSetDefaultUrl(appModule)
+				: delegate.requiresURL());
 	}
 
 }
