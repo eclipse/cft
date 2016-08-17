@@ -80,27 +80,32 @@ public class ApplicationRegistry {
 
 		// Check if manifest archiving is supported before asking the delegates
 		// for an archive
+		CFApplicationArchive archive = null;
 		ApplicationArchiverFactory factory = getArchiverFactory();
 		if (factory.supportsManifestArchiving(module, server)) {
-			return factory.getManifestApplicationArchiver().getApplicationArchive(module, server, resources, monitor);
+			archive = factory.getManifestApplicationArchiver().getApplicationArchive(module, server, resources,
+					monitor);
 		}
 
-		List<ApplicationProvider> providers = getApplicationProviders(module);
-		if (providers != null) {
-			// Iterate through all the providers and find one that provides an
-			// archive for the given module
-			for (ApplicationProvider applicationProvider : providers) {
-				AbstractApplicationDelegate delegate = applicationProvider.getDelegate();
-				if (delegate != null) {
-					CFApplicationArchive archive = delegate.getApplicationArchive(module, server, resources, monitor);
-					if (archive != null) {
-						return archive;
+		if (archive == null) {
+			List<ApplicationProvider> providers = getApplicationProviders(module);
+			if (providers != null) {
+				// Iterate through all the providers and find one that provides
+				// an
+				// archive for the given module
+				for (ApplicationProvider applicationProvider : providers) {
+					AbstractApplicationDelegate delegate = applicationProvider.getDelegate();
+					if (delegate != null) {
+						archive = delegate.getApplicationArchive(module, server, resources, monitor);
+						if (archive != null) {
+							break;
+						}
 					}
 				}
 			}
 		}
 
-		return null;
+		return archive;
 	}
 
 	public static ApplicationArchiverFactory getArchiverFactory() {
