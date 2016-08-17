@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -41,11 +41,16 @@ public class ShowConsoleEditorAction extends Action {
 
 	private final int instanceIndex;
 
-	public ShowConsoleEditorAction(CloudFoundryServer server, CloudFoundryApplicationModule appModule, int instanceIndex) {
+	public ShowConsoleEditorAction(CloudFoundryServer server, CloudFoundryApplicationModule appModule,
+			int instanceIndex) {
 		this.server = server;
 		this.appModule = appModule;
 		this.instanceIndex = instanceIndex;
 		setText(Messages.ShowConsoleEditorAction_TEXT_SHOW_CONSOLE);
+	}
+
+	public ShowConsoleEditorAction(CloudFoundryServer server, CloudFoundryApplicationModule appModule) {
+		this(server, appModule, 0);
 	}
 
 	@Override
@@ -64,8 +69,8 @@ public class ShowConsoleEditorAction extends Action {
 					return Status.OK_STATUS;
 				}
 				else {
-					return CloudFoundryPlugin
-							.getErrorStatus("Internal Error: No Cloud Foundry console callback available. Unable to refresh console contents."); //$NON-NLS-1$
+					return CloudFoundryPlugin.getErrorStatus(
+							"Internal Error: No Cloud Foundry console callback available. Unable to refresh console contents."); //$NON-NLS-1$
 				}
 			}
 

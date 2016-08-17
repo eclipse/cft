@@ -35,6 +35,7 @@ import org.eclipse.cft.server.ui.internal.actions.DeleteServicesAction;
 import org.eclipse.cft.server.ui.internal.actions.RefreshEditorAction;
 import org.eclipse.cft.server.ui.internal.actions.RemapToProjectEditorAction;
 import org.eclipse.cft.server.ui.internal.actions.ServiceToApplicationsBindingAction;
+import org.eclipse.cft.server.ui.internal.actions.ShowConsoleEditorAction;
 import org.eclipse.cft.server.ui.internal.actions.UnmapProjectEditorAction;
 import org.eclipse.cft.server.ui.internal.wizards.CloudFoundryServiceWizard;
 import org.eclipse.cft.server.ui.internal.wizards.CloudRoutesWizard;
@@ -594,6 +595,15 @@ public class ApplicationMasterPart extends SectionPart {
 			else if (project == null) {
 				manager.add(new RemapToProjectEditorAction(editorPage, module));
 			}
+			
+			CloudFoundryApplicationModule appModule = getApplicationModule(module);
+			if (appModule != null) {
+				manager.add(new ShowConsoleEditorAction(cloudServer, appModule));
+			}
 		}
+	}
+
+	protected CloudFoundryApplicationModule getApplicationModule(IModule module) {
+		return cloudServer.getExistingCloudModule(module);
 	}
 }
