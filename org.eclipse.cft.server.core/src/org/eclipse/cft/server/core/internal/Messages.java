@@ -333,6 +333,14 @@ public class Messages extends NLS {
 	
 	public static String CONNECTING;
 	
+	public static String APPLICATION_MODULE_RUNSTATE_STARTED;
+	
+	public static String APPLICATION_MODULE_RUNSTATE_STARTING;
+
+	public static String APPLICATION_MODULE_RUNSTATE_STOPPED;
+	
+	public static String APPLICATION_MODULE_RUNSTATE_UNKNOWN;
+	
 	private static final String BUNDLE_NAME = CloudFoundryPlugin.PLUGIN_ID + ".internal.Messages"; //$NON-NLS-1$
 
 	static {
