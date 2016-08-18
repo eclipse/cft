@@ -1331,11 +1331,11 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			// module
 			if (deltaKind == REMOVED) {
 				final CloudFoundryServer cloudServer = getCloudFoundryServer();
-				final CloudFoundryApplicationModule cloudModule = cloudServer.getCloudModule(module[0]);
-				if (cloudModule.getApplication() != null) {
+				// Get the existing cloud module to avoid recreating the one that was just deleted.
+				final CloudFoundryApplicationModule cloudModule = cloudServer.getExistingCloudModule(module[0]);
+				if (cloudModule != null && cloudModule.getApplication() != null) {
 					getRequestFactory().deleteApplication(cloudModule.getDeployedApplicationName()).run(monitor);
 				}
-
 			}
 			else if (!module[0].isExternal()) {
 				// These operations must ONLY be performed on NON-EXTERNAL
