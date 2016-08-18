@@ -150,7 +150,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	private CloudFoundryServerTarget serverTarget;
 
-	private CloudFoundryTargetManager targetManager;
+	private CloudFoundryTargetManager targetManager = CloudFoundryPlugin.getTargetManager();
 
 	private IServerListener serverListener = new IServerListener() {
 
@@ -1154,8 +1154,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	@Override
 	protected void initialize(IProgressMonitor monitor) {
 		super.initialize(monitor);
-		// Set a default target manager
-		setTargetManager(CloudFoundryPlugin.getTargetManager());
+
 		CFRebelServerIntegration integration = CloudFoundryPlugin.getCallback().getJRebelServerIntegration();
 		if (integration != null) {
 			integration.register();
