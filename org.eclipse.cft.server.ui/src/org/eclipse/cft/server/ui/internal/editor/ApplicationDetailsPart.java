@@ -71,7 +71,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -481,19 +480,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 
 		canUpdate = true;
 
-		if (appModule.getStatus() != null && !appModule.getStatus().isOK()) {
-
-			if (appModule.getStatus().getSeverity() == IStatus.ERROR) {
-				editorPage.setMessage(appModule.getStatus().getMessage(), IMessageProvider.ERROR);
-			}
-			else if (appModule.getStatus().getSeverity() == IStatus.WARNING) {
-				editorPage.setMessage(appModule.getStatus().getMessage(), IMessageProvider.WARNING);
-			}
-		}
-		else {
-			editorPage.setMessage(null, IMessageProvider.ERROR);
-			editorPage.setMessage(null, IMessageProvider.WARNING);
-		}
+		editorPage.setMessage(appModule.getStatus());
 	}
 
 	private void refreshServices(final CloudFoundryApplicationModule appModule) {

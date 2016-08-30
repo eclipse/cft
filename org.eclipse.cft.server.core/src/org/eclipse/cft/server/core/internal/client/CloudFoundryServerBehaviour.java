@@ -54,7 +54,7 @@ import org.eclipse.cft.server.core.CFServiceOffering;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
-import org.eclipse.cft.server.core.internal.BehaviourOperationsScheduler;
+import org.eclipse.cft.server.core.internal.UpdateOperationsScheduler;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryLoginHandler;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
@@ -65,6 +65,7 @@ import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ModuleResourceDeltaWrapper;
+import org.eclipse.cft.server.core.internal.OperationScheduler;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.application.CachingApplicationArchive;
@@ -140,7 +141,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	private AdditionalV1Operations additionalClientSupport;
 
-	private BehaviourOperationsScheduler operationsScheduler;
+	private UpdateOperationsScheduler operationsScheduler;
 
 	private ApplicationUrlLookupService applicationUrlLookup;
 
@@ -204,8 +205,11 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public boolean canControlModule(IModule[] module) {
 		return module.length == 1;
 	}
-	
-	/** When calling connect(...) the client field of CloudFoundryServerBehavoiur must already be set. */
+
+	/**
+	 * When calling connect(...) the client field of CloudFoundryServerBehavoiur
+	 * must already be set.
+	 */
 	public void connect(IProgressMonitor monitor) throws CoreException {
 		final CloudFoundryServer cloudServer = getCloudFoundryServer();
 
@@ -217,20 +221,21 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 		getApplicationUrlLookup().refreshDomains(monitor);
 
-		getOperationsScheduler().updateAll();
+		asyncUpdateAll();
 
 		ServerEventHandler.getDefault().fireServerEvent(
 				new CloudServerEvent(getCloudFoundryServer(), CloudServerEvent.EVENT_SERVER_CONNECTED));
 	}
-	
+
 	/** The user is providing us with a new passcode, so acquire the token */
 	public boolean regenerateSsoLogin(String passcode, IProgressMonitor monitor) throws CoreException {
-		
+
 		final CloudFoundryServer cloudServer = getCloudFoundryServer();
-		
+
 		// Log in and acquire the token
-		createExternalClientLogin(cloudServer, cloudServer.getUrl(), null, null, cloudServer.isSelfSigned(), true, cloudServer.getPasscode(), null, monitor);
-		
+		createExternalClientLogin(cloudServer, cloudServer.getUrl(), null, null, cloudServer.isSelfSigned(), true,
+				cloudServer.getPasscode(), null, monitor);
+
 		// Ensure that client field is set, before connect call
 		CloudFoundryOperations result = getClient(null, true, monitor);
 
@@ -251,12 +256,17 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	}
 
 	/**
-	 * Allows asynchronous execution of operations defined in
+	 * Schedules asynchronous update operations for the Cloud server behaviour.
 	 * {@link #cloudBehaviourOperations}. For synchronous execution, use
 	 * {@link #operations()}
 	 * @return Non-null scheduler
 	 */
-	public BehaviourOperationsScheduler getOperationsScheduler() {
+	private synchronized UpdateOperationsScheduler getUpdateModulesScheduler() {
+		return (UpdateOperationsScheduler) getOperationScheduler();
+	}
+
+	public synchronized OperationScheduler getOperationScheduler() {
+
 		if (operationsScheduler == null) {
 			CloudFoundryServer server = null;
 			try {
@@ -265,9 +275,10 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			catch (CoreException ce) {
 				CloudFoundryPlugin.logError(ce);
 			}
-			operationsScheduler = new BehaviourOperationsScheduler(server);
+			operationsScheduler = new UpdateOperationsScheduler(server);
 		}
 		return operationsScheduler;
+
 	}
 
 	/**
@@ -737,11 +748,11 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * job to execute at certain intervals. This will synch all local
 	 * application modules with the actual deployed applications. This may be a
 	 * long running operation.
-	 * @deprecated user {@link #getOperationsScheduler()} instead
+	 * @deprecated user {@link #getUpdateModulesScheduler()} instead
 	 * @param monitor
 	 */
 	public void refreshModules(IProgressMonitor monitor) {
-		getOperationsScheduler().updateAll();
+		asyncUpdateAll();
 	}
 
 	/**
@@ -1000,32 +1011,38 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		getRequestFactory().register(email, password).run(monitor);
 	}
 
-	/** Called by getClient(...) to prompt the user and reacquire token with passcode, if an exception occurs while connecting with SSO */
-	private void reestablishSsoSessionIfNeeded(CloudFoundryException e, CloudFoundryServer cloudServer)  throws CoreException {
+	/**
+	 * Called by getClient(...) to prompt the user and reacquire token with
+	 * passcode, if an exception occurs while connecting with SSO
+	 */
+	private void reestablishSsoSessionIfNeeded(CloudFoundryException e, CloudFoundryServer cloudServer)
+			throws CoreException {
 		// Status Code: 401 / Description = Invalid Auth Token, or;
 		// Status Code: 403 / Description: Access token denied.
-		if(cloudServer.isSso() && 
-				(e.getStatusCode() == HttpStatus.UNAUTHORIZED  || e.getStatusCode() == HttpStatus.FORBIDDEN)				
-				) {
+		if (cloudServer.isSso()
+				&& (e.getStatusCode() == HttpStatus.UNAUTHORIZED || e.getStatusCode() == HttpStatus.FORBIDDEN)) {
 			boolean result = CloudFoundryPlugin.getCallback().ssoLoginUserPrompt(cloudServer);
-			if(client != null) {
+			if (client != null) {
 				// Success: another thread has established the client.
 				return;
 			}
-			
-			if(result) {
-				// Client is null but the login did succeed, so recreate w/ new token stored in server
-				CloudCredentials credentials = CloudUtil.createSsoCredentials(cloudServer.getPasscode(), cloudServer.getToken());				
-				client = createClientWithCredentials(cloudServer.getUrl(), credentials, cloudServer.getCloudFoundrySpace(), cloudServer.isSelfSigned());
+
+			if (result) {
+				// Client is null but the login did succeed, so recreate w/ new
+				// token stored in server
+				CloudCredentials credentials = CloudUtil.createSsoCredentials(cloudServer.getPasscode(),
+						cloudServer.getToken());
+				client = createClientWithCredentials(cloudServer.getUrl(), credentials,
+						cloudServer.getCloudFoundrySpace(), cloudServer.isSelfSigned());
 				return;
 			}
-		} 
-		
+		}
+
 		// Otherwise, rethrow the exception
 		throw e;
-		
+
 	}
-	
+
 	private final ReentrantLock clientLock = new ReentrantLock();
 
 	/**
@@ -1106,7 +1123,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		CloudSpace sessionSpace = null;
 		CloudFoundrySpace storedSpace = server.getCloudFoundrySpace();
 
-		// Fetch the session spac if it is not available from the server, as it is required for the additional v1 operations
+		// Fetch the session spac if it is not available from the server, as it
+		// is required for the additional v1 operations
 		if (storedSpace != null) {
 			sessionSpace = storedSpace.getSpace();
 			if (sessionSpace == null && storedSpace.getOrgName() != null && storedSpace.getSpaceName() != null) {
@@ -1174,7 +1192,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			// performs a server connection and sets server state.
 			// The server connection is indirectly performed by this
 			// first refresh call.
-			getOperationsScheduler().updateAll();
+			asyncUpdateAll();
 
 			ServerEventHandler.getDefault().fireServerEvent(
 					new CloudServerEvent(getCloudFoundryServer(), CloudServerEvent.EVENT_SERVER_CONNECTED));
@@ -1314,10 +1332,10 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	@Override
 	protected void publishModule(int kind, int deltaKind, IModule[] module, IProgressMonitor monitor)
 			throws CoreException {
-	
+
 		// Log publish module parameters
 		CloudFoundryPlugin.logInfo(convertPublishModuleToString(deltaKind, module));
-		
+
 		super.publishModule(kind, deltaKind, module, monitor);
 
 		try {
@@ -1330,7 +1348,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			// module
 			if (deltaKind == REMOVED) {
 				final CloudFoundryServer cloudServer = getCloudFoundryServer();
-				// Get the existing cloud module to avoid recreating the one that was just deleted.
+				// Get the existing cloud module to avoid recreating the one
+				// that was just deleted.
 				final CloudFoundryApplicationModule cloudModule = cloudServer.getExistingCloudModule(module[0]);
 				if (cloudModule != null && cloudModule.getApplication() != null) {
 					getRequestFactory().deleteApplication(cloudModule.getDeployedApplicationName()).run(monitor);
@@ -1588,7 +1607,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			progress.done();
 		}
 	}
-	
+
 	public static void register(String location, String userName, String password, boolean selfSigned,
 			IProgressMonitor monitor) throws CoreException {
 		SubMonitor progress = SubMonitor.convert(monitor);
@@ -1748,7 +1767,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		// resources. Use incremental publishing if
 		// possible.
 
-		
 		IModuleResource[] resources = getResources(modules);
 
 		CFApplicationArchive archive = ApplicationRegistry.getApplicationArchive(cloudModule.getLocalModule(),
@@ -1780,8 +1798,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		return archive;
 
 	}
-
-	
 
 	/**
 	 * Note that consoles may be mapped to an application's deployment name. If
@@ -1878,7 +1894,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		
 		return "";
 	}
-	
 
 	/**
 	 * Keep track on all the publish operation to be completed
@@ -1982,6 +1997,55 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	public CFInfo getCloudInfo() throws CoreException {
 		return getRequestFactory().getCloudInfo();
+	}
+
+	/**
+	 * Asynchronously updates all modules and services with information from
+	 * Cloud Foundry.
+	 */
+	public void asyncUpdateAll() {
+		UpdateOperationsScheduler scheduler = getUpdateModulesScheduler();
+		if (scheduler != null) {
+			scheduler.updateAll();
+		}
+	}
+
+	/**
+	 * Asynchronously updates the given module IFF it is already deployed to
+	 * Cloud Foundry.
+	 * @param localModule
+	 */
+	public void asyncUpdateDeployedModule(IModule module) {
+		UpdateOperationsScheduler scheduler = getUpdateModulesScheduler();
+		if (scheduler != null) {
+			scheduler.updateDeployedModule(module);
+		}
+	}
+
+	/**
+	 * This generates a different event specific to publish operations (as
+	 * opposed just refresh operations). Callers should use this method when
+	 * updating a module information after a publish operation instead of
+	 * {@link #asyncUpdateModule(IModule)}
+	 * @param module
+	 */
+	public void asyncUpdateModuleAfterPublish(IModule module) {
+		UpdateOperationsScheduler scheduler = getUpdateModulesScheduler();
+		if (scheduler != null) {
+			scheduler.updateModuleAfterPublish(module);
+		}
+	}
+
+	/**
+	 * Asynchronously updates a module, whether it is deployed or not. If the
+	 * module is not deployed, it may be removed from the server.
+	 * @param module
+	 */
+	public void asyncUpdateModule(IModule module) {
+		UpdateOperationsScheduler scheduler = getUpdateModulesScheduler();
+		if (scheduler != null) {
+			scheduler.updateModule(module);
+		}
 	}
 }
 

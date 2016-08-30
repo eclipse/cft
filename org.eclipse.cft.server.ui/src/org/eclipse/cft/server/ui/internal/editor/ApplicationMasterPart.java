@@ -169,14 +169,8 @@ public class ApplicationMasterPart extends SectionPart {
 		updateSections();
 
 		if (editorPage != null && !editorPage.isDisposed()) {
-			if (!status.isOK()) {
-				editorPage.setErrorMessage(status.getMessage());
-			}
-			else {
-				editorPage.setErrorMessage(null);
-			}
+			editorPage.setMessage(status);
 		}
-
 	}
 
 	private class ApplicationViewersDropAdapter extends ServersViewDropAdapter {

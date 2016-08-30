@@ -135,9 +135,9 @@ public class CloudFoundryProxyTest extends AbstractAsynchCloudTest {
 				// therefore wait until refresh modules is completed before
 				// stopping it
 				ModulesRefreshListener listener = getModulesRefreshListener(null, cloudServer,
-						CloudServerEvent.EVENT_SERVER_REFRESHED);
+						CloudServerEvent.EVENT_UPDATE_COMPLETED);
 				connectClient();
-				assertModuleRefreshedAndDispose(listener, CloudServerEvent.EVENT_SERVER_REFRESHED);
+				assertModuleRefreshedAndDispose(listener, CloudServerEvent.EVENT_UPDATE_COMPLETED);
 
 				IModule[] modules = server.getModules();
 

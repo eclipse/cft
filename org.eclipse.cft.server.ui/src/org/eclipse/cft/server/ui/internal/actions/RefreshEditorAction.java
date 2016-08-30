@@ -77,7 +77,7 @@ public class RefreshEditorAction extends Action {
 			protected IStatus run(IProgressMonitor arg0) {
 				// Initialize the server and initiate server update scheduler
 				CloudFoundryServerBehaviour behaviour = editorPage.getCloudServer().getBehaviour();
-				behaviour.getOperationsScheduler().updateAll();
+				behaviour.asyncUpdateAll();
 				
 				return Status.OK_STATUS;
 			}

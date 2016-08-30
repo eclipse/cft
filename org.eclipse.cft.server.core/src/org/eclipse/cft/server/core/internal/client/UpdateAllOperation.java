@@ -28,7 +28,6 @@ import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.core.runtime.CoreException;
@@ -47,6 +46,15 @@ public class UpdateAllOperation extends BehaviourOperation {
 	public UpdateAllOperation(CloudFoundryServerBehaviour behaviour) {
 		super(behaviour, null);
 	}
+	
+	@Override
+	public String getMessage() {
+		return Messages.UpdateAllOperation_OPERATION_MESSAGE;
+	}
+	
+	protected boolean isCanceled(IProgressMonitor monitor) {
+		return monitor != null && monitor.isCanceled();
+	}
 
 	@Override
 	public void run(IProgressMonitor monitor) throws CoreException {
@@ -56,32 +64,36 @@ public class UpdateAllOperation extends BehaviourOperation {
 		subMonitor.beginTask(NLS.bind(Messages.CloudBehaviourOperations_REFRESHING_APPS_AND_SERVICES,
 				cloudServer.getServer().getId()), 100);
 		
+		if (isCanceled(subMonitor)) {
+			return;
+		}
+		
 		// Get updated list of services
 		List<CFServiceInstance> services = getBehaviour().getServices(subMonitor.newChild(20));
-
+		ServerEventHandler.getDefault().fireServicesUpdated(cloudServer, services);
+		
+		if (isCanceled(subMonitor)) {
+			return;
+		}
 		
 		// Split refresh of apps into two parts:
 		
 		// 1. Faster update of apps with basic info to refresh Servers view quicker
 		List<CloudApplication> applications = updateBasicListOfApps(cloudServer, subMonitor.newChild(30));
+		ServerEventHandler.getDefault().fireModulesUpdated(cloudServer, cloudServer.getServer().getModules());
 		
-		// Notify UI to refresh the basic list of apps
-		fireRefreshEvent(services);
+		if (isCanceled(subMonitor)) {
+			return;
+		}
 		
 		// 2. Slower update of apps with stats, service bindings, etc..
 		updateCompleteApps(applications, cloudServer, subMonitor.newChild(70));
-		
-		fireRefreshEvent(services);
-	
+		// Fire again to notify that modules with complete information has been updated
+		ServerEventHandler.getDefault().fireModulesUpdated(cloudServer, cloudServer.getServer().getModules());
 
 		subMonitor.worked(20);
 	}
 	
-	protected void fireRefreshEvent(List<CFServiceInstance> services) throws CoreException {
-		ServerEventHandler.getDefault().fireServerEvent(new AppsAndServicesRefreshEvent(getBehaviour().getCloudFoundryServer(),
-				getModule(), CloudServerEvent.EVENT_SERVER_REFRESHED, services));
-	}
-
 	protected List<CloudApplication> updateBasicListOfApps(CloudFoundryServer cloudServer, SubMonitor subMonitor)
 			throws CoreException {
 		// Get updated list of cloud applications from the server

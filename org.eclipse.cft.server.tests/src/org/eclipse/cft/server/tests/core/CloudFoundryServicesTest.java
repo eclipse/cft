@@ -29,8 +29,8 @@ import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudServicesUtil;
-import org.eclipse.cft.server.core.internal.client.AppsAndServicesRefreshEvent;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
+import org.eclipse.cft.server.core.internal.client.ServicesUpdatedEvent;
 import org.eclipse.cft.server.tests.util.ModulesRefreshListener;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
@@ -208,16 +208,16 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		CFServiceInstance[] services = new CFServiceInstance[] { toCreate };
 
 		ModulesRefreshListener refreshListener = new ModulesRefreshListener(cloudServer,
-				CloudServerEvent.EVENT_UPDATE_SERVICES);
+				CloudServerEvent.EVENT_SERVICES_UPDATED);
 
 		serverBehavior.operations().createServices(services).run(new NullProgressMonitor());
 
 		assertTrue(refreshListener.modulesRefreshed(new NullProgressMonitor()));
-		assertEquals(CloudServerEvent.EVENT_UPDATE_SERVICES, refreshListener.getMatchedEvent().getType());
+		assertEquals(CloudServerEvent.EVENT_SERVICES_UPDATED, refreshListener.getMatchedEvent().getType());
 
-		assertTrue("Expected " + AppsAndServicesRefreshEvent.class,
-				refreshListener.getMatchedEvent() instanceof AppsAndServicesRefreshEvent);
-		AppsAndServicesRefreshEvent cloudEvent = (AppsAndServicesRefreshEvent) refreshListener.getMatchedEvent();
+		assertTrue("Expected " + ServicesUpdatedEvent.class,
+				refreshListener.getMatchedEvent() instanceof ServicesUpdatedEvent);
+		ServicesUpdatedEvent cloudEvent = (ServicesUpdatedEvent) refreshListener.getMatchedEvent();
 		List<CFServiceInstance> existing = cloudEvent.getServices();
 		assertTrue("Expected 1 created service in cloud refresh event", existing.size() == 1);
 		assertEquals("testServiceCreationServicesInEvent", existing.get(0).getName());
@@ -238,17 +238,17 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		assertEquals("Expected 2 services", 2, services.size());
 
 		ModulesRefreshListener refreshListener = new ModulesRefreshListener(cloudServer,
-				CloudServerEvent.EVENT_UPDATE_SERVICES);
+				CloudServerEvent.EVENT_SERVICES_UPDATED);
 
 		serverBehavior.operations().deleteServices(Arrays.asList(new String[] { "testServiceDeletionServicesInEvent" }))
 				.run(new NullProgressMonitor());
 
 		assertTrue(refreshListener.modulesRefreshed(new NullProgressMonitor()));
-		assertEquals(CloudServerEvent.EVENT_UPDATE_SERVICES, refreshListener.getMatchedEvent().getType());
-		assertTrue("Expected " + AppsAndServicesRefreshEvent.class,
-				refreshListener.getMatchedEvent() instanceof AppsAndServicesRefreshEvent);
+		assertEquals(CloudServerEvent.EVENT_SERVICES_UPDATED, refreshListener.getMatchedEvent().getType());
+		assertTrue("Expected " + ServicesUpdatedEvent.class,
+				refreshListener.getMatchedEvent() instanceof ServicesUpdatedEvent);
 
-		AppsAndServicesRefreshEvent cloudEvent = (AppsAndServicesRefreshEvent) refreshListener.getMatchedEvent();
+		ServicesUpdatedEvent cloudEvent = (ServicesUpdatedEvent) refreshListener.getMatchedEvent();
 		List<CFServiceInstance> eventServices = cloudEvent.getServices();
 
 		assertTrue("Expected 1 service in cloud refresh event", eventServices.size() == 1);
@@ -270,17 +270,17 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		client.createService(CloudServicesUtil.asLegacyV1Service(service));
 
 		ModulesRefreshListener refreshListener = new ModulesRefreshListener(cloudServer,
-				CloudServerEvent.EVENT_SERVER_REFRESHED);
+				CloudServerEvent.EVENT_UPDATE_COMPLETED);
 
-		serverBehavior.getOperationsScheduler().updateAll();
+		serverBehavior.asyncUpdateAll();
 
 		assertTrue(refreshListener.modulesRefreshed(new NullProgressMonitor()));
 
-		assertEquals(CloudServerEvent.EVENT_SERVER_REFRESHED, refreshListener.getMatchedEvent().getType());
-		assertTrue("Expected " + AppsAndServicesRefreshEvent.class,
-				refreshListener.getMatchedEvent() instanceof AppsAndServicesRefreshEvent);
+		assertEquals(CloudServerEvent.EVENT_UPDATE_COMPLETED, refreshListener.getMatchedEvent().getType());
+		assertTrue("Expected " + ServicesUpdatedEvent.class,
+				refreshListener.getMatchedEvent() instanceof ServicesUpdatedEvent);
 
-		AppsAndServicesRefreshEvent cloudEvent = (AppsAndServicesRefreshEvent) refreshListener.getMatchedEvent();
+		ServicesUpdatedEvent cloudEvent = (ServicesUpdatedEvent) refreshListener.getMatchedEvent();
 		List<CFServiceInstance> eventServices = cloudEvent.getServices();
 		assertTrue("Expected 1 service in cloud refresh event", eventServices.size() == 1);
 		assertEquals("testExternalCreatedServiceRefresh", eventServices.get(0).getName());

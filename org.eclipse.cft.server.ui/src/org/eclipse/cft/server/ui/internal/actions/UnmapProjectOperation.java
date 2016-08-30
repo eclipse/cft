@@ -21,7 +21,6 @@ package org.eclipse.cft.server.ui.internal.actions;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.ModuleCache;
-import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.ModuleCache.ServerData;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
@@ -65,8 +64,6 @@ public class UnmapProjectOperation implements ICloudFoundryOperation {
 			// the module
 			cloudServer.getBehaviour().operations().updateModule(updatedModule.getLocalModule()).run(monitor);
 		}
-
-		ServerEventHandler.getDefault().fireServerRefreshed(cloudServer);
 	}
 
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,29 +20,24 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import java.util.List;
-
-import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.application.ModuleChangeEvent;
+import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.wst.server.core.IModule;
 
-public class AppsAndServicesRefreshEvent extends ModuleChangeEvent {
-
+public class ModulesUpdatedEvent extends CloudServerEvent {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 
-	private final List<CFServiceInstance> services;
+	private final IModule[] modules;
 
-	public AppsAndServicesRefreshEvent(CloudFoundryServer server, IModule module, int type, List<CFServiceInstance> services) {
-		super(server, type, module, null);
-		this.services = services;
+	public ModulesUpdatedEvent(CloudFoundryServer server, int type, IModule[] modules) {
+		super(server, type);;
+		this.modules = modules;
 	}
 
-	public List<CFServiceInstance> getServices() {
-		return services;
+	public IModule[] getModules() {
+		return modules;
 	}
-
 }
