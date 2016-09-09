@@ -161,7 +161,7 @@ public class CloudApplicationUrlPart extends UIPart {
 		GridDataFactory.fillDefaults().grab(false, false).align(SWT.FILL, SWT.CENTER).applyTo(label);
 
 		fullURLText = new Text(subDomainComp, SWT.BORDER);
-		GridDataFactory.fillDefaults().grab(true, false).applyTo(fullURLText);
+		GridDataFactory.fillDefaults().grab(true, false).align(SWT.FILL, SWT.CENTER).applyTo(fullURLText);
 
 		fullURLText.addModifyListener(new ModifyListener() {
 

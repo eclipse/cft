@@ -28,9 +28,9 @@ import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.core.internal.debug.CloudFoundryProperties;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
+import org.eclipse.cft.server.ui.internal.ModuleDeploymentDecoration;
 import org.eclipse.cft.server.ui.internal.actions.DeleteServicesAction;
 import org.eclipse.cft.server.ui.internal.actions.RefreshEditorAction;
 import org.eclipse.cft.server.ui.internal.actions.RemapToProjectEditorAction;
@@ -52,6 +52,7 @@ import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.ToolBarManager;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.LocalSelectionTransfer;
 import org.eclipse.jface.viewers.DecorationOverlayIcon;
 import org.eclipse.jface.viewers.IDecoration;
@@ -168,14 +169,8 @@ public class ApplicationMasterPart extends SectionPart {
 		updateSections();
 
 		if (editorPage != null && !editorPage.isDisposed()) {
-			if (!status.isOK()) {
-				editorPage.setErrorMessage(status.getMessage());
-			}
-			else {
-				editorPage.setErrorMessage(null);
-			}
+			editorPage.setMessage(status);
 		}
-
 	}
 
 	private class ApplicationViewersDropAdapter extends ServersViewDropAdapter {
@@ -300,6 +295,9 @@ public class ApplicationMasterPart extends SectionPart {
 		ToolBarManager toolBarManager = new ToolBarManager(SWT.FLAT);
 		toolBarManager.createControl(headerComposite);
 
+		final ModuleDeploymentDecoration<StringBuffer> deploymentDecorator = ModuleDeploymentDecoration
+				.getModuleTextDecoration();
+		
 		applicationsViewer = new TableViewer(toolkit.createTable(client, SWT.NONE));
 		applicationsViewer.setContentProvider(new TreeContentProvider());
 		applicationsViewer.setLabelProvider(new ServerLabelProvider() {
@@ -311,15 +309,10 @@ public class ApplicationMasterPart extends SectionPart {
 					IModule module = (IModule) element;
 					CloudFoundryApplicationModule appModule = editorPage.getCloudServer()
 							.getExistingCloudModule(module);
-					if (appModule != null && appModule.getStatus() != null && !appModule.getStatus().isOK()) {
-						if (appModule.getStatus().getSeverity() == IStatus.ERROR) {
-							return CloudFoundryImages.getImage(new DecorationOverlayIcon(image,
-									CloudFoundryImages.OVERLAY_ERROR, IDecoration.BOTTOM_LEFT));
-						}
-						else if (appModule.getStatus().getSeverity() == IStatus.WARNING) {
-							return CloudFoundryImages.getImage(new DecorationOverlayIcon(image,
-									CloudFoundryImages.OVERLAY_WARNING, IDecoration.BOTTOM_LEFT));
-						}
+					ImageDescriptor imageDescriptor = deploymentDecorator.getImageDecoration(appModule);
+					if (imageDescriptor != null) {
+						return CloudFoundryImages.getImage(new DecorationOverlayIcon(image,
+								imageDescriptor, IDecoration.BOTTOM_LEFT));
 					}
 				}
 
@@ -331,7 +324,7 @@ public class ApplicationMasterPart extends SectionPart {
 				// This is the WTP module name (usually, it's the workspace
 				// project name)
 				String moduleName = super.getText(element);
-
+			
 				// However, the user has the option to specify a different name
 				// when pushing an app, which is used as the cf app name. If
 				// they are different, and the
@@ -341,28 +334,17 @@ public class ApplicationMasterPart extends SectionPart {
 				if (element instanceof IModule) {
 
 					IModule module = (IModule) element;
-
 					// Find the corresponding Cloud Foundry-aware application
 					// Module.
-					CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule((IModule) element);
+					CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
 
 					if (appModule != null) {
-						String cfAppName = appModule.getDeployedApplicationName();
-
-						if (cfAppName != null) {
-
-							// Be sure not to show a null WTP module name,
-							// although
-							// that should not be encountered
-							if (moduleName != null && !cfAppName.equals(moduleName)
-									&& CloudFoundryProperties.isModuleProjectAccessible
-											.testProperty(new IModule[] { module }, cloudServer)) {
-								moduleName = cfAppName + " (" + moduleName + ")"; //$NON-NLS-1$ //$NON-NLS-2$
-							}
-							else {
-								moduleName = cfAppName;
-							}
-						}
+						
+						StringBuffer label = new StringBuffer();
+						label.append(moduleName);
+					
+						deploymentDecorator.decorateText(label, appModule);
+						return label.toString();
 					}
 				}
 

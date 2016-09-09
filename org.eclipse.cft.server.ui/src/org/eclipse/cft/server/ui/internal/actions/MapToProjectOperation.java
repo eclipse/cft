@@ -49,8 +49,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.dialogs.ElementTreeSelectionDialog;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
 import org.eclipse.ui.model.WorkbenchViewerComparator;
-import org.eclipse.wst.common.project.facet.core.IFacetedProject;
-import org.eclipse.wst.common.project.facet.core.ProjectFacetsManager;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
 import org.eclipse.wst.server.core.IServerWorkingCopy;
@@ -147,9 +145,6 @@ public class MapToProjectOperation implements ICloudFoundryOperation {
 			// the module
 			cloudServer.getBehaviour().operations().updateModule(updatedModule.getLocalModule()).run(monitor);
 		}
-
-		
-		ServerEventHandler.getDefault().fireServerRefreshed(cloudServer);
 	}
 
 	/**

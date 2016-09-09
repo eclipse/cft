@@ -43,6 +43,6 @@ public class ApplicationUpdateOperation extends BehaviourOperation {
 	@Override
 	public void run(IProgressMonitor monitor) throws CoreException {
 		request.run(monitor);
-		getBehaviour().getOperationsScheduler().updateDeployedModule(getModule());
+		getBehaviour().asyncUpdateDeployedModule(getModule());
 	}
 }

@@ -31,11 +31,15 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
 
 /**
- * Schedules behaviour operations for asynchronous execution.
+ * Schedules update operations on the cloud Server asynchronously. For example,
+ * updating a single modules, or all modules in the associated Cloud server.
+ * 
+ * <p/>
+ * Only ONE refresh job per server instance is run.
  * 
  * 
  */
-public class BehaviourOperationsScheduler {
+public class UpdateOperationsScheduler implements OperationScheduler {
 
 	private BehaviourRefreshJob refreshJob;
 
@@ -43,13 +47,11 @@ public class BehaviourOperationsScheduler {
 
 	private BehaviourOperation opToRun;
 
-	private static final String NO_SERVER_ERROR = "Null server in refresh module handler. Unable to schedule module refresh."; //$NON-NLS-1$
-
 	/**
 	 * 
 	 * @param cloudServer may be null if not resolved.
 	 */
-	public BehaviourOperationsScheduler(CloudFoundryServer cloudServer) {
+	public UpdateOperationsScheduler(CloudFoundryServer cloudServer) {
 		this.cloudServer = cloudServer;
 		String serverName = cloudServer != null ? cloudServer.getServer().getId() : "Unknown server"; //$NON-NLS-1$
 
@@ -58,20 +60,22 @@ public class BehaviourOperationsScheduler {
 		this.refreshJob = new BehaviourRefreshJob(refreshJobLabel);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.eclipse.cft.server.core.internal.OperationScheduler#
+	 * getCurrentOperation()
+	 */
+	@Override
+	public synchronized BehaviourOperation getCurrentOperation() {
+		return this.opToRun;
+	}
+
 	/**
 	 * Updates all modules in the server, as well as services
 	 */
 	public synchronized void updateAll() {
-		if (cloudServer == null) {
-			CloudFoundryPlugin.logError(NO_SERVER_ERROR);
-		}
-		else if (this.opToRun == null) {
-			scheduleRefresh(cloudServer.getBehaviour().operations().updateAll());
-		}
-	}
-
-	public synchronized boolean isScheduled() {
-		return this.opToRun != null;
+		scheduleRefresh(cloudServer.getBehaviour().operations().updateAll());
 	}
 
 	/**
@@ -81,12 +85,7 @@ public class BehaviourOperationsScheduler {
 	 * @param module to refresh
 	 */
 	public synchronized void updateDeployedModule(IModule module) {
-		if (cloudServer == null) {
-			CloudFoundryPlugin.logError(NO_SERVER_ERROR);
-		}
-		else if (this.opToRun == null) {
-			scheduleRefresh(cloudServer.getBehaviour().operations().updateDeployedModule(module));
-		}
+		scheduleRefresh(cloudServer.getBehaviour().operations().updateDeployedModule(module));
 	}
 
 	/**
@@ -94,12 +93,7 @@ public class BehaviourOperationsScheduler {
 	 * @see CloudBehaviourOperations#updateModule(IModule)
 	 */
 	public synchronized void updateModule(IModule module) {
-		if (cloudServer == null) {
-			CloudFoundryPlugin.logError(NO_SERVER_ERROR);
-		}
-		else if (this.opToRun == null) {
-			scheduleRefresh(cloudServer.getBehaviour().operations().updateModule(module));
-		}
+		scheduleRefresh(cloudServer.getBehaviour().operations().updateModule(module));
 	}
 
 	/**
@@ -108,13 +102,8 @@ public class BehaviourOperationsScheduler {
 	 * {@link #updateDeployedModule(IModule)} specific to publishing
 	 * @param module
 	 */
-	public synchronized void updateOnPublish(IModule module) {
-		if (cloudServer == null) {
-			CloudFoundryPlugin.logError(NO_SERVER_ERROR);
-		}
-		else if (this.opToRun == null) {
-			scheduleRefresh(cloudServer.getBehaviour().operations().updateOnPublish(module));
-		}
+	public synchronized void updateModuleAfterPublish(IModule module) {
+		scheduleRefresh(cloudServer.getBehaviour().operations().updateOnPublish(module));
 	}
 
 	private synchronized void scheduleRefresh(BehaviourOperation opToRun) {
@@ -125,7 +114,9 @@ public class BehaviourOperationsScheduler {
 	}
 
 	private void schedule() {
+		// Must be visible in progress bar as it can be long running op
 		refreshJob.setSystem(false);
+
 		refreshJob.schedule();
 	}
 
@@ -137,9 +128,11 @@ public class BehaviourOperationsScheduler {
 
 		@Override
 		public IStatus run(IProgressMonitor monitor) {
+
+			IModule module = null;
 			try {
 				CloudFoundryServer cloudServer = null;
-				IModule module = opToRun.getModule();
+				module = opToRun.getModule();
 
 				try {
 					cloudServer = opToRun.getBehaviour() != null ? opToRun.getBehaviour().getCloudFoundryServer()
@@ -147,31 +140,53 @@ public class BehaviourOperationsScheduler {
 				}
 				catch (CoreException ce) {
 					CloudFoundryPlugin.logError(ce);
+					return ce.getStatus();
 				}
 
-				try {
-					opToRun.run(monitor);
+				// Cloud server must not be null as it's the source of
+				// the event
+				if (cloudServer == null) {
+					IStatus error = CloudFoundryPlugin.getErrorStatus(
+							NLS.bind(Messages.RefreshModulesHandler_EVENT_CLOUD_SERVER_NULL, opToRun.getClass()));
+					CloudFoundryPlugin.log(error);
+					return error;
 				}
-				catch (Throwable t) {
-					// Cloud server must not be null as it's the source of
-					// the event
-					if (cloudServer == null) {
-						CloudFoundryPlugin.logError(
-								NLS.bind(Messages.RefreshModulesHandler_EVENT_CLOUD_SERVER_NULL, opToRun.getClass()));
-					}
-					else {
-						cloudServer.setAndSaveToken(null);
-						ServerEventHandler.getDefault().fireError(cloudServer, module,
-								CloudFoundryPlugin.getErrorStatus(Messages.RefreshModulesHandler_REFRESH_FAILURE, t));
 
-					}
-				}
+				// At this stage, cloud server is NOT null
+				runOperation(module, cloudServer, monitor);
 			}
 			finally {
 				opToRun = null;
 			}
 
 			return Status.OK_STATUS;
+		}
+
+		/**
+		 * 
+		 * @param monitor
+		 * @param module optionally null if operation is not being performed on
+		 * a single module
+		 * @param cloudServer must NOT be null
+		 */
+		protected void runOperation(IModule module, CloudFoundryServer cloudServer, IProgressMonitor monitor) {
+			IStatus errorStatus = null;
+			try {
+				ServerEventHandler.getDefault().fireUpdateStarting(cloudServer);
+				opToRun.run(monitor);
+			}
+			catch (Throwable t) {
+				cloudServer.setAndSaveToken(null);
+				errorStatus = CloudFoundryPlugin.getErrorStatus(Messages.RefreshModulesHandler_REFRESH_FAILURE, t);
+			}
+			finally {
+				if (errorStatus != null) {
+					ServerEventHandler.getDefault().fireError(cloudServer, module, errorStatus);
+				}
+				else {
+					ServerEventHandler.getDefault().fireUpdateCompleted(cloudServer);
+				}
+			}
 		}
 	}
 

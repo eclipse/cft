@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ package org.eclipse.cft.server.ui.internal;
 
 import java.util.List;
 
-import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.AbstractCloudFoundryUrl;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
@@ -34,7 +33,7 @@ import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IStatus;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.ILightweightLabelDecorator;
 import org.eclipse.jface.viewers.LabelProvider;
@@ -77,6 +76,8 @@ public class CloudFoundryDecorator extends LabelProvider implements ILightweight
 			if (s != null && CloudServerUtil.isCloudFoundryServer(s)) {
 				IModule[] modules = moduleServer.getModule();
 				if (modules != null && modules.length == 1) {
+					
+                    ModuleDeploymentDecoration<IDecoration> deploymentDecoration = ModuleDeploymentDecoration.getServersViewDecoration();
 					CloudFoundryServer server = getCloudFoundryServer(moduleServer.getServer());
 					if (server == null || !server.isConnected()) {
 						return;
@@ -89,32 +90,12 @@ public class CloudFoundryDecorator extends LabelProvider implements ILightweight
 						return;
 					}
 
-					if (module.getLocalModule() != null) {
-						// show local information?
-					}
-
-					CloudApplication application = module.getApplication();
-					if (application != null) {
-						String deployedAppName = application.getName();
-						IModule localModule = module.getLocalModule();
-						// Only show "Deployed as" when the local module name does not match the deployed app name.
-						if (localModule != null && !localModule.getName().equals(deployedAppName)) {
-							decoration.addSuffix(NLS.bind(Messages.CloudFoundryDecorator_SUFFIX_DEPLOYED_AS, deployedAppName));
-						} else {
-							decoration.addSuffix(Messages.CloudFoundryDecorator_SUFFIX_DEPLOYED);
-						}
-					}
-					else {
-						decoration.addSuffix(Messages.CloudFoundryDecorator_SUFFIX_NOT_DEPLOYED);
-					}
-
-					if (module.getStatus() != null && !module.getStatus().isOK()) {
-						if (module.getStatus().getSeverity() == IStatus.ERROR) {
-							decoration.addOverlay(CloudFoundryImages.OVERLAY_ERROR, IDecoration.BOTTOM_LEFT);
-						} else if (module.getStatus().getSeverity() == IStatus.WARNING) {
-							decoration.addOverlay(CloudFoundryImages.OVERLAY_WARNING, IDecoration.BOTTOM_LEFT);
-						}
-					}
+					deploymentDecoration.decorateText(decoration, module);
+					ImageDescriptor image = deploymentDecoration.getImageDecoration(module);
+				
+					if (image != null) {
+						decoration.addOverlay(image, IDecoration.BOTTOM_LEFT);
+					}	
 				}
 			}
 		}

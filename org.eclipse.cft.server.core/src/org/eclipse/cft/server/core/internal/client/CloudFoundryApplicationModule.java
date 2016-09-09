@@ -37,6 +37,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
+import org.eclipse.cft.server.core.internal.application.ApplicationRunState;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
@@ -362,16 +363,35 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 	 * @return One of the following state of the application on the Cloud
 	 * target: {@link IServer#STATE_STARTED}, {@link IServer#STATE_STOPPED},
 	 * {@link IServer#STATE_UNKNOWN}
+	 * @deprecated use {@link #getRunState()} instead
 	 * 
 	 */
 	public synchronized int getState() {
 		return getCloudState(getApplication(), this.applicationStats);
 	}
-	
+
 	/**
 	 * 
-	 * @return state in the IServer. This may differ from the computed
-	 * state from {@link #getState()} which relies on Cloud information.
+	 * @return run state of the module. If application is starting, started, or stopped, it will return the following, respectively:
+	 * {@link IServer#STATE_STARTING}, {@link IServer#STATE_STARTED}, {@link IServer#STATE_STOPPED}. Otherwise it will return
+	 * {@link IServer#STATE_UNKNOWN}
+	 */
+	public synchronized ApplicationRunState getRunState() {
+		// CF does not accurately track "starting" state of an application, therefore rely
+		// on the state of the module in the local WTP server to determine if it is in "starting" state
+		if (getLocalModule() != null) {
+			int startingState = getStateInServer();
+			if (startingState == IServer.STATE_STARTING) {
+				return ApplicationRunState.getRunState(startingState);
+			}
+		}
+		// If app is not in starting mode, compute the run state based on the actual cloud app state in CF:
+		return ApplicationRunState.getRunState(getCloudState(getApplication(), this.applicationStats));
+	}
+
+	/**
+	 * 
+	 * @return module state in the IServer.
 	 */
 	public int getStateInServer() {
 		return server.getModuleState(new IModule[] { getLocalModule() });
@@ -590,7 +610,8 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 
 		if (delegate != null) {
 			try {
-				defaultInfo = delegate.getDefaultApplicationDeploymentInfo(this, getCloudFoundryServer().getServer(), monitor);
+				defaultInfo = delegate.getDefaultApplicationDeploymentInfo(this, getCloudFoundryServer().getServer(),
+						monitor);
 			}
 			catch (CoreException e) {
 				CloudFoundryPlugin.logError(e);
