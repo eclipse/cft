@@ -40,6 +40,7 @@ import org.eclipse.cft.server.ui.internal.editor.ServicesTreeLabelProvider;
 import org.eclipse.cft.server.ui.internal.editor.TreeContentProvider;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ToolBarManager;
@@ -64,7 +65,8 @@ import org.eclipse.swt.widgets.ToolBar;
 public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 
 	// This page is optional and can be completed at any time
-	private final boolean canFinish = true;
+//	private final boolean canFinish = true;
+	private boolean canFinish = true;
 
 	private final String serverTypeId;
 
@@ -100,6 +102,10 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 		this.cloudServer = cloudServer;
 		this.serverTypeId = module.getServerTypeId();
 		this.descriptor = descriptor;
+	}
+	
+	public boolean canFlipToNextPage() {
+		return true;
 	}
 
 	public boolean isPageComplete() {
@@ -175,6 +181,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 					List<CFServiceInstance> addedService = wizard.getServices();
 					if (addedService != null) {
 						addServices(addedService);
+						setInput();
 					}
 				}
 			}
@@ -268,22 +275,45 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 					// to not exist and
 					// will require being created. Only create services IF they
 					// are to be bound to the app.
+					String errMsg = null;
 					for (String name : selectedServicesToBind) {
 						CFServiceInstance service = allServices.get(name);
 						if (service.isLocal()) {
 							servicesToAdd.add(name);
 						}
+						// If the service is not going to be added and it is not existing, the binding will fail,
+						// so display an error message and block completion.
+						else if(!servicesToAdd.contains(service) && 
+								(existingServices == null || !existingServices.contains(service))) {
+							errMsg = NLS.bind(Messages.CloudFoundryApplicationServicesWizardPage_NO_INSTANCE_TO_BIND_TO, 
+											service.getName());
+						}
 					}
 
 					setServicesToCreateInDescriptor();
 
+					// update canFinish
+					if(errMsg != null) {
+						canFinish = false;
+					}
+					else {
+						canFinish = true;
+					}
+					
 					// Refresh UI
+					final String ferrMsg = errMsg;
 					Display.getDefault().asyncExec(new Runnable() {
 
 						public void run() {
-							// Clear any info in the dialogue
-							setMessage(null);
-							update(false, Status.OK_STATUS);
+							// Update the dialog, adding/removing the error message.
+							setMessage(ferrMsg);
+							IStatus status = Status.OK_STATUS;
+							if(ferrMsg != null) {
+								status = new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID, ferrMsg);
+							}
+							update(false, status);
+							// If the error is resolved, can now press 'Finish'
+							setPageComplete(canFinish);
 
 							setBoundServiceSelectionInUI();
 						}
@@ -310,7 +340,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 		runAsync(runnable, Messages.CloudFoundryApplicationServicesWizardPage_TEXT_VERIFY_SERVICE_PROGRESS);
 
 	}
-
+	
 	protected void populateServicesFromDeploymentInfo() {
 
 		List<CFServiceInstance> servicesToBind = descriptor.getDeploymentInfo().getServices();

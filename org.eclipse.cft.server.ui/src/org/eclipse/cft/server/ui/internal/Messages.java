@@ -603,6 +603,8 @@ public class Messages extends NLS {
 	public static String CloudFoundryApplicationServicesWizardPage_TEXT_TABLE_ACC_LABEL;
 
 	public static String CloudFoundryApplicationServicesWizardPage_TEXT_VERIFY_SERVICE_PROGRESS;
+	
+	public static String CloudFoundryApplicationServicesWizardPage_NO_INSTANCE_TO_BIND_TO;
 
 	public static String CloudFoundryApplicationWizard_TITLE_APP;
 
