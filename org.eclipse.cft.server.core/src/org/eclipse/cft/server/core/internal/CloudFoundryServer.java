@@ -1106,6 +1106,35 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	}
 
 
+	public static void syncCFAMLocalModule(CloudFoundryApplicationModule cloudModule, IServer server) {
+		
+		IModule localModule = cloudModule.getLocalModule();
+		
+		if(localModule == null) {
+			return;
+		}
+		
+		IModule newModule = null;
+		
+		IModule[] lm = server.getModules();
+		if(lm != null) {
+			for(IModule im : lm) {
+				if(im.getId().equals(localModule.getId()) && im.getName().equals(localModule.getName())) {
+					newModule = im;
+					break;
+				}
+			}
+		}
+
+		if(newModule != null) {
+
+			if(newModule != localModule) {
+				cloudModule.setLocalModule(newModule);
+			}
+		}
+	}
+
+
 	/**
 	 * Updates the {@link IModule} and {@link ICloudFoundryApplicationModule}
 	 * associated with the given {@link CloudApplication}. If a null

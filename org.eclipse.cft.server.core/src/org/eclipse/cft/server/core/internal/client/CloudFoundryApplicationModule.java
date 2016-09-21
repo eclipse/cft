@@ -341,6 +341,10 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		return localModule;
 	}
 
+	public void setLocalModule(IModule localModule) {
+		this.localModule = localModule;
+	}
+
 	public int getPublishState() {
 		// if (isExternal()) {
 		return IServer.PUBLISH_STATE_NONE;

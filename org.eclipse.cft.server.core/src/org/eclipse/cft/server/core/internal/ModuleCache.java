@@ -303,6 +303,9 @@ public class ModuleCache {
 			// created.
 			CloudFoundryApplicationModule appModule = getCloudModuleToLocalModuleName(module.getName());
 			if (appModule != null) {
+				
+				CloudFoundryServer.syncCFAMLocalModule(appModule, server);
+
 				return appModule;
 			}
 
