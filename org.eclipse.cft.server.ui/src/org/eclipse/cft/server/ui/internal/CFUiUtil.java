@@ -600,6 +600,7 @@ public class CFUiUtil {
 	 * 
 	 * The algorithm to determine the unique, unused subdomain is as follows:
 	 * 1. Check if the initial subdomain is taken.  If it is not taken, it is returned.
+	 *    NB: If URL contains some upper case, replaced by hyphen and in lower case if could not be reserved on CF server
 	 * 2. If taken, the initial subdomain will be appended by a dash (-) followed by a hash of the username, org and space. If
 	 *    it is not taken, it is returned. 
 	 * 3. If taken, then it will be appended by a dash and a 1.
@@ -619,6 +620,7 @@ public class CFUiUtil {
 		ApplicationUrlLookupService lookup = ApplicationUrlLookupService.getCurrentLookup(server);
 		CloudApplicationURL cloudUrl = null;
 		boolean isUniqueURL = true;
+		boolean upperCaseChecked = false;
 		int intSuffix = -1;
 
 		UniqueSubdomain result = null;
@@ -646,14 +648,12 @@ public class CFUiUtil {
 				cloudUrl = lookup.getCloudApplicationURL(url);
 			}
 			catch (CoreException e) {
-				// if error occurred, eg. url is null, then don't check for host
-				// taken and simply return
+				// if error occurred, eg. url is null, then don't check for host taken and simply return
 				break;
 			}
 
 			if (cloudUrl == null) {
-				// if error occurred, eg. url is null, then don't check for host
-				// taken and simply return
+				// if error occurred, eg. url is null, then don't check for host taken and simply return
 				break;
 			}
 
@@ -662,10 +662,8 @@ public class CFUiUtil {
 			}
 
 			boolean isFound = false; // is in route list?
-			boolean isRouteReservedAndUnused = false; // is route reserve and
-														// unused?
-			boolean isRouteCreated = false; // did we create the route in
-											// reserveRoute?
+			boolean isRouteReservedAndUnused = false; // is route reserve and unused?
+			boolean isRouteCreated = false; // did we create the route in reserveRoute?
 
 			// First check the existing cloud routes
 			for (CloudRoute cr : routes) {
@@ -686,9 +684,7 @@ public class CFUiUtil {
 			}
 
 			if (!isFound) {
-				// If the route was not found in the getRoutes(...) list, then
-				// attempt to reserve it
-
+				// If the route was not found in the getRoutes(...) list, then attempt to reserve it
 				isRouteReservedAndUnused = server.getBehaviour().reserveRouteIfAvailable(cloudUrl.getSubdomain(),
 						cloudUrl.getDomain(), monitor);
 				isRouteCreated = isRouteReservedAndUnused;
@@ -703,6 +699,25 @@ public class CFUiUtil {
 				isUniqueURL = true;
 
 			}
+			else if (!upperCaseChecked && !url.equals(url.toLowerCase())) {
+				isUniqueURL = false;
+				upperCaseChecked = true;
+		        
+						// If URL contains some upper-case, first sanitization before increment
+		        final String hyphen = "-";
+		        Pattern p = Pattern.compile("([A-Z])");
+		        Matcher m = p.matcher(url);
+		        StringBuffer sb = new StringBuffer();
+		        while (m.find()) {
+		            m.appendReplacement(sb, hyphen + m.group(1).toLowerCase());
+		        }
+		        m.appendTail(sb);
+		        // If first char was in upper case, remove first hyphen
+		        if (sb.indexOf(hyphen) == 0) {
+		            sb.deleteCharAt(0);
+		        }
+		        url = sb.toString();
+			}
 			else {
 				intSuffix ++;   
 				// The route is taken (as determined either by checking the
@@ -714,28 +729,20 @@ public class CFUiUtil {
 				
 				if (intSuffix == 0) {  // First attempt at a suggested unused name
 					sb = new StringBuilder(url);
-					subdomain = cloudUrl.getSubdomain();    // Example: MyApp1-23526.  If app is actually called MyApp1-23526, then it will be MyApp1-23526-23526
+					subdomain = cloudUrl.getSubdomain();    // Example: my-app1-23526.  If app is actually called my-app1-23526, then it will be my-app1-23526-23526
 					url = sb.insert(sb.indexOf(subdomain) + subdomain.length(), "-" + hashString).toString();
 				} else if (intSuffix == 1) { // Second attempt
 					int beginning = subdomain.indexOf(hashString) - 1; // -1 for the dash
 					int length = hashString.length() + 1; // +1 for the dash
-					url = sb.replace(beginning, beginning + length, "-" + hashString + "-1").toString(); // Example: MyApp1-23526-1
+					url = sb.replace(beginning, beginning + length, "-" + hashString + "-1").toString(); // Example: my-app1-23526-1
 				} else { // All subsequent attempts to find an unused name
 					int beginning = subdomain.indexOf(hashString) - 1; // -1 for the leading dash
 					int length = hashString.length() + 2 + String.valueOf(intSuffix - 1).length(); // + 2 for the two dashes
-					url = sb.replace(beginning, beginning + length, "-" + hashString + "-" + intSuffix).toString(); // Example: MyApp1-23526-2
+					url = sb.replace(beginning, beginning + length, "-" + hashString + "-" + intSuffix).toString(); // Example: my-app1-23526-2
 				}
 			}
 
-		} while (!isUniqueURL && intSuffix < Integer.MAX_VALUE - 1 && !monitor.isCanceled()); // Support
-																								// suffix
-																								// up
-																								// to
-																								// the
-																								// number
-																								// 2^31
-																								// -
-																								// 1
+		} while (!isUniqueURL && intSuffix < Integer.MAX_VALUE - 1 && !monitor.isCanceled()); // Support suffix up to the number 2^31 - 1
 
 		return result;
 	}
