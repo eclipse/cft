@@ -1298,12 +1298,12 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		// workaround.
 		
 		// Whether or not we have determined if at least one root (parent) module was added or removed, and thus will be deleted from CF
-		boolean parentAddedOrRemoved = false;
 
 		if ( modules != null && deltaKind2 != null) {
-			
+
+			boolean parentAddedOrRemoved = false;
+
 			List<ModuleAndDeltaKind> topLevelParents = new ArrayList<ModuleAndDeltaKind>();
-			Map<Integer /* index of parent in 'modules' param */, List<ModuleAndDeltaKind> /*all children, grandchildren, etc of parent*/> transitiveChildren = new HashMap<Integer, List<ModuleAndDeltaKind>>();
 
 			// Gather top level parents into 'topLevelParents'
 			for(int x = 0; x < modules.size(); x++) {
@@ -1330,10 +1330,12 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 				
 				topLevelParents.add(new ModuleAndDeltaKind(module, (int)deltaKind2.get(x), x));
 			}
-			
+
+			Map<Integer /* index of parent in 'modules' param */, List<ModuleAndDeltaKind> /*all children, grandchildren, etc of parent*/> transitiveChildren = new HashMap<Integer, List<ModuleAndDeltaKind>>();
+
 			if(parentAddedOrRemoved) {
 			
-				// Gather children
+				// Gather children into childList and transitiveChildren
 				for(int childIndex = 0; childIndex < modules.size(); childIndex++) {
 	
 					if (monitor.isCanceled()) {
@@ -1343,7 +1345,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 					IModule[] childModule = (IModule[]) modules.get(childIndex);
 						
 					
-					// Skip top level parents
+					// if not a top level parent...
 					if(childModule.length > 1) { 
 
 						if (shouldIgnorePublishRequest(childModule[childModule.length - 1])) {
@@ -1351,8 +1353,10 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 						}
 						
 						for(int parentIndex = 0; parentIndex < topLevelParents.size(); parentIndex++)  {
+							// For each top level parent...
 							ModuleAndDeltaKind parentModuleAndDelta = topLevelParents.get(parentIndex);
 							if(childModule[0].getId().equals(parentModuleAndDelta.modules[0].getId())) {
+								// If the current childModule has the parent, then add it to childList and transitiveChildren
 								List<ModuleAndDeltaKind> childList = transitiveChildren.get((Integer)parentModuleAndDelta.index);
 								if(childList == null) {
 									childList = new ArrayList<ModuleAndDeltaKind>();
@@ -1371,11 +1375,14 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 				
 				for(ModuleAndDeltaKind parent : topLevelParents) {
 					
+					// For each top level parent that was directly ADDED or REMOVED
 					if(ServerBehaviourDelegate.ADDED == parent.deltaKind2 || ServerBehaviourDelegate.REMOVED == parent.deltaKind2) {
 						
+						// Add parent module and deltaKind
 						newModulesList.add(parent.modules);
 						newDeltaKind2List.add(parent.deltaKind2);
 						
+						// Get all the children, and add their module and deltaKind
 						List<ModuleAndDeltaKind> childrenOfParent = transitiveChildren.get(parent.index);
 						
 						if(childrenOfParent != null) {
@@ -1390,6 +1397,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 					
 				}
 				
+				// Replace the existing module list+delataKind parameters, with our updated module list+deltaKind parameters
+				// that only include parents that were ADDED/REMOVED (and all their children). 
 				if(newModulesList.size() > 0 && newDeltaKind2List.size() > 0) {
 					modules = newModulesList;
 					deltaKind2 = newDeltaKind2List;
