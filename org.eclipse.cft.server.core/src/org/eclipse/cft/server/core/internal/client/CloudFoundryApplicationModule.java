@@ -338,13 +338,39 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 	 * @return local WST module. May be null if the application is external.
 	 */
 	public IModule getLocalModule() {
+		syncCFAMLocalModule();
+		
 		return localModule;
 	}
 
-	public void setLocalModule(IModule localModule) {
-		this.localModule = localModule;
+	private void syncCFAMLocalModule() {
+		
+		if(localModule == null) {
+			return;
+		}
+		
+		IModule newModule = null;
+		
+		IModule[] lm = server.getModules();
+		if(lm != null) {
+			for(IModule im : lm) {
+				if(im.getId().equals(localModule.getId()) && im.getName().equals(localModule.getName())) {
+					newModule = im;
+					break;
+				}
+			}
+		}
+
+		if(newModule != null) {
+
+			if(newModule != localModule) {
+				
+				localModule = newModule;
+			}
+		}
 	}
 
+	
 	public int getPublishState() {
 		// if (isExternal()) {
 		return IServer.PUBLISH_STATE_NONE;

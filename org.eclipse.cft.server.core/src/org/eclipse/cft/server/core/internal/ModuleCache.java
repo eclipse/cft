@@ -304,8 +304,6 @@ public class ModuleCache {
 			CloudFoundryApplicationModule appModule = getCloudModuleToLocalModuleName(module.getName());
 			if (appModule != null) {
 				
-				CloudFoundryServer.syncCFAMLocalModule(appModule, server);
-
 				return appModule;
 			}
 
