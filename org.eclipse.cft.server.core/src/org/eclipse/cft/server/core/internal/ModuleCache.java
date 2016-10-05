@@ -303,7 +303,6 @@ public class ModuleCache {
 			// created.
 			CloudFoundryApplicationModule appModule = getCloudModuleToLocalModuleName(module.getName());
 			if (appModule != null) {
-				
 				return appModule;
 			}
 
