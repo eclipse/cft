@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -35,14 +35,18 @@ public class CloudServerEvent extends EventObject {
 
 	public static final int EVENT_INSTANCES_UPDATED = 100;
 
-	public static final int EVENT_UPDATE_SERVICES = 200;
+	public static final int EVENT_SERVICES_UPDATED = 200;
 
 	public static final int EVENT_UPDATE_PASSWORD = 300;
 
-	public static final int EVENT_APPLICATION_REFRESHED = 310;
+	public static final int EVENT_MODULE_UPDATED = 310;
+	
+	public static final int EVENT_MODULES_UPDATED = 320;
+	
+	public static final int EVENT_UPDATE_STARTING = 400;
 
-	public static final int EVENT_SERVER_REFRESHED = 400;
-
+	public static final int EVENT_UPDATE_COMPLETED = 401;
+	
 	public static final int EVENT_SERVER_CONNECTED = 403;
 
 	public static final int EVENT_SERVER_DISCONNECTED = 406;
@@ -60,7 +64,7 @@ public class CloudServerEvent extends EventObject {
 	public static final int EVENT_APP_DEBUG = 500;
 
 	public static final int EVENT_CLOUD_OP_ERROR = 600;
-	
+
 	public static final int EVENT_JREBEL_REMOTING_UPDATE = 700;
 
 	private static final long serialVersionUID = 1L;

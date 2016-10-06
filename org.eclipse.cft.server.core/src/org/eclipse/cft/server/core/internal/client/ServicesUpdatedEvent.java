@@ -23,30 +23,25 @@ package org.eclipse.cft.server.core.internal.client;
 import java.util.List;
 
 import org.eclipse.cft.server.core.CFServiceInstance;
-import org.eclipse.cft.server.core.internal.Messages;
-import org.eclipse.cft.server.core.internal.ServerEventHandler;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.CloudServerEvent;
 
-public class UpdateServicesOperation extends BehaviourOperation {
+public class ServicesUpdatedEvent extends CloudServerEvent {
 
-	private final BaseClientRequest<List<CFServiceInstance>> request;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
-	public UpdateServicesOperation(BaseClientRequest<List<CFServiceInstance>> request, CloudFoundryServerBehaviour behaviour) {
-		super(behaviour, null);
-		this.request = request;
-	}
-	
-	@Override
-	public String getMessage() {
-		return Messages.UpdateServicesOperation_OPERATION_MESSAGE;
+	private final List<CFServiceInstance> services;
+
+	public ServicesUpdatedEvent(CloudFoundryServer server, int type, List<CFServiceInstance> services) {
+		super(server, type);
+		this.services = services;
 	}
 
-	@Override
-	public void run(IProgressMonitor monitor) throws CoreException {
-		List<CFServiceInstance> existingServices = request.run(monitor);
-		ServerEventHandler.getDefault().fireServicesUpdated(getBehaviour().getCloudFoundryServer(),
-				existingServices);
+	public List<CFServiceInstance> getServices() {
+		return services;
 	}
 
 }

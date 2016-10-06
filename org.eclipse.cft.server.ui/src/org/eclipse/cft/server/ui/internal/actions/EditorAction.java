@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ package org.eclipse.cft.server.ui.internal.actions;
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.NotFinishedStagingException;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
@@ -40,7 +41,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.widgets.Display;
@@ -197,27 +197,12 @@ public abstract class EditorAction extends Action {
 	}
 
 	protected void setErrorInPage(String message) {
-		if (message == null) {
-			editorPage.setMessage(null, IMessageProvider.NONE);
-		}
-		else {
-			editorPage.setMessage(message, IMessageProvider.ERROR);
-		}
+		IStatus errorStatus = message != null ? CloudFoundryPlugin.getErrorStatus(message) : null;
+		setMessageInPage(errorStatus);
 	}
 
 	protected void setMessageInPage(IStatus status) {
-		String message = status.getMessage();
-		int providerStatus = IMessageProvider.NONE;
-		switch (status.getSeverity()) {
-		case IStatus.INFO:
-			providerStatus = IMessageProvider.INFORMATION;
-			break;
-		case IStatus.WARNING:
-			providerStatus = IMessageProvider.WARNING;
-			break;
-		}
-
-		editorPage.setMessage(message, providerStatus);
+		editorPage.setMessage(status);
 	}
 
 	protected CloudFoundryServerBehaviour getBehaviour() {

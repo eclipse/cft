@@ -30,8 +30,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudServerListener;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
-import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.core.internal.client.AppsAndServicesRefreshEvent;
+import org.eclipse.cft.server.core.internal.client.ServicesUpdatedEvent;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.actions.EditorAction.EditorCloudEvent;
@@ -40,7 +39,6 @@ import org.eclipse.cft.server.ui.internal.actions.RefreshEditorAction;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.widgets.Composite;
@@ -48,7 +46,6 @@ import org.eclipse.ui.forms.ManagedForm;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.progress.UIJob;
-import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServerListener;
 import org.eclipse.wst.server.core.ServerEvent;
@@ -78,11 +75,11 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 
 	private int[] applicationMemoryChoices;
 
-	private final int MAX_ERROR_MESSAGE = 100;
-
 	private UIJob refreshJob;
 
-	private RefreshEditorOperation currentRefreshOp;
+	private UpdateEditorOperation currentRefreshOp;
+
+	private FormMessageHandler formMessageHandler;
 
 	@Override
 	public void createPartControl(Composite parent) {
@@ -105,6 +102,17 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 		serverListener = new ServerListener();
 		addCloudServerListener(serverListener);
 		getServer().getOriginal().addServerListener(serverListener);
+	}
+
+	/**
+	 * The message handler for the underlying form in this page. May be null if
+	 * it hasn't yet been initialised (for example, the form is not yet created)
+	 */
+	public FormMessageHandler getFormMessageHandler() {
+		if (this.formMessageHandler == null && cloudServer != null && sform != null) {
+			this.formMessageHandler = new FormMessageHandler(cloudServer, sform);
+		}
+		return this.formMessageHandler;
 	}
 
 	/**
@@ -164,8 +172,10 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 	}
 
 	public void selectAndReveal(IModule module) {
-		// Refresh the UI immediately with the cached information for the module
+		// Refresh the UI immediately with the cached information for the
+		// module. Refresh
 		masterDetailsBlock.refreshUI(RefreshArea.MASTER);
+
 		TableViewer viewer = masterDetailsBlock.getMasterPart().getApplicationsViewer();
 		viewer.setSelection(new StructuredSelection(module));
 
@@ -179,35 +189,6 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 	public void setFocus() {
 	}
 
-	public void setMessage(String message, int messageType) {
-		String messageToDisplay = message;
-		if (messageToDisplay == null) {
-			sform.setMessage(null, IMessageProvider.NONE);
-		}
-		else {
-			// First replace all return carriages, or new lines with spaces
-			StringBuffer buffer = new StringBuffer(messageToDisplay);
-			for (int i = 0; i < buffer.length(); i++) {
-				char ch = buffer.charAt(i);
-				if (ch == '\r' || ch == '\n') {
-					buffer.replace(i, i + 1, " "); //$NON-NLS-1$
-				}
-			}
-
-			if (buffer.length() > MAX_ERROR_MESSAGE) {
-				String endingSegment = Messages.CloudFoundryApplicationsEditorPage_TEXT_SEE_ERRORLOG;
-
-				messageToDisplay = buffer.substring(0, MAX_ERROR_MESSAGE).trim() + endingSegment;
-				CloudFoundryPlugin.logError(message);
-			}
-			else {
-				messageToDisplay = buffer.toString();
-			}
-
-			sform.setMessage(messageToDisplay, messageType);
-		}
-	}
-
 	public void setServices(List<CFServiceInstance> services) {
 		this.services = services;
 	}
@@ -216,11 +197,11 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 		this.applicationMemoryChoices = applicationMemoryChoices;
 	}
 
-	private synchronized void setRefreshOp(RefreshEditorOperation op) {
+	private synchronized void setRefreshOp(UpdateEditorOperation op) {
 		this.currentRefreshOp = op;
 	}
 
-	private synchronized RefreshEditorOperation getRefreshOp() {
+	private synchronized UpdateEditorOperation getRefreshOp() {
 		return this.currentRefreshOp;
 	}
 
@@ -245,20 +226,20 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 			if (event.getType() != CloudServerEvent.EVENT_INSTANCES_UPDATED) {
 				RefreshArea area = event instanceof EditorCloudEvent ? ((EditorCloudEvent) event).getRefreshArea()
 						: RefreshArea.ALL;
-				launchRefresh(new RefreshEditorOperation(event, area));
+				launchRefresh(new UpdateEditorOperation(event, area));
 			}
 		}
 
 		public void serverChanged(ServerEvent event) {
 			// refresh when server is saved, e.g. due to add/remove of modules
 			if (event.getKind() == ServerEvent.SERVER_CHANGE) {
-				launchRefresh(new RefreshEditorOperation(CloudServerEvent.EVENT_SERVER_REFRESHED, RefreshArea.ALL,
+				launchRefresh(new UpdateEditorOperation(CloudServerEvent.EVENT_UPDATE_COMPLETED, RefreshArea.ALL,
 						event.getStatus()));
 			}
 		}
 	}
 
-	protected void launchRefresh(RefreshEditorOperation refreshOp) {
+	protected void launchRefresh(UpdateEditorOperation refreshOp) {
 
 		setRefreshOp(refreshOp);
 
@@ -271,7 +252,7 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 				@Override
 				public IStatus runInUIThread(IProgressMonitor monitor) {
 
-					RefreshEditorOperation op = getRefreshOp();
+					UpdateEditorOperation op = getRefreshOp();
 					if (op != null) {
 						op.run(monitor);
 					}
@@ -283,36 +264,11 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 		refreshJob.schedule();
 	}
 
-
-	protected void setMessageInPage(IStatus status) {
-		String message = status != null ? status.getMessage() : null;
-		if (message == null || status == null || status.isOK()) {
-			setMessage(null, IMessageProvider.NONE);
-		}
-		else {
-			int providerStatus = IMessageProvider.NONE;
-			switch (status.getSeverity()) {
-			case IStatus.INFO:
-				providerStatus = IMessageProvider.INFORMATION;
-				break;
-			case IStatus.WARNING:
-				providerStatus = IMessageProvider.WARNING;
-				break;
-			case IStatus.ERROR:
-				providerStatus = IMessageProvider.ERROR;
-				break;
-			}
-
-			setMessage(message, providerStatus);
-		}
-
-	}
-
 	/**
 	 * Refresh operation that should only be run in UI thread.
 	 *
 	 */
-	private class RefreshEditorOperation {
+	private class UpdateEditorOperation {
 
 		private CloudServerEvent event;
 
@@ -322,14 +278,14 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 
 		private final IStatus status;
 
-		public RefreshEditorOperation(CloudServerEvent event, RefreshArea area) {
+		public UpdateEditorOperation(CloudServerEvent event, RefreshArea area) {
 			this.event = event;
 			this.area = area;
 			this.type = event.getType();
 			this.status = event.getStatus() != null ? event.getStatus() : Status.OK_STATUS;
 		}
 
-		public RefreshEditorOperation(int eventType, RefreshArea area, IStatus status) {
+		public UpdateEditorOperation(int eventType, RefreshArea area, IStatus status) {
 			this.area = area;
 			this.type = eventType;
 			this.status = status != null ? status : Status.OK_STATUS;
@@ -342,45 +298,33 @@ public class CloudFoundryApplicationsEditorPage extends ServerEditorPart {
 				return;
 			}
 
-			if (event instanceof AppsAndServicesRefreshEvent
-					&& (this.type == CloudServerEvent.EVENT_UPDATE_SERVICES
-							|| this.type == CloudServerEvent.EVENT_SERVER_REFRESHED)
+			if (event instanceof ServicesUpdatedEvent && this.type == CloudServerEvent.EVENT_SERVICES_UPDATED
 					&& status.getSeverity() != IStatus.ERROR) {
-				List<CFServiceInstance> services = ((AppsAndServicesRefreshEvent) event).getServices();
+				List<CFServiceInstance> services = ((ServicesUpdatedEvent) event).getServices();
 				if (services == null) {
 					services = Collections.emptyList();
 				}
 				setServices(services);
 			}
 
-			Throwable error = status.getException();
-
-			// Refresh the UI before handing any errors
+			// Refresh the UI
 			masterDetailsBlock.refreshUI(area);
+		}
+	}
 
-			// Process errors
-			if (status.getSeverity() == IStatus.WARNING || status.getSeverity() == IStatus.INFO) {
-				setMessageInPage(status);
-			}
-			else if (error != null || status.getSeverity() == IStatus.ERROR) {
-				StatusManager.getManager().handle(status, StatusManager.LOG);
-				setMessageInPage(status);
-			}
-			else {
-				IModule currentModule = getMasterDetailsBlock().getCurrentModule();
-
-				// If no error is found, be sure to set null for the
-				// message to
-				// clear any error messages
-				IStatus status = null;
-				if (currentModule != null) {
-					CloudFoundryApplicationModule appModule = getCloudServer().getExistingCloudModule(currentModule);
-					if (appModule != null) {
-						status = appModule.getStatus();
-					}
-				}
-				setMessageInPage(status);
-			}
+	/**
+	 * Primary API to set messages in the editor that are visible to the user.
+	 * Callers should use this method instead of
+	 * {@link ServerEditorPart#setErrorMessage(String)} as it performs
+	 * additional checks on the message.
+	 * 
+	 * @param status can be null if there are no messages to set. If so, or
+	 * status is OK, any current messages in the editor will be cleared.
+	 */
+	public void setMessage(IStatus status) {
+		FormMessageHandler messageHandler = getFormMessageHandler();
+		if (messageHandler != null) {
+			messageHandler.setMessage(status);
 		}
 	}
 

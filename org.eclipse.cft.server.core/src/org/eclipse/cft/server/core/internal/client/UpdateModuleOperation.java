@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,9 +22,11 @@ package org.eclipse.cft.server.core.internal.client;
 
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
 import org.eclipse.wst.server.core.internal.Server;
@@ -38,6 +40,13 @@ public class UpdateModuleOperation extends BehaviourOperation {
 
 	public UpdateModuleOperation(CloudFoundryServerBehaviour behaviour, IModule module) {
 		super(behaviour, module);
+	}
+	
+	@Override
+	public String getMessage() {
+		CloudFoundryApplicationModule appModule = getCloudModule();
+		String name = appModule != null ? appModule.getDeployedApplicationName() : getModule().getName();
+		return NLS.bind(Messages.UpdateModuleOperation_OPERATION_MESSAGE, name);
 	}
 
 	@Override
@@ -61,7 +70,7 @@ public class UpdateModuleOperation extends BehaviourOperation {
 		// Fire the event even if updates do not occur in server, as to
 		// notify interested parties (e.g UI) that an update
 		// module operation was run anyway
-		ServerEventHandler.getDefault().fireApplicationRefreshed(getBehaviour().getCloudFoundryServer(), getModule());
+		ServerEventHandler.getDefault().fireModuleUpdated(getBehaviour().getCloudFoundryServer(), getModule());
 	}
 
 	protected CloudFoundryApplicationModule updateModule(IProgressMonitor monitor) throws CoreException {

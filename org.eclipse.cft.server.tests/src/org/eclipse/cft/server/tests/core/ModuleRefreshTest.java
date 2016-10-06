@@ -560,24 +560,24 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 		// Test the server-wide refresh of all modules without specifying a
 		// selected module.
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
-				CloudServerEvent.EVENT_SERVER_REFRESHED);
-		cloudServer.getBehaviour().getOperationsScheduler().updateAll();
+				CloudServerEvent.EVENT_UPDATE_COMPLETED);
+		cloudServer.getBehaviour().asyncUpdateAll();
 
-		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_SERVER_REFRESHED);
-
-		refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
-				CloudServerEvent.EVENT_SERVER_REFRESHED);
-
-		cloudServer.getBehaviour().getOperationsScheduler().updateAll();
-
-		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_SERVER_REFRESHED);
+		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_UPDATE_COMPLETED);
 
 		refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
-				CloudServerEvent.EVENT_SERVER_REFRESHED);
+				CloudServerEvent.EVENT_UPDATE_COMPLETED);
 
-		cloudServer.getBehaviour().getOperationsScheduler().updateAll();
+		cloudServer.getBehaviour().asyncUpdateAll();
 
-		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_SERVER_REFRESHED);
+		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_UPDATE_COMPLETED);
+
+		refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
+				CloudServerEvent.EVENT_UPDATE_COMPLETED);
+
+		cloudServer.getBehaviour().asyncUpdateAll();
+
+		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_UPDATE_COMPLETED);
 	}
 
 	public void testScheduleRefreshHandlerRefreshApplication() throws Exception {
@@ -591,11 +591,11 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 				harness.getDefaultBuildpack());
 
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(
-				appModule.getDeployedApplicationName(), cloudServer, CloudServerEvent.EVENT_APPLICATION_REFRESHED);
+				appModule.getDeployedApplicationName(), cloudServer, CloudServerEvent.EVENT_MODULE_UPDATED);
 
-		cloudServer.getBehaviour().getOperationsScheduler().updateDeployedModule(appModule.getLocalModule());
+		cloudServer.getBehaviour().asyncUpdateDeployedModule(appModule.getLocalModule());
 
-		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_APPLICATION_REFRESHED);
+		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_MODULE_UPDATED);
 	}
 
 	public void testScheduleRefreshHandlerAllModuleInstances() throws Exception {
@@ -607,11 +607,11 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 		deployApplicationWithModuleRefresh(prefix, startApp, harness.getDefaultBuildpack());
 
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
-				CloudServerEvent.EVENT_SERVER_REFRESHED);
+				CloudServerEvent.EVENT_UPDATE_COMPLETED);
 
-		cloudServer.getBehaviour().getOperationsScheduler().updateAll();
+		cloudServer.getBehaviour().asyncUpdateAll();
 
-		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_SERVER_REFRESHED);
+		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_UPDATE_COMPLETED);
 	}
 
 	public void testScheduleRefreshHandlerDeploymentChange() throws Exception {
@@ -626,7 +626,7 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(null, cloudServer,
 				CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
 
-		cloudServer.getBehaviour().getOperationsScheduler().updateOnPublish(appModule.getLocalModule());
+		cloudServer.getBehaviour().asyncUpdateModuleAfterPublish(appModule.getLocalModule());
 
 		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
 	}
@@ -645,19 +645,19 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 		final IModule module = cloudServer.getExistingCloudModule(expectedAppName).getLocalModule();
 
 		ModulesRefreshListener refreshListener = ModulesRefreshListener.getListener(expectedAppName, cloudServer,
-				CloudServerEvent.EVENT_APPLICATION_REFRESHED);
+				CloudServerEvent.EVENT_MODULE_UPDATED);
 
 		IRunnableWithProgress runnable = new IRunnableWithProgress() {
 
 			@Override
 			public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
-				ServerEventHandler.getDefault().fireApplicationRefreshed(cloudServer, module);
+				ServerEventHandler.getDefault().fireModuleUpdated(cloudServer, module);
 			}
 		};
 
 		asynchExecuteOperation(runnable);
 
-		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_APPLICATION_REFRESHED);
+		assertModuleRefreshedAndDispose(refreshListener, CloudServerEvent.EVENT_MODULE_UPDATED);
 	}
 
 	public void testModuleRefreshDuringServerConnect1() throws Exception {
@@ -669,8 +669,7 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 
 		// Cloud module should have been created.
 		Collection<CloudFoundryApplicationModule> appModules = cloudServer.getExistingCloudModules();
-		assertEquals(harness.getWebAppName(appPrefix),
-				appModules.iterator().next().getDeployedApplicationName());
+		assertEquals(harness.getWebAppName(appPrefix), appModules.iterator().next().getDeployedApplicationName());
 
 		serverBehavior.disconnect(new NullProgressMonitor());
 
@@ -679,15 +678,14 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 		assertTrue("Expected empty list of cloud application modules after server disconnect", appModules.isEmpty());
 
 		ModulesRefreshListener listener = getModulesRefreshListener(null, cloudServer,
-				CloudServerEvent.EVENT_SERVER_REFRESHED);
+				CloudServerEvent.EVENT_UPDATE_COMPLETED);
 
 		serverBehavior.connect(new NullProgressMonitor());
 
-		assertModuleRefreshedAndDispose(listener, CloudServerEvent.EVENT_SERVER_REFRESHED);
+		assertModuleRefreshedAndDispose(listener, CloudServerEvent.EVENT_UPDATE_COMPLETED);
 
 		appModules = cloudServer.getExistingCloudModules();
-		assertEquals(harness.getWebAppName(appPrefix),
-				appModules.iterator().next().getDeployedApplicationName());
+		assertEquals(harness.getWebAppName(appPrefix), appModules.iterator().next().getDeployedApplicationName());
 	}
 
 	public void testModuleRefreshDuringServerConnect2() throws Exception {
@@ -717,8 +715,7 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 
 		// Cloud module should have been created.
 		Collection<CloudFoundryApplicationModule> appModules = cloudServer.getExistingCloudModules();
-		assertEquals(harness.getWebAppName(appPrefix),
-				appModules.iterator().next().getDeployedApplicationName());
+		assertEquals(harness.getWebAppName(appPrefix), appModules.iterator().next().getDeployedApplicationName());
 
 		// Disconnect and verify that there are no cloud foundry application
 		// modules
@@ -741,11 +738,11 @@ public class ModuleRefreshTest extends AbstractAsynchCloudTest {
 		// notified when
 		// modules are refreshed
 		ModulesRefreshListener listener = getModulesRefreshListener(null, cloudServer,
-				CloudServerEvent.EVENT_SERVER_REFRESHED);
+				CloudServerEvent.EVENT_UPDATE_COMPLETED);
 
 		serverBehavior.connect(new NullProgressMonitor());
 
-		assertModuleRefreshedAndDispose(listener, CloudServerEvent.EVENT_SERVER_REFRESHED);
+		assertModuleRefreshedAndDispose(listener, CloudServerEvent.EVENT_UPDATE_COMPLETED);
 
 		appModules = cloudServer.getExistingCloudModules();
 		CloudFoundryApplicationModule appModule = appModules.iterator().next();

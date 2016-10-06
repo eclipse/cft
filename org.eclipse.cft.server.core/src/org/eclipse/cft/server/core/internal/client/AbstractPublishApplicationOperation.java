@@ -88,7 +88,7 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 
 		try {
 			doApplicationOperation(monitor);
-			getBehaviour().getOperationsScheduler().updateOnPublish(getModule());
+			getBehaviour().asyncUpdateModuleAfterPublish(getModule());
 		}
 		catch (OperationCanceledException e) {
 			// [492609] - Modules are not correctly marked as "completed" when

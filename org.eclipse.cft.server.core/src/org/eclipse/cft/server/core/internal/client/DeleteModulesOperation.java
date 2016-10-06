@@ -62,7 +62,7 @@ public class DeleteModulesOperation extends BehaviourOperation {
 	@Override
 	public void run(IProgressMonitor monitor) throws CoreException {
 		doDelete(monitor);
-		getBehaviour().getOperationsScheduler().updateOnPublish(getModule());
+		getBehaviour().asyncUpdateModuleAfterPublish(getModule());
 	}
 
 	protected void doDelete(IProgressMonitor monitor) throws CoreException {
