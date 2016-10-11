@@ -29,11 +29,13 @@ import java.util.Set;
 
 import org.eclipse.cft.server.core.AbstractCloudFoundryUrl;
 import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint;
+import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint.CloudServerURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.ui.CloudUIUtil;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.operation.IRunnableContext;
@@ -52,15 +54,15 @@ import org.eclipse.swt.widgets.Shell;
  * 
  */
 public class CloudServerUIUtil {
-	public static List<AbstractCloudFoundryUrl> getAllUrls(String serverTypeId, IRunnableContext runnableContext) throws CoreException {
+	public static List<AbstractCloudFoundryUrl> getAllUrls(String serverTypeId, IRunnableContext runnableContext, boolean runningInUIThread) throws CoreException {
 		List<AbstractCloudFoundryUrl> urls = new ArrayList<AbstractCloudFoundryUrl>();
 		// Be super safe to avoid NPE
-		AbstractCloudFoundryUrl defaultUrl = getDefaultUrl(serverTypeId, runnableContext); 
+		AbstractCloudFoundryUrl defaultUrl = getDefaultUrl(serverTypeId, runnableContext, runningInUIThread); 
 		if (defaultUrl != null) {
 			urls.add(defaultUrl);
 		}
 		
-		List <AbstractCloudFoundryUrl> cloudUrls = getUrls(serverTypeId, runnableContext);
+		List <AbstractCloudFoundryUrl> cloudUrls = getUrls(serverTypeId, runnableContext, runningInUIThread);
 		if (cloudUrls != null) {
 			urls.addAll(cloudUrls);
 		}
@@ -68,7 +70,7 @@ public class CloudServerUIUtil {
 		return urls;
 	}
 
-	public static AbstractCloudFoundryUrl getDefaultUrl(final String serverTypeId, IRunnableContext context) throws CoreException {
+	public static AbstractCloudFoundryUrl getDefaultUrl(final String serverTypeId, IRunnableContext context, boolean runningInUIThread) throws CoreException {
 		try {
 			final AbstractCloudFoundryUrl[] abstractUrls = new AbstractCloudFoundryUrl[1];
 			ICoreRunnable coreRunner = new ICoreRunnable() {
@@ -76,11 +78,17 @@ public class CloudServerUIUtil {
 					abstractUrls[0] = CloudFoundryBrandingExtensionPoint.getDefaultUrl(serverTypeId);
 				}
 			};
-			if (context != null) {
-				CFUiUtil.runForked(coreRunner, context);
-			}
-			else {
-				CFUiUtil.runForked(coreRunner);
+			
+			if(runningInUIThread) {
+			
+				if (context != null) {
+					CFUiUtil.runForked(coreRunner, context);
+				}
+				else {
+					CFUiUtil.runForked(coreRunner);
+				}
+			} else {
+				coreRunner.run(new NullProgressMonitor());
 			}
 
 			return abstractUrls[0];
@@ -90,7 +98,7 @@ public class CloudServerUIUtil {
 		}
 	}
 
-	public static List<AbstractCloudFoundryUrl> getUrls(final String serverTypeId, final IRunnableContext context) throws CoreException {
+	public static List<AbstractCloudFoundryUrl> getUrls(final String serverTypeId, final IRunnableContext context, boolean runningInUIThread) throws CoreException {
 		try {
 			final List<AbstractCloudFoundryUrl> cloudUrls = new ArrayList<AbstractCloudFoundryUrl>();
 			ICoreRunnable coreRunner = new ICoreRunnable() {
@@ -119,11 +127,17 @@ public class CloudServerUIUtil {
 					}
 				}
 			};
-			if (context != null) {
-				CFUiUtil.runForked(coreRunner, context);
-			}
-			else {
-				CFUiUtil.runForked(coreRunner);
+			
+			
+			if(runningInUIThread) {
+				if (context != null) {
+					CFUiUtil.runForked(coreRunner, context);
+				}
+				else {
+					CFUiUtil.runForked(coreRunner);
+				}
+			} else {
+				coreRunner.run(new NullProgressMonitor());
 			}
 
 			return cloudUrls;
@@ -209,4 +223,6 @@ public class CloudServerUIUtil {
 
 		prefStore.setValue(CFUiUtil.ATTR_USER_DEFINED_URLS + "." + serverTypeId, builder.toString()); //$NON-NLS-1$
 	}
+	
+	
 }
