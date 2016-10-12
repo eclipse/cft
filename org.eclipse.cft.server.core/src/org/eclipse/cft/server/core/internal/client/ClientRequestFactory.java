@@ -93,7 +93,6 @@ public class ClientRequestFactory {
 		};
 	}
 
-	
 	public BaseClientRequest<?> updateApplicationDiego(final CloudFoundryApplicationModule appModule, final boolean diego) {
 		
 		String message;
@@ -134,7 +133,6 @@ public class ClientRequestFactory {
 		};
 	}
 
-	
 	public BaseClientRequest<List<CloudRoute>> getRoutes(final String domainName) throws CoreException {
 
 		return new BehaviourRequest<List<CloudRoute>>(NLS.bind(Messages.ROUTES, domainName), behaviour) {
