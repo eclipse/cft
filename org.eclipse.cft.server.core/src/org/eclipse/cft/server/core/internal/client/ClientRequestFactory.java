@@ -113,7 +113,6 @@ public class ClientRequestFactory {
 		};
 	}
 
-
 	public BaseClientRequest<?> updateApplicationEnableSsh(final CloudFoundryApplicationModule appModule, final boolean enableSsh) {
 		String message;
 		if(enableSsh) {
