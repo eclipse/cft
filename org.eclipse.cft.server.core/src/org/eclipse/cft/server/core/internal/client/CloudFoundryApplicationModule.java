@@ -173,7 +173,11 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 
 	private StartingInfo startingInfo;
 
-	private IModule localModule;
+	/** This moduleId indicates that 'this' should be returned when localModule is called. This occurs when
+	 * a 'null' IModule parameter is passed to one of the constructors. */
+	private final static String CFAM_MODULE_ID = "org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule";
+	
+	private String localModuleId;
 
 	private final IServer server;
 
@@ -211,7 +215,9 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		Assert.isNotNull(deployedApplicationName);
 		Assert.isNotNull(localName);
 		Assert.isNotNull(server);
-		this.localModule = (module != null) ? module : this;
+		
+		this.localModuleId = (module != null) ? module.getId() : CFAM_MODULE_ID;
+		
 		this.server = server;
 		setDeployedApplicationName(deployedApplicationName);
 		CloudFoundryPlugin.trace("Created ApplicationModule " + deployedApplicationName + " for module " + module); //$NON-NLS-1$ //$NON-NLS-2$
@@ -338,15 +344,13 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 	 * @return local WST module. May be null if the application is external.
 	 */
 	public IModule getLocalModule() {
-		syncCFAMLocalModule();
 		
-		return localModule;
-	}
-
-	private void syncCFAMLocalModule() {
+		if(localModuleId == null) {
+			return null;
+		}
 		
-		if(localModule == null) {
-			return;
+		if(localModuleId == CFAM_MODULE_ID) {
+			return this;
 		}
 		
 		IModule newModule = null;
@@ -354,22 +358,16 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		IModule[] lm = server.getModules();
 		if(lm != null) {
 			for(IModule im : lm) {
-				if(im.getId().equals(localModule.getId()) && im.getName().equals(localModule.getName())) {
+				if(im.getId().equals(localModuleId)) {
 					newModule = im;
 					break;
 				}
 			}
 		}
-
-		if(newModule != null) {
-
-			if(newModule != localModule) {
-				
-				localModule = newModule;
-			}
-		}
+		
+		return newModule;
+	
 	}
-
 	
 	public int getPublishState() {
 		// if (isExternal()) {
@@ -458,7 +456,7 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 	}
 
 	public boolean isExternal() {
-		return localModule == this;
+		return localModuleId == CFAM_MODULE_ID;
 	}
 
 	public synchronized void setError(CoreException error) {
@@ -610,7 +608,7 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		Assert.isNotNull(applicationName);
 		if (!applicationName.equals(this.deployedAppName)) {
 			this.deployedAppName = applicationName;
-			if (localModule != null) {
+			if (localModuleId != null) {
 				CloudFoundryServer cloudServer = getCloudFoundryServer();
 
 				// Since the deployment name changed, update the local module ->
