@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -104,6 +104,40 @@ public enum CloudFoundryProperties {
 			return false;
 		}
 	},
+	
+	isEnableSshOnModule {
+		public boolean testProperty(IModule[] modules, CloudFoundryServer cloudFoundryServer) {
+
+			if (modules != null && modules.length > 0) {
+
+				// Selection is limited to one module
+				CloudFoundryApplicationModule cloudModule = cloudFoundryServer.getExistingCloudModule(modules[0]);
+				if (cloudModule != null && cloudModule.getApplication() != null) {
+					boolean result = cloudModule.getApplication().isEnableSsh();
+					return result;
+				}
+			}
+			
+			return false;
+		}
+	}, 
+	
+	isDiegoEnabledOnModule {
+		public boolean testProperty(IModule[] modules, CloudFoundryServer cloudFoundryServer) {
+
+			if (modules != null && modules.length > 0) {
+
+				// Selection is limited to one module
+				CloudFoundryApplicationModule cloudModule = cloudFoundryServer.getExistingCloudModule(modules[0]);
+				if (cloudModule != null && cloudModule.getApplication() != null) {
+					boolean result = cloudModule.getApplication().isDiego();
+					return result;
+				}
+			}
+			
+			return false;
+		}
+	}, 
 
 	/**
 	 * Determines is the module's workspace project is accessible. True if it

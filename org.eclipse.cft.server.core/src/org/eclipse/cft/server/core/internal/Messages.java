@@ -212,6 +212,13 @@ public class Messages extends NLS {
 	public static String CloudFoundryServerBehaviour_RECONNECTING_SERVER;
 
 	public static String CloudFoundryServerBehaviour_UPDATE_APP_MEMORY;
+	
+	public static String CloudFoundryServerBehaviour_ENABLING_DIEGO;
+	
+	public static String CloudFoundryServerBehaviour_DISABLING_DIEGO;
+	
+	public static String CloudFoundryServerBehaviour_ENABLING_SSH;
+	public static String CloudFoundryServerBehaviour_DISABLING_SSH;
 
 	public static String CloudFoundryServerBehaviour_UPDATE_APP_URLS;
 
@@ -252,6 +259,8 @@ public class Messages extends NLS {
 	public static String CONSOLE_APP_STOPPED;
 
 	public static String PushApplicationOperation_PUSH_MESSAGE;
+	
+	public static String EnableDiegoCommand_ENABLE_JOB_NAME;
 
 	public static String PushApplicationOperation_UPDATE_APP_MESSAGE;
 

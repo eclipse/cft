@@ -593,7 +593,7 @@
             id="org.eclipse.cft.server.propertytester"
             namespace="org.eclipse.cft.server.ui"
             properties="isModuleStopped, 
-            isServerSupported, isServerStopped, isServerStarted, isModuleStarted, isCloudModuleStarted, isCloudModuleLocal, isModuleProjectAccessible"
+            isServerSupported, isServerStopped, isServerStarted, isModuleStarted, isCloudModuleStarted, isCloudModuleLocal, isModuleProjectAccessible, isDiegoEnabledOnModule, isEnableSshOnModule"
             type="java.lang.Object">
       </propertyTester>
    </extension>
