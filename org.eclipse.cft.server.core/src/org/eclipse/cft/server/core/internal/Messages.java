@@ -260,8 +260,6 @@ public class Messages extends NLS {
 
 	public static String PushApplicationOperation_PUSH_MESSAGE;
 	
-	public static String EnableDiegoCommand_ENABLE_JOB_NAME;
-
 	public static String PushApplicationOperation_UPDATE_APP_MESSAGE;
 
 	public static String CONSOLE_APP_CREATION;
