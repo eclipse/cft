@@ -1259,9 +1259,25 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		CloudFoundryPlugin.log(errorStatus);
 	}
 
+	/** Used by publishModules(...) to sort parents and children of those parents, while preserving the module[] list and deltakind*/
+	private static class ModuleAndDeltaKind {
+		final IModule[] modules;
+		final int deltaKind2;
+		
+		/** Index into the original List<IModule[]> provided to publishModules. */
+		final int index; 
+		
+		public ModuleAndDeltaKind(IModule[] modules, int deltaKind2, int index) {
+			this.modules = modules;
+			this.deltaKind2 = deltaKind2;
+			this.index = index;
+		}
+	}
+
 	@Override
-	protected void publishModules(int kind, List modules, List deltaKind2, MultiStatus multi,
+	protected void publishModules(int kind, List/*<IModule[]>*/ modules, List/*<Integer>*/ deltaKind2, MultiStatus multi,
 			IProgressMonitor monitor) {
+		
 		// NOTE: this is a workaround to avoid server-wide publish when removing
 		// a module (i.e., deleting an application) as
 		// well as publishing
@@ -1280,62 +1296,129 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		// add/delete without triggering a server publish, this seems to be a
 		// suitable
 		// workaround.
-		if (modules != null && deltaKind2 != null) {
-			List<IModule[]> filteredModules = new ArrayList<IModule[]>(modules.size());
-			List<Integer> filteredDeltaKinds = new ArrayList<Integer>(deltaKind2.size());
+		
+		// Whether or not we have determined if at least one root (parent) module was added or removed, and thus will be deleted from CF
 
-			// To prevent server-wide publish. Only filter in the following
-			// modules:
-			// 1. Those being added
-			// 2. Those being deleted
-			// If neither is present, it means modules only have CHANGE or
-			// NOCHANGE delta kinds
-			// which means the publish operation was probably requested through
-			// an actual Server publish action. In this case,
-			// no filter should occur
-			for (int i = 0; i < modules.size() && i < deltaKind2.size(); i++) {
+		if ( modules != null && deltaKind2 != null) {
+
+			boolean parentAddedOrRemoved = false;
+
+			List<ModuleAndDeltaKind> topLevelParents = new ArrayList<ModuleAndDeltaKind>();
+
+			// Gather top level parents into 'topLevelParents'
+			for(int x = 0; x < modules.size(); x++) {
 
 				if (monitor.isCanceled()) {
 					return;
 				}
 
-				// should skip this publish
-				IModule[] module = (IModule[]) modules.get(i);
+				IModule[] module = (IModule[]) modules.get(x);
 
-				if (module.length == 0) {
+				if (module.length != 1) {
 					continue;
 				}
-
-				IModule m = module[module.length - 1];
-
-				if (shouldIgnorePublishRequest(m)) {
+				
+				if (shouldIgnorePublishRequest(module[module.length - 1])) {
 					continue;
 				}
+				
+				int knd = (int)deltaKind2.get(x); 
 
-				int knd = (Integer) deltaKind2.get(i);
 				if (ServerBehaviourDelegate.ADDED == knd || ServerBehaviourDelegate.REMOVED == knd) {
-					filteredModules.add(module);
-					filteredDeltaKinds.add(knd);
+					parentAddedOrRemoved = true;
+				}
+				
+				topLevelParents.add(new ModuleAndDeltaKind(module, (int)deltaKind2.get(x), x));
+			}
+
+			Map<Integer /* index of parent in 'modules' param */, List<ModuleAndDeltaKind> /*all children, grandchildren, etc of parent*/> transitiveChildren = new HashMap<Integer, List<ModuleAndDeltaKind>>();
+
+			if(parentAddedOrRemoved) {
+			
+				// Gather children into childList and transitiveChildren
+				for(int childIndex = 0; childIndex < modules.size(); childIndex++) {
+	
+					if (monitor.isCanceled()) {
+						return;
+					}
+	
+					IModule[] childModule = (IModule[]) modules.get(childIndex);
+						
+					
+					// if not a top level parent...
+					if(childModule.length > 1) { 
+
+						if (shouldIgnorePublishRequest(childModule[childModule.length - 1])) {
+							continue;
+						}
+						
+						for(int parentIndex = 0; parentIndex < topLevelParents.size(); parentIndex++)  {
+							// For each top level parent...
+							ModuleAndDeltaKind parentModuleAndDelta = topLevelParents.get(parentIndex);
+							if(childModule[0].getId().equals(parentModuleAndDelta.modules[0].getId())) {
+								// If the current childModule has the parent, then add it to childList and transitiveChildren
+								List<ModuleAndDeltaKind> childList = transitiveChildren.get((Integer)parentModuleAndDelta.index);
+								if(childList == null) {
+									childList = new ArrayList<ModuleAndDeltaKind>();
+									transitiveChildren.put((Integer)parentModuleAndDelta.index,childList);
+								}
+								childList.add(new ModuleAndDeltaKind(childModule, (int)deltaKind2.get(childIndex), childIndex ));							
+							}
+						}
+					}
 				}
 
-			}
-
-			if (!filteredModules.isEmpty()) {
-				modules = filteredModules;
-				deltaKind2 = filteredDeltaKinds;
-			}
+				// We know there exists at least one parent which has been added or removed, so only include those parents (and their children, regardless 
+				// of deltaKind2 value) that have been added/removed.
+				List<IModule[]> newModulesList = new ArrayList<IModule[]>();
+				List<Integer> newDeltaKind2List = new ArrayList<Integer>();
+				
+				for(ModuleAndDeltaKind parent : topLevelParents) {
+					
+					// For each top level parent that was directly ADDED or REMOVED
+					if(ServerBehaviourDelegate.ADDED == parent.deltaKind2 || ServerBehaviourDelegate.REMOVED == parent.deltaKind2) {
+						
+						// Add parent module and deltaKind
+						newModulesList.add(parent.modules);
+						newDeltaKind2List.add(parent.deltaKind2);
+						
+						// Get all the children, and add their module and deltaKind
+						List<ModuleAndDeltaKind> childrenOfParent = transitiveChildren.get(parent.index);
+						
+						if(childrenOfParent != null) {
+							for(ModuleAndDeltaKind child : childrenOfParent) {
+								
+								newModulesList.add(child.modules);
+								newDeltaKind2List.add(child.deltaKind2);
+							}
+						}
+						
+					}
+					
+				}
+				
+				// Replace the existing module list+delataKind parameters, with our updated module list+deltaKind parameters
+				// that only include parents that were ADDED/REMOVED (and all their children). 
+				if(newModulesList.size() > 0 && newDeltaKind2List.size() > 0) {
+					modules = newModulesList;
+					deltaKind2 = newDeltaKind2List;
+				}
+				
+			} // end if-parentsAddOrRemoved			
+			
 		}
 
 		super.publishModules(kind, modules, deltaKind2, multi, monitor);
+
 	}
 
 	@Override
 	protected void publishModule(int kind, int deltaKind, IModule[] module, IProgressMonitor monitor)
 			throws CoreException {
-
+	
 		// Log publish module parameters
 		CloudFoundryPlugin.logInfo(convertPublishModuleToString(deltaKind, module));
-
+		
 		super.publishModule(kind, deltaKind, module, monitor);
 
 		try {
@@ -1346,10 +1429,9 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			// documentation
 			// (and the name of the parameter) indicates that it is always one
 			// module
-			if (deltaKind == REMOVED) {
+			if (deltaKind == REMOVED && module.length == 1) {
 				final CloudFoundryServer cloudServer = getCloudFoundryServer();
-				// Get the existing cloud module to avoid recreating the one
-				// that was just deleted.
+				// Get the existing cloud module to avoid recreating the one that was just deleted.
 				final CloudFoundryApplicationModule cloudModule = cloudServer.getExistingCloudModule(module[0]);
 				if (cloudModule != null && cloudModule.getApplication() != null) {
 					getRequestFactory().deleteApplication(cloudModule.getDeployedApplicationName()).run(monitor);
@@ -1364,13 +1446,27 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 				// applications that
 				// should not be restarted.
 				int publishState = getServer().getModulePublishState(module);
+
 				ICloudFoundryOperation op = null;
-				if (deltaKind == ServerBehaviourDelegate.ADDED || publishState == IServer.PUBLISH_STATE_UNKNOWN) {
+				
+				final CloudFoundryServer cloudServer = getCloudFoundryServer();
+				
+				// Get the existing cloud module to avoid recreating the one that was just deleted.
+				final CloudFoundryApplicationModule cloudModule = cloudServer.getExistingCloudModule(module[0]);
+				if (cloudModule != null && cloudModule.isDeployed()) {
+					
+					if(deltaKind != ServerBehaviourDelegate.NO_CHANGE || isChildModuleChanged(module, monitor) ) {
+						// Only update if the child module changed, or if the delta is added/changed
+						op = operations().applicationDeployment(module, ApplicationAction.UPDATE_RESTART);						
+					}
+					
+					
+				} else if (deltaKind == ServerBehaviourDelegate.ADDED || publishState == IServer.PUBLISH_STATE_UNKNOWN) {
 					// Application has not been published, so do a full
 					// publish
 					op = operations().applicationDeployment(module, ApplicationAction.PUSH);
 				}
-				else if (deltaKind == ServerBehaviourDelegate.CHANGED) {
+				else if (deltaKind == ServerBehaviourDelegate.CHANGED || deltaKind == ServerBehaviourDelegate.REMOVED) {
 					op = operations().applicationDeployment(module, ApplicationAction.UPDATE_RESTART);
 				}
 				// Republish the root module if any of the child module requires
