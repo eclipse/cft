@@ -45,7 +45,9 @@ public class CFClientV1Support {
 	private final CFInfo cloudInfo;
 
 	protected final String authorizationUrl;
-
+	
+	protected final String tokenUrl;
+	
 	protected final CloudSpace existingSessionConnection;
 
 	protected final CloudFoundryServer cfServer;
@@ -60,6 +62,8 @@ public class CFClientV1Support {
 		ClientHttpRequestFactory requestFactory = restTemplate.getRequestFactory();
 		restTemplate.setRequestFactory(authorize(requestFactory));
 
+		this.tokenUrl = cloudInfo.getTokenUrl();
+		
 		this.authorizationUrl = cloudInfo.getAuthorizationUrl();
 		
 		this.cfServer = cfServer;

@@ -45,6 +45,10 @@ public class CFInfo {
 	public String getAuthorizationUrl() {
 		return getProp("authorization_endpoint"); //$NON-NLS-1$
 	}
+	
+	public String getTokenUrl() {
+		return getProp("token_endpoint"); //$NON-NLS-1$
+	}
 
 	public String getCloudControllerUrl() {
 		return this.ccUrl;
