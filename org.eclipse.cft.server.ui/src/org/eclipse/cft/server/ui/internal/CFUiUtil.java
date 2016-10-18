@@ -172,7 +172,7 @@ public class CFUiUtil {
 			// Switch to new generic utility method, then convert to the
 			// expected return type
 			return convertAbstractCloudFoundryUrlListToCloudServerURLList(
-					CloudServerUIUtil.getAllUrls(serverTypeId, null));
+					CloudServerUIUtil.getAllUrls(serverTypeId, null, false));
 		}
 		catch (CoreException ex) {
 			CloudFoundryServerUiPlugin.logError(ex);
@@ -192,7 +192,7 @@ public class CFUiUtil {
 		try {
 			// Switch to new generic utility method, then convert to the
 			// expected return type
-			AbstractCloudFoundryUrl abstractUrl = CloudServerUIUtil.getDefaultUrl(serverTypeId, null);
+			AbstractCloudFoundryUrl abstractUrl = CloudServerUIUtil.getDefaultUrl(serverTypeId, null, true);
 			if (abstractUrl != null) {
 				url = convertAbstractCloudFoundryUrlToCloudServerURL(abstractUrl);
 			}
@@ -213,7 +213,7 @@ public class CFUiUtil {
 			// Switch to new generic utility method, then convert to the
 			// expected return type
 			return convertAbstractCloudFoundryUrlListToCloudServerURLList(
-					CloudServerUIUtil.getUrls(serverTypeId, null));
+					CloudServerUIUtil.getUrls(serverTypeId, null, true));
 		}
 		catch (CoreException ex) {
 			CloudFoundryServerUiPlugin.logError(ex);
@@ -391,7 +391,7 @@ public class CFUiUtil {
 
 	public static String getDisplayTextFromUrl(String url, String serverTypeId) {
 		try {
-			List<AbstractCloudFoundryUrl> cloudUrls = CloudServerUIUtil.getAllUrls(serverTypeId, null);
+			List<AbstractCloudFoundryUrl> cloudUrls = CloudServerUIUtil.getAllUrls(serverTypeId, null, true);
 			for (AbstractCloudFoundryUrl cloudUrl : cloudUrls) {
 				if (cloudUrl.getUrl().equals(url)) {
 					return cloudUrl.getName() + " - " + url; //$NON-NLS-1$

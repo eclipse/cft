@@ -195,7 +195,7 @@ public class ManageCloudDialog extends Dialog {
 		});
 		
 		try {
-			cloudUrls = CloudServerUIUtil.getAllUrls(serverTypeId, runnableContext);
+			cloudUrls = CloudServerUIUtil.getAllUrls(serverTypeId, runnableContext, true);
 			viewer.setInput(cloudUrls.toArray());
 		} catch (CoreException ex) {
 			CloudFoundryServerUiPlugin.logError(ex);
