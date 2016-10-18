@@ -64,8 +64,8 @@ import org.eclipse.swt.widgets.ToolBar;
 
 public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 
-	// This page is optional and can be completed at any time
-//	private final boolean canFinish = true;
+	// This page is optional and can be completed at any time EXCEPT for the 
+	// manifest.yml case where the app wants to bind to a service that is not currently running.
 	private boolean canFinish = true;
 
 	private final String serverTypeId;
@@ -293,12 +293,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 					setServicesToCreateInDescriptor();
 
 					// update canFinish
-					if(errMsg != null) {
-						canFinish = false;
-					}
-					else {
-						canFinish = true;
-					}
+					canFinish = errMsg == null;
 					
 					// Refresh UI
 					final String ferrMsg = errMsg;
@@ -312,7 +307,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 								status = new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID, ferrMsg);
 							}
 							update(false, status);
-							// If the error is resolved, can now press 'Finish'
+							// If the error is resolved, can now press Finish
 							setPageComplete(canFinish);
 
 							setBoundServiceSelectionInUI();
@@ -340,7 +335,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 		runAsync(runnable, Messages.CloudFoundryApplicationServicesWizardPage_TEXT_VERIFY_SERVICE_PROGRESS);
 
 	}
-	
+
 	protected void populateServicesFromDeploymentInfo() {
 
 		List<CFServiceInstance> servicesToBind = descriptor.getDeploymentInfo().getServices();
