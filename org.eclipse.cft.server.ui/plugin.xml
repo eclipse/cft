@@ -596,9 +596,9 @@
             class="org.eclipse.cft.server.ui.internal.CloudFoundryPropertyTester"
             id="org.eclipse.cft.server.propertytester"
             namespace="org.eclipse.cft.server.ui"
-            properties="isModuleStopped, 
-            isServerSupported, isServerStopped, isServerStarted, isModuleStarted, isCloudModuleStarted, 
-            isCloudModuleLocal, isModuleProjectAccessible, isSSO"
+            properties="isModuleStopped, isServerSupported, isServerStopped, isServerStarted, isModuleStarted, 
+            isCloudModuleStarted, isCloudModuleLocal, isModuleProjectAccessible, isDiegoEnabledOnModule, 
+            isEnableSshOnModule, isSSO"
             type="java.lang.Object">
       </propertyTester>
    </extension>

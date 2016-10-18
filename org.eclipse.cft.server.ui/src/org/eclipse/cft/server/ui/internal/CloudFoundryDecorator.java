@@ -104,6 +104,16 @@ public class CloudFoundryDecorator extends LabelProvider implements ILightweight
 			if (CloudServerUtil.isCloudFoundryServer(server)) {
 				final CloudFoundryServer cfServer = getCloudFoundryServer(server);
 				if (cfServer != null && cfServer.getUsername() != null) {
+					
+					final List<AbstractCloudFoundryUrl> cloudUrls;
+					try {
+						cloudUrls = CloudServerUIUtil.getAllUrls(cfServer.getBehaviour().getServer()
+								.getServerType().getId(), null, false);
+					} catch (CoreException e1) {
+						CloudFoundryServerUiPlugin.logError(e1);
+						return;
+					}
+					
 					// This now runs on a non UI thread, so we need to join this
 					// update to a UI thread.
 					Display.getDefault().syncExec(new Runnable() {
@@ -119,21 +129,14 @@ public class CloudFoundryDecorator extends LabelProvider implements ILightweight
 											.addSuffix(NLS.bind(" - {0} - {1}", clSpace.getOrgName(), clSpace.getSpaceName())); //$NON-NLS-1$
 								}
 							}
-							try {
-								List<AbstractCloudFoundryUrl> cloudUrls = CloudServerUIUtil.getAllUrls(cfServer.getBehaviour().getServer()
-										.getServerType().getId(), null);
-								String url = cfServer.getUrl();
-								// decoration.addSuffix(NLS.bind("  {0}",
-								// cfServer.getUsername()));
-								for (AbstractCloudFoundryUrl cloudUrl : cloudUrls) {
-									if (cloudUrl.getUrl().equals(url)) {
-										decoration.addSuffix(NLS.bind(" - {0}", cloudUrl.getUrl())); //$NON-NLS-1$
-										break;
-									}
+							String url = cfServer.getUrl();
+							// decoration.addSuffix(NLS.bind("  {0}",
+							// cfServer.getUsername()));
+							for (AbstractCloudFoundryUrl cloudUrl : cloudUrls) {
+								if (cloudUrl.getUrl().equals(url)) {
+									decoration.addSuffix(NLS.bind(" - {0}", cloudUrl.getUrl())); //$NON-NLS-1$
+									break;
 								}
-							}
-							catch (CoreException e) {
-								CloudFoundryServerUiPlugin.logError(e);
 							}
 						}
 					});

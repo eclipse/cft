@@ -126,6 +126,25 @@ public class CloudBehaviourOperations {
 				appModule);
 	}
 
+	
+	public ICloudFoundryOperation updateApplicationDiego(final CloudFoundryApplicationModule appModule, boolean diego)
+			throws CoreException {
+		
+		return new ApplicationUpdateOperation(
+				behaviour.getRequestFactory().updateApplicationDiego(appModule, diego), behaviour,
+				appModule);
+	}
+
+
+	public ICloudFoundryOperation updateApplicationEnableSsh(final CloudFoundryApplicationModule appModule, boolean enableSsh)
+			throws CoreException {
+		
+		return new ApplicationUpdateOperation(
+				behaviour.getRequestFactory().updateApplicationEnableSsh(appModule, enableSsh), behaviour,
+				appModule);
+	}
+
+	
 	/**
 	 * Gets an operation to update the application's URL mapping.
 	 * @throws CoreException if failed to create the operation
