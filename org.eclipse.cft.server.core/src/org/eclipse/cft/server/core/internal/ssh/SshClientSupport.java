@@ -24,11 +24,17 @@ import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.eclipse.cft.server.core.ISshClientSupport;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.CloudServerUtil;
+import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.client.CFClientV1Support;
 import org.eclipse.cft.server.core.internal.client.diego.CloudInfoSsh;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.osgi.util.NLS;
+import org.eclipse.wst.server.core.IServer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -40,16 +46,18 @@ import com.jcraft.jsch.UserInfo;
 /**
  * @author Kris De Volder
  */
-public class SshClientSupport extends CFClientV1Support {
+public class SshClientSupport extends CFClientV1Support implements ISshClientSupport {
 
 	private String sshClientId;
 
 	public SshClientSupport(CloudFoundryOperations cfClient, CloudInfoSsh cloudInfo,
 			HttpProxyConfiguration httpProxyConfiguration, CloudFoundryServer server, boolean trustSelfSigned) {
-		super(cfClient, /* no session space required */ null, cloudInfo, httpProxyConfiguration, server, trustSelfSigned);
+		super(cfClient, /* no session space required */ null, cloudInfo, httpProxyConfiguration, server,
+				trustSelfSigned);
 		this.sshClientId = cloudInfo.getSshClientId();
 	}
 
+	@Override
 	public String getSshCode() {
 		try {
 			URIBuilder builder = new URIBuilder(tokenUrl + "/oauth/authorize"); //$NON-NLS-1$
@@ -90,12 +98,21 @@ public class SshClientSupport extends CFClientV1Support {
 		return getCloudInfo().getSshHost();
 	}
 
-	public static SshClientSupport create(final CloudFoundryOperations client, CloudInfoSsh cloudInfo,
+	public static ISshClientSupport create(final CloudFoundryOperations client, CloudInfoSsh cloudInfo,
 			HttpProxyConfiguration proxyConf, CloudFoundryServer cfServer, boolean selfSigned) {
 		return new SshClientSupport(client, cloudInfo, proxyConf, cfServer, selfSigned);
 	}
 
-	public Session connect(CloudApplication app, CloudFoundryServer cloudServer, int appInstance) throws CoreException {
+	@Override
+	public Session connect(String appName, int appInstance, IServer server, IProgressMonitor monitor)
+			throws CoreException {
+
+		CloudFoundryServer cloudServer = CloudServerUtil.getCloudServer(server);
+		CloudApplication app = cloudServer.getBehaviour().getCloudApplication(appName, monitor);
+
+		if (app == null) {
+			throw CloudErrorUtil.toCoreException(NLS.bind(Messages.SshClientSupport_NO_CLOUD_APP, appName));
+		}
 
 		JSch jsch = new JSch();
 

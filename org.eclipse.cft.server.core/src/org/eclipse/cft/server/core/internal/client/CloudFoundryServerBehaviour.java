@@ -51,6 +51,7 @@ import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.CFServiceOffering;
+import org.eclipse.cft.server.core.ISshClientSupport;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
@@ -70,10 +71,12 @@ import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.application.CachingApplicationArchive;
 import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
+import org.eclipse.cft.server.core.internal.client.diego.CloudInfoSsh;
 import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
 import org.eclipse.cft.server.core.internal.jrebel.CFRebelServerIntegration;
 import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
 import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
+import org.eclipse.cft.server.core.internal.ssh.SshClientSupport;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -2142,6 +2145,23 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		if (scheduler != null) {
 			scheduler.updateModule(module);
 		}
+	}
+
+	/**
+	 * 
+	 * @param monitor
+	 * @return SSH support, or null if not supported
+	 */
+	public ISshClientSupport getSshClientSupport(IProgressMonitor monitor) throws CoreException {
+		CFInfo cloudInfo = getCloudInfo();
+		if (cloudInfo instanceof CloudInfoSsh) {
+			ISshClientSupport ssh = SshClientSupport.create(getClient(monitor), (CloudInfoSsh) cloudInfo,
+					getCloudFoundryServer().getProxyConfiguration(), getCloudFoundryServer(),
+					getCloudFoundryServer().isSelfSigned());
+
+			return ssh;
+		}
+		return null;
 	}
 }
 
