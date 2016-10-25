@@ -30,6 +30,7 @@ import java.util.List;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.eclipse.cft.server.core.ISshClientSupport;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -39,7 +40,6 @@ import org.eclipse.cft.server.core.internal.client.BehaviourRequest;
 import org.eclipse.cft.server.core.internal.client.ClientRequestFactory;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
-import org.eclipse.cft.server.core.internal.ssh.SshClientSupport;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.osgi.util.NLS;
@@ -155,11 +155,13 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 				if (path == null) {
 					return null;
 				}
-
-				SshClientSupport ssh = SshClientSupport.create(client, getCloudInfo(),
-						cloudServer.getProxyConfiguration(), cloudServer, cloudServer.isSelfSigned());
-
-				Session session = ssh.connect(app, cloudServer, instanceIndex);
+				
+				ISshClientSupport ssh = behaviour.getSshClientSupport(progress);
+				if (ssh == null) {
+					return null;
+				}
+				
+				Session session = ssh.connect(app.getName(), instanceIndex, cloudServer.getServer(), progress);
 
 				String command = isDir ? "ls -p " + path //$NON-NLS-1$
 						// Basic work-around to scp which doesn't appear to work

@@ -353,6 +353,9 @@ public class Messages extends NLS {
 	public static String UpdateModuleOperation_OPERATION_MESSAGE;
 	
 	public static String UpdateServicesOperation_OPERATION_MESSAGE;
+	
+	public static String SshClientSupport_NO_CLOUD_APP;
+
 
 	private static final String BUNDLE_NAME = CloudFoundryPlugin.PLUGIN_ID + ".internal.Messages"; //$NON-NLS-1$
 
