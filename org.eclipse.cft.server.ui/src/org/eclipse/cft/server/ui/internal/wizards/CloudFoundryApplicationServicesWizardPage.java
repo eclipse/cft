@@ -94,6 +94,11 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 	 */
 	private final Map<String, CFServiceInstance> allServices = new HashMap<String, CFServiceInstance>();
 
+	/**
+	 * Cache of existing services on the server. Updated when setInput is called.
+	 */
+	private List<CFServiceInstance> existingServices = new ArrayList<CFServiceInstance>();
+
 	private final ApplicationWizardDescriptor descriptor;
 
 	public CloudFoundryApplicationServicesWizardPage(CloudFoundryServer cloudServer,
@@ -245,7 +250,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 			public void run(IProgressMonitor monitor) throws CoreException {
 
 				try {
-					List<CFServiceInstance> existingServices = cloudServer.getBehaviour().getServices(monitor);
+					existingServices = cloudServer.getBehaviour().getServices(monitor);
 
 					// Clear only after retrieving an update list without errors
 					allServices.clear();
@@ -287,53 +292,54 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 					checkForUnboundServices();
 				}
 				catch (final CoreException e) {
-					showException(e);
+					Display.getDefault().asyncExec(new Runnable() {
+						public void run() {
+							update(false,
+									CloudFoundryPlugin
+											.getErrorStatus(
+													NLS.bind(Messages.CloudFoundryApplicationServicesWizardPage_ERROR_VERIFY_SERVICE,
+															e.getMessage()), e));
+						}
+					});
 				}
 			}
 		};
 		runAsync(runnable, Messages.CloudFoundryApplicationServicesWizardPage_TEXT_VERIFY_SERVICE_PROGRESS);
-
 	}
 
 	/**
-	 * Unexpected exception was thrown; show the exception message in the wizard.
-	 * @param e
+	 * Loops through selectedServicesToBind and causes the wizard to block and display an error
+	 * if any service is to be bound that does not exist - since this will cause the deploy to fail.
+	 * Bugzilla #506163
 	 */
-	protected void showException(final Exception e) {
-		Display.getDefault().asyncExec(new Runnable() {
-			public void run() {
-				update(false,
-						CloudFoundryPlugin
-								.getErrorStatus(
-										NLS.bind(Messages.CloudFoundryApplicationServicesWizardPage_ERROR_VERIFY_SERVICE,
-												e.getMessage()), e));
-			}
-		});
-	}
-
 	protected void checkForUnboundServices() {
 		ICoreRunnable runnable = new ICoreRunnable() {
 			@Override
-			public void run(IProgressMonitor monitor) throws CoreException {
-				List<String> existingServices = new ArrayList<String>();
-				try {
-					for(CFServiceInstance cfsi : cloudServer.getBehaviour().getServices(monitor)) {
-						existingServices.add(cfsi.getName());
-					}
-				}
-				catch (CoreException e) {
-					showException(e);
-					// Can't reasonably continue if existingServices is possibly not valid.
-					return;
-				}
+			public void run(IProgressMonitor monitor) {
+				// List that tracks any problematic services. If the list is not empty, the wizard cannot finish.
+				List<String> unboundList = new ArrayList<String>();
 
-				List<String> unboundList= new ArrayList<String>();
 				for (String name : selectedServicesToBind) {
-					CFServiceInstance service = allServices.get(name);
 					// If the service is not going to be added (isLocal) and it is not existing, the 
 					// binding will necessarily fail, so display an error message and block completion.
-					if(!service.isLocal() && (existingServices == null || !existingServices.contains(name))) {
-						unboundList.add(service.getName());
+					if(!allServices.get(name).isLocal()) {
+						if(existingServices == null) {
+							unboundList.add(name);
+						}
+						else {
+							// See if the service already exists
+							boolean isExisting = false;
+							for(CFServiceInstance cfsi : existingServices) {
+								if(cfsi.getName().equals(name)) {
+									isExisting = true;
+								}
+							}
+
+							// if it does not, it is unbound and must be added.
+							if(!isExisting) {
+								unboundList.add(name);
+							}
+						}
 					}
 				}
 
@@ -343,6 +349,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 					String msg = Messages.CloudFoundryApplicationServicesWizardPage_SERVICE_DOES_NOT_EXIST_ONE;
 					String param = unboundList.get(0);
 
+					// display up to two services to keep the message manageable
 					if(unboundList.size() > 1) {
 						msg = Messages.CloudFoundryApplicationServicesWizardPage_SERVICE_DOES_NOT_EXIST_MULTI;
 						param += ", " + unboundList.get(1);
@@ -351,7 +358,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 					errMsg = NLS.bind(msg, param);
 				}
 
-				canFinish = errMsg == null;
+				canFinish = (errMsg == null);
 
 				final String ferrMsg = errMsg;
 				// Refresh UI
@@ -359,12 +366,10 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 					public void run() {
 						// Update the dialog, adding/removing the error message.
 						IStatus status = Status.OK_STATUS;
-						setMessage(ferrMsg);
 						if(!canFinish) {
 							status = new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID, ferrMsg);
 						}
 						update(false, status);
-						// set ability to Finish depending on if there is an error.
 						setPageComplete(canFinish);
 
 						setBoundServiceSelectionInUI();
