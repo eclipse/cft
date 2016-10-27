@@ -159,6 +159,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 						selectedServicesToBind.add(service.getName());
 					}
 					setServicesToBindInDescriptor();
+					checkForUnboundServices();
 				}
 			}
 		});
@@ -181,7 +182,7 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 					List<CFServiceInstance> addedService = wizard.getServices();
 					if (addedService != null) {
 						addServices(addedService);
-						setInput();
+						checkForUnboundServices();
 					}
 				}
 			}
@@ -275,65 +276,104 @@ public class CloudFoundryApplicationServicesWizardPage extends PartsWizardPage {
 					// to not exist and
 					// will require being created. Only create services IF they
 					// are to be bound to the app.
-					String errMsg = null;
 					for (String name : selectedServicesToBind) {
 						CFServiceInstance service = allServices.get(name);
 						if (service.isLocal()) {
 							servicesToAdd.add(name);
 						}
-						// If the service is not going to be added and it is not existing, the binding will fail,
-						// so display an error message and block completion.
-						else if(!servicesToAdd.contains(service) && 
-								(existingServices == null || !existingServices.contains(service))) {
-							errMsg = NLS.bind(Messages.CloudFoundryApplicationServicesWizardPage_NO_INSTANCE_TO_BIND_TO, 
-											service.getName());
-						}
 					}
 
 					setServicesToCreateInDescriptor();
-
-					// update canFinish
-					canFinish = errMsg == null;
-					
-					// Refresh UI
-					final String ferrMsg = errMsg;
-					Display.getDefault().asyncExec(new Runnable() {
-
-						public void run() {
-							// Update the dialog, adding/removing the error message.
-							setMessage(ferrMsg);
-							IStatus status = Status.OK_STATUS;
-							if(ferrMsg != null) {
-								status = new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID, ferrMsg);
-							}
-							update(false, status);
-							// If the error is resolved, can now press Finish
-							setPageComplete(canFinish);
-
-							setBoundServiceSelectionInUI();
-						}
-
-					});
+					checkForUnboundServices();
 				}
 				catch (final CoreException e) {
-
-					Display.getDefault().asyncExec(new Runnable() {
-
-						public void run() {
-
-							update(false,
-									CloudFoundryPlugin
-											.getErrorStatus(
-													NLS.bind(Messages.CloudFoundryApplicationServicesWizardPage_ERROR_VERIFY_SERVICE,
-															e.getMessage()), e));
-
-						}
-					});
+					showException(e);
 				}
 			}
 		};
 		runAsync(runnable, Messages.CloudFoundryApplicationServicesWizardPage_TEXT_VERIFY_SERVICE_PROGRESS);
 
+	}
+
+	/**
+	 * Unexpected exception was thrown; show the exception message in the wizard.
+	 * @param e
+	 */
+	protected void showException(final Exception e) {
+		Display.getDefault().asyncExec(new Runnable() {
+			public void run() {
+				update(false,
+						CloudFoundryPlugin
+								.getErrorStatus(
+										NLS.bind(Messages.CloudFoundryApplicationServicesWizardPage_ERROR_VERIFY_SERVICE,
+												e.getMessage()), e));
+			}
+		});
+	}
+
+	protected void checkForUnboundServices() {
+		ICoreRunnable runnable = new ICoreRunnable() {
+			@Override
+			public void run(IProgressMonitor monitor) throws CoreException {
+				List<String> existingServices = new ArrayList<String>();
+				try {
+					for(CFServiceInstance cfsi : cloudServer.getBehaviour().getServices(monitor)) {
+						existingServices.add(cfsi.getName());
+					}
+				}
+				catch (CoreException e) {
+					showException(e);
+					// Can't reasonably continue if existingServices is possibly not valid.
+					return;
+				}
+
+				List<String> unboundList= new ArrayList<String>();
+				for (String name : selectedServicesToBind) {
+					CFServiceInstance service = allServices.get(name);
+					// If the service is not going to be added (isLocal) and it is not existing, the 
+					// binding will necessarily fail, so display an error message and block completion.
+					if(!service.isLocal() && (existingServices == null || !existingServices.contains(name))) {
+						unboundList.add(service.getName());
+					}
+				}
+
+				String errMsg = null;
+				// if the list is empty, everything is OK (errMsg stays null). Otherwise generate an error.
+				if(!unboundList.isEmpty()) {
+					String msg = Messages.CloudFoundryApplicationServicesWizardPage_SERVICE_DOES_NOT_EXIST_ONE;
+					String param = unboundList.get(0);
+
+					if(unboundList.size() > 1) {
+						msg = Messages.CloudFoundryApplicationServicesWizardPage_SERVICE_DOES_NOT_EXIST_MULTI;
+						param += ", " + unboundList.get(1);
+					}
+
+					errMsg = NLS.bind(msg, param);
+				}
+
+				canFinish = errMsg == null;
+
+				final String ferrMsg = errMsg;
+				// Refresh UI
+				Display.getDefault().asyncExec(new Runnable() {
+					public void run() {
+						// Update the dialog, adding/removing the error message.
+						IStatus status = Status.OK_STATUS;
+						setMessage(ferrMsg);
+						if(!canFinish) {
+							status = new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID, ferrMsg);
+						}
+						update(false, status);
+						// set ability to Finish depending on if there is an error.
+						setPageComplete(canFinish);
+
+						setBoundServiceSelectionInUI();
+					}
+				});
+			}
+		};
+
+		runAsync(runnable, Messages.CloudFoundryApplicationServicesWizardPage_TEXT_VERIFY_SERVICE_PROGRESS);
 	}
 
 	protected void populateServicesFromDeploymentInfo() {
