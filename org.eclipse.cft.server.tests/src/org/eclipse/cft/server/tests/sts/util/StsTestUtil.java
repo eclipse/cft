@@ -144,9 +144,9 @@ public class StsTestUtil {
 		validateCredentials(credentials);
 
 		try {
-			return CloudFoundryPlugin.getCloudFoundryClientFactory().getCloudFoundryOperations(
-					new CloudCredentials(credentials.userEmail, credentials.password), new URL(url),
-					credentials.organization, credentials.space, credentials.selfSignedCertificate);
+			return CloudFoundryPlugin.getCloudFoundryClientFactory().getCloudFoundryOperations(new URL(url),
+					new CloudCredentials(credentials.userEmail, credentials.password), credentials.organization,
+					credentials.space, credentials.selfSignedCertificate);
 		}
 		catch (MalformedURLException e) {
 			throw CloudErrorUtil.toCoreException(e);
@@ -424,8 +424,8 @@ public class StsTestUtil {
 	 *
 	 * "" length = 0 => type of resource is IWorkspaceRoot "foo" length = 1 =>
 	 * type of resource is IProject "foo/src/Foo.java" length > 1 and no
-	 * trailing "/" => type is IFile
-	 * "foo/src/          length > 1 and a trailing "/" => type is IFolder
+	 * trailing "/" => type is IFile "foo/src/ length > 1 and a trailing "/" =>
+	 * type is IFolder
 	 */
 	public static IResource getResource(String pathToFile) {
 		return getResource(Path.ROOT.append(pathToFile));

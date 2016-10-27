@@ -22,17 +22,19 @@ package org.eclipse.cft.server.core.internal;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.eclipse.cft.server.core.internal.client.AbstractWaitWithProgressJob;
+import org.eclipse.cft.server.core.internal.client.CFClient;
+import org.eclipse.cft.server.core.internal.client.V1AccessToken;
+import org.eclipse.cft.server.core.internal.client.CFAccessToken;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CloudFoundryLoginHandler {
 
-	private final CloudFoundryOperations operations;
+	private final CFClient operations;
 
 	private static final String DEFAULT_PROGRESS_LABEL = Messages.CloudFoundryLoginHandler_LABEL_PERFORM_CF_OPERATION;
 
@@ -46,7 +48,7 @@ public class CloudFoundryLoginHandler {
 	 * @param operations must not be null
 	 * @param cloudServer can be null if no server has been created yet
 	 */
-	public CloudFoundryLoginHandler(CloudFoundryOperations operations, CloudFoundryServer server) {
+	public CloudFoundryLoginHandler(CFClient operations, CloudFoundryServer server) {
 		this.operations = operations;
 		this.server = server;
 	}
@@ -56,7 +58,7 @@ public class CloudFoundryLoginHandler {
 	 * @throws CoreException if login failed. The reason for the login failure
 	 * is contained in the core exception's
 	 */
-	public OAuth2AccessToken login(IProgressMonitor monitor) throws CoreException {
+	public CFAccessToken login(IProgressMonitor monitor) throws CoreException {
 		return login(monitor, 1, 0);
 	}
 
@@ -65,32 +67,38 @@ public class CloudFoundryLoginHandler {
 	 * specified sleep time between each attempt. If at the end of the attempts,
 	 * login has failed, Core exception is thrown.
 	 */
-	public OAuth2AccessToken login(IProgressMonitor monitor, int tries, long sleep) throws CoreException {
+	public CFAccessToken login(IProgressMonitor monitor, int tries, long sleep) throws CoreException {
 		return internalLogin(monitor, tries, sleep);
 	}
 
-	protected OAuth2AccessToken internalLogin(IProgressMonitor monitor, int tries, long sleep) throws CoreException {
-		return new AbstractWaitWithProgressJob<OAuth2AccessToken>(tries, sleep) {
+	protected CFAccessToken internalLogin(IProgressMonitor monitor, int tries, long sleep) throws CoreException {
+		 return new AbstractWaitWithProgressJob<CFAccessToken>(tries, sleep) {
 
 			@Override
-			protected OAuth2AccessToken runInWait(IProgressMonitor monitor) throws CoreException {
+			protected CFAccessToken runInWait(IProgressMonitor monitor) throws CoreException {
 				// Do not wrap CloudFoundryException or RestClientException in a
 				// CoreException.
 				// as they are uncaught exceptions and can be inspected directly
 				// by the shouldRetryOnError(..) method.
-				OAuth2AccessToken token = operations.login();
+				CFAccessToken token = operations.login();
 				
 				if(server != null && server.isSso()) {
 					// Store the SSO token in the server
 					try {
-						String tokenValue = new ObjectMapper().writeValueAsString(token);
+						String tokenValue = null;
+						if (token instanceof V1AccessToken) {
+							tokenValue = new ObjectMapper()
+									.writeValueAsString(((V1AccessToken) token).getV1AccessToken());
+						}
+						else {
+							tokenValue = new ObjectMapper().writeValueAsString(token);
+						}
 						server.setAndSaveToken(tokenValue);
 					}
 					catch (JsonProcessingException e) {
 						CloudFoundryPlugin.logWarning(e.getMessage());
 					}					
 				}
-				
 				return token;
 				
 			}

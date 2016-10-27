@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2014, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,16 @@ package org.eclipse.cft.server.core.internal.log;
  * different types of trace messages (e.g. ERROR vs OK).
  */
 public class LogContentType {
+
+	/*
+	 * Log content types that are specific to streaming or fetching recent logs
+	 * of published applications that are currently running on the Cloud server
+	 */
+	public static final LogContentType APPLICATION_LOG_STS_ERROR = new LogContentType("applicationlogstderror"); //$NON-NLS-1$
+
+	public static final LogContentType APPLICATION_LOG_STD_OUT = new LogContentType("applicationlogstdout"); //$NON-NLS-1$
+
+	public static final LogContentType APPLICATION_LOG_UNKNOWN = new LogContentType("applicationlogunknown"); //$NON-NLS-1$
 
 	private final String id;
 

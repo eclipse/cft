@@ -30,7 +30,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.client.CFClientV1Support;
-import org.eclipse.cft.server.core.internal.client.diego.CloudInfoSsh;
+import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.osgi.util.NLS;
@@ -50,7 +50,7 @@ public class SshClientSupport extends CFClientV1Support implements ISshClientSup
 
 	private String sshClientId;
 
-	public SshClientSupport(CloudFoundryOperations cfClient, CloudInfoSsh cloudInfo,
+	public SshClientSupport(CloudFoundryOperations cfClient, CFInfo cloudInfo,
 			HttpProxyConfiguration httpProxyConfiguration, CloudFoundryServer server, boolean trustSelfSigned) {
 		super(cfClient, /* no session space required */ null, cloudInfo, httpProxyConfiguration, server,
 				trustSelfSigned);
@@ -98,7 +98,8 @@ public class SshClientSupport extends CFClientV1Support implements ISshClientSup
 		return getCloudInfo().getSshHost();
 	}
 
-	public static ISshClientSupport create(final CloudFoundryOperations client, CloudInfoSsh cloudInfo,
+
+	public static ISshClientSupport create(final CloudFoundryOperations client, CFInfo cloudInfo,
 			HttpProxyConfiguration proxyConf, CloudFoundryServer cfServer, boolean selfSigned) {
 		return new SshClientSupport(client, cloudInfo, proxyConf, cfServer, selfSigned);
 	}
@@ -138,12 +139,7 @@ public class SshClientSupport extends CFClientV1Support implements ISshClientSup
 					, e, false);
 		}
 	}
-
-	@Override
-	protected CloudInfoSsh getCloudInfo() {
-		return (CloudInfoSsh) super.getCloudInfo();
-	}
-
+	
 	protected UserInfo getUserInfo(final String accessToken) {
 		return new UserInfo() {
 

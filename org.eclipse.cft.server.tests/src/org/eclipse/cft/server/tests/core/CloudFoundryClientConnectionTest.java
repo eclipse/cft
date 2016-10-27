@@ -27,6 +27,7 @@ import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryLoginHandler;
+import org.eclipse.cft.server.core.internal.client.CFClient;
 import org.eclipse.cft.server.tests.sts.util.StsTestUtil;
 import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture;
 import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture.CredentialProperties;
@@ -64,7 +65,7 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(credentials.userEmail, credentials.password,
 				credentials.organization, credentials.space, httpUrl, credentials.selfSignedCertificate);
 
-		new CloudFoundryLoginHandler(client, null).login(new NullProgressMonitor());
+		new CloudFoundryLoginHandler(new CFClient(client), null).login(new NullProgressMonitor());
 
 		CloudInfo cloudInfo = client.getCloudInfo();
 		Assert.assertNotNull(cloudInfo);
@@ -82,7 +83,7 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(credentials.userEmail, credentials.password,
 				credentials.organization, credentials.space, httpUrl, credentials.selfSignedCertificate);
 
-		new CloudFoundryLoginHandler(client, null).login(new NullProgressMonitor());
+		new CloudFoundryLoginHandler(new CFClient(client), null).login(new NullProgressMonitor());
 
 		CloudInfo cloudInfo = client.getCloudInfo();
 		Assert.assertNotNull(cloudInfo);
@@ -107,7 +108,7 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(credentials.userEmail, credentials.password,
 				credentials.organization, credentials.space, credentials.url, credentials.selfSignedCertificate);
 
-		CloudFoundryLoginHandler operationsHandler = new CloudFoundryLoginHandler(client, null);
+		CloudFoundryLoginHandler operationsHandler = new CloudFoundryLoginHandler(new CFClient(client), null);
 
 		operationsHandler.login(new NullProgressMonitor());
 

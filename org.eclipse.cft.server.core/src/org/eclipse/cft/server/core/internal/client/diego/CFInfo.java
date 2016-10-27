@@ -1,23 +1,15 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others
+ * Copied from Spring Tool Suite. Original license:
  * 
+ * Copyright (c) 2015 Pivotal Software, Inc.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Apache License v2.0 which accompanies this distribution. 
- * 
- * The Eclipse Public License is available at 
- * 
+ * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- * 
- * and the Apache License v2.0 is available at 
- * 
- * http://www.apache.org/licenses/LICENSE-2.0
- * 
- * You may elect to redistribute this code under either of these licenses.
- *  
- *  Contributors:
+ *
+ * Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
- ********************************************************************************/
+ *******************************************************************************/
 package org.eclipse.cft.server.core.internal.client.diego;
 
 import java.util.Map;
@@ -27,8 +19,12 @@ import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.util.CloudUtil;
 import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.eclipse.cft.server.core.internal.client.RestUtils;
+import org.eclipse.cft.server.core.internal.ssh.SshHost;
 import org.springframework.web.client.RestTemplate;
 
+/**
+ * @author Kris De Volder
+ */
 public class CFInfo {
 
 	protected final RestTemplate restTemplate;
@@ -76,6 +72,27 @@ public class CFInfo {
 
 	private String getUrl(String path) {
 		return ccUrl + path;
+	}
+
+	public String getSshClientId() {
+		return getProp("app_ssh_oauth_client"); //$NON-NLS-1$
+	}
+
+	public SshHost getSshHost() {
+		String fingerPrint = getProp("app_ssh_host_key_fingerprint"); //$NON-NLS-1$
+		String host = getProp("app_ssh_endpoint"); //$NON-NLS-1$
+		int port = 22; // Default ssh port
+		if (host != null) {
+			if (host.contains(":")) { //$NON-NLS-1$
+				String[] pieces = host.split(":"); //$NON-NLS-1$
+				host = pieces[0];
+				port = Integer.parseInt(pieces[1]);
+			}
+		}
+		if (host != null || fingerPrint != null) {
+			return new SshHost(host, port, fingerPrint);
+		}
+		return null;
 	}
 
 }

@@ -72,7 +72,7 @@ public class CloudFoundryClientFactory {
 		return sessionFactory;
 	}
 
-	public CloudFoundryOperations getCloudFoundryOperations(CloudCredentials credentials, URL url, boolean selfSigned) {
+	public CloudFoundryOperations getCloudFoundryOperations(URL url, CloudCredentials credentials, boolean selfSigned) {
 		return getCloudFoundryOperations(credentials, url, null, selfSigned);
 	}
 
@@ -91,7 +91,7 @@ public class CloudFoundryClientFactory {
 				: new CloudFoundryClient(credentials, url, proxyConfiguration, selfSigned);
 	}
 
-	public CloudFoundryOperations getCloudFoundryOperations(CloudCredentials credentials, URL url, String orgName,
+	public CloudFoundryOperations getCloudFoundryOperations(URL url, CloudCredentials credentials, String orgName,
 			String spaceName, boolean selfsigned) {
 
 		// Proxies are always updated on each client call by the
@@ -196,6 +196,7 @@ public class CloudFoundryClientFactory {
 		return null;
 	}
 
+	// TODO: this needs to be moved out into CFClientManager 
 	public static String getSsoUrl(String apiurl, boolean trustSelfSignedCerts) throws Exception {
 		RestUtil restUtil = new RestUtil();
 		HttpProxyConfiguration httpProxyConfiguration = getProxy(new URL(apiurl));

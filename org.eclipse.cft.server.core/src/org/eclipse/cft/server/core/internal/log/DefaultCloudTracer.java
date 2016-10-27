@@ -23,6 +23,7 @@ package org.eclipse.cft.server.core.internal.log;
 import java.io.StringWriter;
 
 import org.cloudfoundry.client.lib.RestLogEntry;
+import org.eclipse.cft.server.core.internal.client.CFRestLogEntry;
 
 /**
  * General-purpose tracer that parses a {@link RestLogEntry} into various String
@@ -41,7 +42,7 @@ public class DefaultCloudTracer extends CloudTracer {
 
 	static final String SPACE = " "; //$NON-NLS-1$
 
-	protected void doTrace(RestLogEntry restLogEntry) {
+	protected void doTrace(CFRestLogEntry restLogEntry) {
 
 		StringWriter writer = new StringWriter();
 		boolean isError = restLogEntry.getStatus() != null && ERROR_STATUS.equals(restLogEntry.getStatus());
@@ -55,7 +56,6 @@ public class DefaultCloudTracer extends CloudTracer {
 		writer.append(HTTP_TRACE_STATUS);
 		writer.append(':');
 		writer.append(SPACE);
-		writer.append(restLogEntry.getHttpStatus().name());
 
 		fireTraceEvent(getCloudLog(writer.toString(), isError ? TraceType.HTTP_ERROR : TraceType.HTTP_OK));
 
@@ -66,9 +66,7 @@ public class DefaultCloudTracer extends CloudTracer {
 		writer.append(HTTP_TRACE_REQUEST);
 		writer.append(':');
 		writer.append(SPACE);
-		writer.append(restLogEntry.getMethod().toString());
 
-		writer.append(' ');
 		writer.append(restLogEntry.getUri().toString());
 		writer.append(TRACE_SEPARATOR);
 		writer.append(restLogEntry.getMessage());

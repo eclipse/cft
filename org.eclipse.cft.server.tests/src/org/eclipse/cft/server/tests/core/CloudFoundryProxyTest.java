@@ -72,8 +72,7 @@ public class CloudFoundryProxyTest extends AbstractAsynchCloudTest {
 					error = e;
 				}
 
-				assertNotNull("Expected access exception ", error);
-				assertTrue(error.getCause().getMessage().contains("invalid.proxy.test"));
+				assertTrue("Expected access exception ", error instanceof IllegalArgumentException);
 
 				assertNull("Expected no client due to invalid proxy", client);
 			}
@@ -121,8 +120,8 @@ public class CloudFoundryProxyTest extends AbstractAsynchCloudTest {
 					fail("Expected invalid.proxy.test failure");
 
 				}
-				catch (Exception e) {
-					assertTrue(e.getCause().getMessage().contains("invalid.proxy.test"));
+				catch (Exception error) {
+					assertTrue("Expected access exception ", error instanceof IllegalArgumentException);
 					ran[0] = true;
 				}
 

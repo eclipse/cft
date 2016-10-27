@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2014, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,8 +20,8 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.log;
 
-import org.cloudfoundry.client.lib.RestLogEntry;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.client.CFRestLogEntry;
 
 /**
  * Cloud tracer that fires trace events when a trace request is received from
@@ -30,7 +30,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
  */
 public abstract class CloudTracer implements ICloudTracer {
 
-	public void traceNewLogEntry(RestLogEntry restLogEntry) {
+	public void traceNewLogEntry(CFRestLogEntry restLogEntry) {
 
 		if (restLogEntry == null || !HttpTracer.getCurrent().isEnabled()) {
 			return;
@@ -43,7 +43,7 @@ public abstract class CloudTracer implements ICloudTracer {
 	 * @param restLogEntry non-null log entry, invoked only when tracing is
 	 * enabled.
 	 */
-	abstract void doTrace(RestLogEntry restLogEntry);
+	abstract void doTrace(CFRestLogEntry restLogEntry);
 
 	/**
 	 * Utility method for tracing a message based on a {@link LogContentType}.

@@ -20,10 +20,12 @@
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.actions;
 
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.editor.CloudFoundryApplicationsEditorPage;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.action.Action;
 import org.eclipse.wst.server.core.IModule;
 
@@ -47,7 +49,12 @@ public class RefreshModuleEditorAction extends Action {
 	public void run() {
 		IModule selectedModule = editorPage.getMasterDetailsBlock().getCurrentModule();
 		CloudFoundryServerBehaviour behaviour = editorPage.getCloudServer().getBehaviour();
-		behaviour.asyncUpdateModule(selectedModule);
+		try {
+			behaviour.asyncUpdateModule(selectedModule);
+		}
+		catch (CoreException e) {
+			CloudFoundryPlugin.logError(e);
+		}
 	}
 
 }

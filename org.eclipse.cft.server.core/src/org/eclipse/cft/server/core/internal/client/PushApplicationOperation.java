@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.cft.server.core.CFApplicationArchive;
@@ -135,7 +134,7 @@ public class PushApplicationOperation extends StartOperation {
 	}
 
 	@Override
-	protected void pushApplication(CloudFoundryOperations client, final CloudFoundryApplicationModule appModule,
+	protected void pushApplication(final CloudFoundryApplicationModule appModule,
 			CFApplicationArchive applicationArchive, final IProgressMonitor monitor) throws CoreException {
 		String appName = appModule.getDeploymentInfo().getDeploymentName();
 
@@ -180,7 +179,7 @@ public class PushApplicationOperation extends StartOperation {
 			SubMonitor subMonitor = SubMonitor.convert(monitor, 50);
 			subMonitor.subTask(creatingAppLabel);
 			try {
-				client.createApplication(appName, staging, appModule.getDeploymentInfo().getMemory(), uris, services);
+				getBehaviour().getClient(monitor).createApplication(appName, staging, appModule.getDeploymentInfo().getMemory(), uris, services, monitor);
 			}
 			catch (Exception e) {
 				String hostTaken = CloudErrorUtil.getHostTakenError(e);
@@ -203,7 +202,7 @@ public class PushApplicationOperation extends StartOperation {
 
 				if (actualApp != null) {
 					SubMonitor updateMonitor = SubMonitor.convert(subMonitor, 100);
-					getBehaviour().getRequestFactory().getUpdateEnvVarRequest(appName, variables).run(updateMonitor.newChild(50));
+					getBehaviour().getClient(monitor).updateEnvVarRequest(appName, variables, updateMonitor.newChild(50));
 
 					// Update instances if it is more than 1. By default, app
 					// starts
@@ -231,7 +230,7 @@ public class PushApplicationOperation extends StartOperation {
 			}
 
 		}
-		super.pushApplication(client, appModule, applicationArchive, monitor);
+		super.pushApplication(appModule, applicationArchive, monitor);
 	}
 
 	@Override

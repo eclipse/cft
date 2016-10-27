@@ -128,8 +128,7 @@ public class RestartOperation extends ApplicationOperation {
 			getBehaviour().operations().updateModule(getModule()).run(monitor);
 
 			// Perform the actual restarting in the client
-			StartingInfo info = getBehaviour().getRequestFactory().restartApplication(deploymentName, startLabel)
-					.run(monitor.newChild(20));
+			StartingInfo info = getBehaviour().getClient(monitor).restartApplication(deploymentName, startLabel, monitor.newChild(20));
 
 			appModule.setStartingInfo(info);
 

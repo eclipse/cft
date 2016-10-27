@@ -74,7 +74,7 @@ public class UpdateOperationsScheduler implements OperationScheduler {
 	/**
 	 * Updates all modules in the server, as well as services
 	 */
-	public synchronized void updateAll() {
+	public synchronized void updateAll() throws CoreException {
 		scheduleRefresh(cloudServer.getBehaviour().operations().updateAll());
 	}
 
@@ -84,7 +84,7 @@ public class UpdateOperationsScheduler implements OperationScheduler {
 	 * @see CloudBehaviourOperations#updateDeployedModule(IModule)
 	 * @param module to refresh
 	 */
-	public synchronized void updateDeployedModule(IModule module) {
+	public synchronized void updateDeployedModule(IModule module) throws CoreException {
 		scheduleRefresh(cloudServer.getBehaviour().operations().updateDeployedModule(module));
 	}
 
@@ -92,7 +92,7 @@ public class UpdateOperationsScheduler implements OperationScheduler {
 	 * Schedule an update on a module regardless if it is deployed or no.
 	 * @see CloudBehaviourOperations#updateModule(IModule)
 	 */
-	public synchronized void updateModule(IModule module) {
+	public synchronized void updateModule(IModule module) throws CoreException {
 		scheduleRefresh(cloudServer.getBehaviour().operations().updateModule(module));
 	}
 
@@ -102,7 +102,7 @@ public class UpdateOperationsScheduler implements OperationScheduler {
 	 * {@link #updateDeployedModule(IModule)} specific to publishing
 	 * @param module
 	 */
-	public synchronized void updateModuleAfterPublish(IModule module) {
+	public synchronized void updateModuleAfterPublish(IModule module) throws CoreException {
 		scheduleRefresh(cloudServer.getBehaviour().operations().updateOnPublish(module));
 	}
 

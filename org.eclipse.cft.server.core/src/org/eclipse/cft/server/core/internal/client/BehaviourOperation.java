@@ -51,10 +51,11 @@ public abstract class BehaviourOperation implements ICloudFoundryOperation {
 	public IModule getModule() {
 		return module;
 	}
-	
+
 	protected CloudFoundryApplicationModule getCloudModule() {
 		try {
-			return CloudServerUtil.getCloudFoundryApplicationModule(module, behaviour.getCloudFoundryServer().getServer());
+			return CloudServerUtil.getCloudFoundryApplicationModule(module,
+					behaviour.getCloudFoundryServer().getServer());
 		}
 		catch (CoreException e) {
 			CloudFoundryPlugin.logError(e);

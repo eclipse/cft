@@ -25,6 +25,7 @@ import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.actions.EditorAction.RefreshArea;
 import org.eclipse.cft.server.ui.internal.editor.CloudFoundryApplicationsEditorPage;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -77,9 +78,13 @@ public class RefreshEditorAction extends Action {
 			protected IStatus run(IProgressMonitor arg0) {
 				// Initialize the server and initiate server update scheduler
 				CloudFoundryServerBehaviour behaviour = editorPage.getCloudServer().getBehaviour();
-				behaviour.asyncUpdateAll();
-				
-				return Status.OK_STATUS;
+				try {
+					behaviour.asyncUpdateAll();
+					return Status.OK_STATUS;
+				}
+				catch (CoreException e) {
+					return e.getStatus();
+				}
 			}
 			
 		};

@@ -26,6 +26,7 @@ import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryLoginHandler;
+import org.eclipse.cft.server.core.internal.client.CFClient;
 import org.eclipse.cft.server.tests.AllCloudFoundryTests;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -39,7 +40,7 @@ public class CloudAccessTokenTest extends AbstractCloudFoundryTest {
 
 	public void testFailingRequestAccessTokenErrorClient() throws Exception {
 		CloudFoundryOperations client = getTestFixture().createExternalClient();
-		CloudFoundryLoginHandler handler = new CloudFoundryLoginHandler(client, cloudServer);
+		CloudFoundryLoginHandler handler = new CloudFoundryLoginHandler(new CFClient(client), cloudServer);
 
 		handler.login(new NullProgressMonitor());
 

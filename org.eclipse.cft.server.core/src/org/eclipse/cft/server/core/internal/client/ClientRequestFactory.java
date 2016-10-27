@@ -21,6 +21,11 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,11 +33,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.cloudfoundry.client.lib.CloudCredentials;
+import org.cloudfoundry.client.lib.ApplicationLogListener;
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
-import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.StartingInfo;
+import org.cloudfoundry.client.lib.StreamingLogToken;
+import org.cloudfoundry.client.lib.UploadStatusCallback;
+import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
@@ -42,9 +49,11 @@ import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
+import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.CFServiceOffering;
 import org.eclipse.cft.server.core.EnvironmentVariable;
+import org.eclipse.cft.server.core.ISshClientSupport;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -53,6 +62,11 @@ import org.eclipse.cft.server.core.internal.CloudServicesUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
+import org.eclipse.cft.server.core.internal.log.CFApplicationLogListener;
+import org.eclipse.cft.server.core.internal.log.CFStreamingLogToken;
+import org.eclipse.cft.server.core.internal.log.CFV1StreamingLogToken;
+import org.eclipse.cft.server.core.internal.log.V1AppLogUtil;
+import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -65,130 +79,138 @@ import org.springframework.web.client.RestClientException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 
 /**
- * A general pre-Diego Client request factory based off the v1 Cloud Foundry
- * Java client.
- *
+ * A request factory for requests based on the v1 CF Java client.
  */
 public class ClientRequestFactory {
 
-	protected final CloudFoundryServerBehaviour behaviour;
+	protected final CloudFoundryServer cloudServer;
 
 	protected CFInfo cachedInfo;
 
-	public ClientRequestFactory(CloudFoundryServerBehaviour behaviour) {
-		this.behaviour = behaviour;
+
+	protected CloudServerCFClient cfClient;
+
+	public ClientRequestFactory(CloudFoundryServer cloudSever, CloudServerCFClient cfClient) throws CoreException {
+		this.cloudServer = cloudSever;
+		this.cfClient = cfClient;
 	}
 
-	public BaseClientRequest<?> getUpdateApplicationMemoryRequest(final CloudFoundryApplicationModule appModule,
+	public ClientRequest<?> getUpdateApplicationMemoryRequest(final CloudFoundryApplicationModule appModule,
 			final int memory) {
-		return new AppInStoppedStateAwareRequest<Void>(NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_APP_MEMORY,
-				appModule.getDeployedApplicationName()), behaviour) {
+		return new AppInStoppedStateAwareRequest<Void>(cloudServer, cfClient, NLS
+				.bind(Messages.CloudFoundryServerBehaviour_UPDATE_APP_MEMORY, appModule.getDeployedApplicationName())) {
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
 				client.updateApplicationMemory(appModule.getDeployedApplicationName(), memory);
 				return null;
 			}
 		};
 	}
 
-	public BaseClientRequest<?> updateApplicationDiego(final CloudFoundryApplicationModule appModule, final boolean diego) {
-		
+	public ClientRequest<?> updateApplicationDiego(final CloudFoundryApplicationModule appModule, final boolean diego) {
+
 		String message;
-		if(diego) {
+		if (diego) {
 			message = NLS.bind(Messages.CloudFoundryServerBehaviour_ENABLING_DIEGO,
 					appModule.getDeployedApplicationName());
-		} else {
-			message = NLS.bind(Messages.CloudFoundryServerBehaviour_DISABLING_DIEGO,
-					appModule.getDeployedApplicationName());			
 		}
-		
-		return new AppInStoppedStateAwareRequest<Void>(message, behaviour) {
+		else {
+			message = NLS.bind(Messages.CloudFoundryServerBehaviour_DISABLING_DIEGO,
+					appModule.getDeployedApplicationName());
+		}
+
+		return new AppInStoppedStateAwareRequest<Void>(cloudServer, cfClient, message) {
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
 				client.updateApplicationDiego(appModule.getDeployedApplicationName(), diego);
 				return null;
 			}
 		};
 	}
 
-	public BaseClientRequest<?> updateApplicationEnableSsh(final CloudFoundryApplicationModule appModule, final boolean enableSsh) {
+	public ClientRequest<?> updateApplicationEnableSsh(final CloudFoundryApplicationModule appModule,
+			final boolean enableSsh) {
 		String message;
-		if(enableSsh) {
+		if (enableSsh) {
 			message = NLS.bind(Messages.CloudFoundryServerBehaviour_ENABLING_SSH,
 					appModule.getDeployedApplicationName());
-		} else {
-			message = NLS.bind(Messages.CloudFoundryServerBehaviour_DISABLING_SSH,
-					appModule.getDeployedApplicationName());			
 		}
-		
-		return new AppInStoppedStateAwareRequest<Void>(message, behaviour) {
+		else {
+			message = NLS.bind(Messages.CloudFoundryServerBehaviour_DISABLING_SSH,
+					appModule.getDeployedApplicationName());
+		}
+
+		return new AppInStoppedStateAwareRequest<Void>(cloudServer, cfClient, message) {
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
 				client.updateApplicationEnableSsh(appModule.getDeployedApplicationName(), enableSsh);
 				return null;
 			}
 		};
 	}
 
-	public BaseClientRequest<List<CloudRoute>> getRoutes(final String domainName) throws CoreException {
+	public ClientRequest<List<CloudRoute>> getRoutes(final String domainName) throws CoreException {
 
-		return new BehaviourRequest<List<CloudRoute>>(NLS.bind(Messages.ROUTES, domainName), behaviour) {
+		return new V1ClientRequest<List<CloudRoute>>(cloudServer, cfClient, NLS.bind(Messages.ROUTES, domainName)) {
 			@Override
-			protected List<CloudRoute> doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected List<CloudRoute> runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
+					throws CoreException {
 				return client.getRoutes(domainName);
 			}
 		};
 	}
 
-	public BaseClientRequest<StartingInfo> restartApplication(final String appName, final String opLabel)
+	public ClientRequest<StartingInfo> restartApplication(final String appName, final String opLabel)
 			throws CoreException {
-		return new BehaviourRequest<StartingInfo>(opLabel, behaviour) {
+		return new V1ClientRequest<StartingInfo>(cloudServer, cfClient, opLabel) {
 			@Override
-			protected StartingInfo doRun(final CloudFoundryOperations client, SubMonitor progress)
+			protected StartingInfo runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
 					throws CoreException, OperationCanceledException {
 				return client.restartApplication(appName);
 			}
 		};
 	}
 
-	public BaseClientRequest<?> deleteApplication(final String appName) {
-		return new BehaviourRequest<Void>(NLS.bind(Messages.DELETING_MODULE, appName), behaviour) {
+	public ClientRequest<?> deleteApplication(final String appName) {
+		return new V1ClientRequest<Void>(cloudServer, cfClient, NLS.bind(Messages.DELETING_MODULE, appName)) {
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				CloudFoundryPlugin.logInfo("ClientRequestFactory.deleteApplication(...): appName:"+appName);
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
+				CloudFoundryPlugin.logInfo("ClientRequestFactory.deleteApplication(...): appName:" + appName);
 				client.deleteApplication(appName);
 				return null;
 			}
 		};
 	}
 
-	public BaseClientRequest<?> getUpdateAppUrlsRequest(final String appName, final List<String> urls) {
-		return new AppInStoppedStateAwareRequest<Void>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_APP_URLS, appName), behaviour) {
+	public ClientRequest<?> getUpdateAppUrlsRequest(final String appName, final List<String> urls) {
+		return new AppInStoppedStateAwareRequest<Void>(cloudServer, cfClient,
+				NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_APP_URLS, appName)) {
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
 
 				// Look up the existing urls locally first to avoid a client
 				// call
-				CloudFoundryApplicationModule existingAppModule = behaviour.getCloudFoundryServer()
-						.getExistingCloudModule(appName);
+				CloudFoundryApplicationModule existingAppModule = cloudServer.getExistingCloudModule(appName);
 
 				List<String> oldUrls = existingAppModule != null && existingAppModule.getDeploymentInfo() != null
 						? existingAppModule.getDeploymentInfo().getUris() : null;
 
 				if (oldUrls == null) {
-					oldUrls = behaviour.getCloudApplication(appName, progress).getUris();
+					oldUrls = getCloudApplication(appName).run(monitor).getUris();
 				}
 
 				client.updateApplicationUris(appName, urls);
 
 				if (existingAppModule != null) {
 					ServerEventHandler.getDefault()
-							.fireServerEvent(new AppUrlChangeEvent(behaviour.getCloudFoundryServer(),
-									CloudServerEvent.EVENT_APP_URL_CHANGED, existingAppModule.getLocalModule(),
-									Status.OK_STATUS, oldUrls, urls));
+							.fireServerEvent(new AppUrlChangeEvent(cloudServer, CloudServerEvent.EVENT_APP_URL_CHANGED,
+									existingAppModule.getLocalModule(), Status.OK_STATUS, oldUrls, urls));
 
 				}
 				return null;
@@ -196,25 +218,23 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<?> getUpdateServicesRequest(final String appName, final List<String> services) {
-		return new StagingAwareRequest<Void>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_SERVICE_BINDING, appName), behaviour) {
+	public ClientRequest<?> getUpdateServicesRequest(final String appName, final List<String> services) {
+		return new StagingAwareRequest<Void>(cloudServer, cfClient,
+				NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_SERVICE_BINDING, appName)) {
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
 				client.updateApplicationServices(appName, services);
 				return null;
 			}
 		};
 	}
 
-	public BaseClientRequest<Void> getUpdateEnvVarRequest(final String appName,
-			final List<EnvironmentVariable> variables) {
+	public ClientRequest<Void> getUpdateEnvVarRequest(final String appName, final List<EnvironmentVariable> variables) {
 		final String label = NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_ENV_VARS, appName);
-		return new BehaviourRequest<Void>(label, behaviour) {
+		return new V1ClientRequest<Void>(cloudServer, cfClient, label) {
 
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
 				// Update environment variables.
 				Map<String, String> varsMap = new HashMap<String, String>();
 
@@ -232,14 +252,14 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<List<CFServiceInstance>> getDeleteServicesRequest(final List<String> services) {
-		return new BehaviourRequest<List<CFServiceInstance>>(Messages.CloudFoundryServerBehaviour_DELETE_SERVICES,
-				behaviour) {
+	public ClientRequest<List<CFServiceInstance>> getDeleteServicesRequest(final List<String> services) {
+		return new V1ClientRequest<List<CFServiceInstance>>(cloudServer, cfClient,
+				Messages.CloudFoundryServerBehaviour_DELETE_SERVICES) {
 			@Override
-			protected List<CFServiceInstance> doRun(CloudFoundryOperations client, SubMonitor progress)
+			protected List<CFServiceInstance> runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
 					throws CoreException {
 
-				SubMonitor serviceProgress = SubMonitor.convert(progress, services.size());
+				SubMonitor serviceProgress = SubMonitor.convert(monitor, services.size());
 
 				List<String> boundServices = new ArrayList<String>();
 				for (String service : services) {
@@ -261,7 +281,7 @@ public class ClientRequestFactory {
 						// apps. This is treated as an alternate way only if the
 						// primary form fails as fetching list of
 						// apps may be potentially slower
-						List<CloudApplication> apps = behaviour.getApplications(progress);
+						List<CloudApplication> apps = getApplications().run(monitor);
 						if (apps != null) {
 							for (int i = 0; shouldDelete && i < apps.size(); i++) {
 								CloudApplication app = apps.get(i);
@@ -308,14 +328,14 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<List<CFServiceInstance>> getCreateServicesRequest(final CFServiceInstance[] services) {
-		return new BehaviourRequest<List<CFServiceInstance>>(Messages.CloudFoundryServerBehaviour_CREATE_SERVICES,
-				behaviour) {
+	public ClientRequest<List<CFServiceInstance>> getCreateServicesRequest(final CFServiceInstance[] services) {
+		return new V1ClientRequest<List<CFServiceInstance>>(cloudServer, cfClient,
+				Messages.CloudFoundryServerBehaviour_CREATE_SERVICES) {
 			@Override
-			protected List<CFServiceInstance> doRun(CloudFoundryOperations client, SubMonitor progress)
+			protected List<CFServiceInstance> runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
 					throws CoreException {
 
-				SubMonitor serviceProgress = SubMonitor.convert(progress, services.length);
+				SubMonitor serviceProgress = SubMonitor.convert(monitor, services.length);
 
 				for (CFServiceInstance service : services) {
 					serviceProgress.subTask(
@@ -328,13 +348,14 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<CloudApplication> getCloudApplication(final String appName) throws CoreException {
+	public ClientRequest<CloudApplication> getCloudApplication(final String appName) throws CoreException {
 
-		final String serverId = behaviour.getCloudFoundryServer().getServer().getId();
-		return new ApplicationRequest<CloudApplication>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_GET_APPLICATION, appName), behaviour) {
+		final String serverId = cloudServer.getServer().getId();
+		return new ApplicationRequest<CloudApplication>(cloudServer, cfClient,
+				NLS.bind(Messages.CloudFoundryServerBehaviour_GET_APPLICATION, appName)) {
 			@Override
-			protected CloudApplication doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected CloudApplication runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
+					throws CoreException {
 				return client.getApplication(appName);
 			}
 
@@ -346,14 +367,14 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<?> deleteRoute(final List<CloudRoute> routes) throws CoreException {
+	public ClientRequest<?> deleteRoute(final List<CloudRoute> routes) throws CoreException {
 
 		if (routes == null || routes.isEmpty()) {
 			return null;
 		}
-		return new BehaviourRequest<Void>("Deleting routes", behaviour) { //$NON-NLS-1$
+		return new V1ClientRequest<Void>(cloudServer, cfClient, "Deleting routes") { //$NON-NLS-1$
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
 				for (CloudRoute route : routes) {
 					client.deleteRoute(route.getHost(), route.getDomain().getName());
 				}
@@ -363,10 +384,10 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<?> register(final String email, final String password) {
-		return new BehaviourRequest<Void>("Registering account", behaviour) { //$NON-NLS-1$
+	public ClientRequest<?> register(final String email, final String password) {
+		return new V1ClientRequest<Void>(cloudServer, cfClient, "Registering account") { //$NON-NLS-1$
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
 				client.register(email, password);
 				return null;
 			}
@@ -374,14 +395,14 @@ public class ClientRequestFactory {
 	}
 
 	/** Log-in to server and store token as needed */
-	public BaseClientRequest<?> connect() throws CoreException {
-		final CloudFoundryServer cloudServer = behaviour.getCloudFoundryServer();
-		
-		return new BehaviourRequest<Void>("Login to " + behaviour.getCloudFoundryServer().getUrl(), behaviour) { //$NON-NLS-1$
+	public ClientRequest<CFAccessToken> connect() throws CoreException {
+
+		return new V1ClientRequest<CFAccessToken>(cloudServer, cfClient, "Login to " + cloudServer.getUrl()) { //$NON-NLS-1$
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected CFAccessToken runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
+					throws CoreException {
 				OAuth2AccessToken token = client.login();
-				if(cloudServer.isSso()) {
+				if (cloudServer.isSso()) {
 					try {
 						String tokenValue = new ObjectMapper().writeValueAsString(token);
 						cloudServer.setAndSaveToken(tokenValue);
@@ -391,9 +412,46 @@ public class ClientRequestFactory {
 					}
 				}
 
-				return null;
+				return new V1AccessToken(token);
 			}
 		};
+	}
+
+	public ClientRequest<CFStreamingLogToken> addApplicationLogListener(final String appName,
+			final CFApplicationLogListener listener) {
+		if (appName != null && listener != null) {
+			return new V1ClientRequest<CFStreamingLogToken>(cloudServer, cfClient,
+					Messages.ADDING_APPLICATION_LOG_LISTENER) {
+				@Override
+				protected CFStreamingLogToken runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
+						throws CoreException {
+					StreamingLogToken token = client.streamLogs(appName, new ApplicationLogListener() {
+
+						@Override
+						public void onMessage(ApplicationLog log) {
+							listener.onMessage(V1AppLogUtil.getLogFromV1(log));
+						}
+
+						@Override
+						public void onError(Throwable exception) {
+							listener.onError(exception);
+						}
+
+						@Override
+						public void onComplete() {
+							listener.onComplete();
+						}
+					});
+					if (token != null) {
+						return new CFV1StreamingLogToken(token);
+					}
+					return null;
+				}
+
+			};
+
+		}
+		return null;
 	}
 
 	/**
@@ -407,11 +465,11 @@ public class ClientRequestFactory {
 	 * @throws CoreException if error occurred during or after instances are
 	 * updated.
 	 */
-	public BaseClientRequest<?> updateApplicationInstances(final String appName, final int instanceCount)
+	public ClientRequest<?> updateApplicationInstances(final String appName, final int instanceCount)
 			throws CoreException {
-		return new AppInStoppedStateAwareRequest<Void>("Updating application instances", behaviour) { //$NON-NLS-1$
+		return new AppInStoppedStateAwareRequest<Void>(cloudServer, cfClient, "Updating application instances") { //$NON-NLS-1$
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
 				client.updateApplicationInstances(appName, instanceCount);
 				return null;
 			}
@@ -419,11 +477,11 @@ public class ClientRequestFactory {
 
 	}
 
-	public BaseClientRequest<?> updatePassword(final String newPassword) throws CoreException {
-		return new BehaviourRequest<Void>("Updating password", behaviour) { //$NON-NLS-1$
+	public ClientRequest<?> updatePassword(final String newPassword) throws CoreException {
+		return new V1ClientRequest<Void>(cloudServer, cfClient, "Updating password") { //$NON-NLS-1$
 
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
 				client.updatePassword(newPassword);
 				return null;
 			}
@@ -431,13 +489,14 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<List<ApplicationLog>> getRecentApplicationLogs(final String appName) throws CoreException {
+	public ClientRequest<List<ApplicationLog>> getRecentApplicationLogs(final String appName) throws CoreException {
 
-		return new BehaviourRequest<List<ApplicationLog>>("Getting existing application logs for: " + appName, //$NON-NLS-1$
-				behaviour) {
+		return new V1ClientRequest<List<ApplicationLog>>(cloudServer, cfClient,
+				"Getting existing application logs for: " + appName //$NON-NLS-1$
+		) {
 
 			@Override
-			protected List<ApplicationLog> doRun(CloudFoundryOperations client, SubMonitor progress)
+			protected List<ApplicationLog> runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
 					throws CoreException {
 				List<ApplicationLog> logs = null;
 				if (appName != null) {
@@ -451,11 +510,12 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<ApplicationStats> getApplicationStats(final String appName) throws CoreException {
-		return new StagingAwareRequest<ApplicationStats>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_APP_STATS, appName), behaviour) {
+	public ClientRequest<ApplicationStats> getApplicationStats(final String appName) throws CoreException {
+		return new StagingAwareRequest<ApplicationStats>(cloudServer, cfClient,
+				NLS.bind(Messages.CloudFoundryServerBehaviour_APP_STATS, appName)) {
 			@Override
-			protected ApplicationStats doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected ApplicationStats runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
+					throws CoreException {
 				try {
 					return client.getApplicationStats(appName);
 				}
@@ -472,11 +532,12 @@ public class ClientRequestFactory {
 		};
 	}
 
-	public BaseClientRequest<InstancesInfo> getInstancesInfo(final String applicationId) throws CoreException {
-		return new StagingAwareRequest<InstancesInfo>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_APP_INFO, applicationId), behaviour) {
+	public ClientRequest<InstancesInfo> getInstancesInfo(final String applicationId) throws CoreException {
+		return new StagingAwareRequest<InstancesInfo>(cloudServer, cfClient,
+				NLS.bind(Messages.CloudFoundryServerBehaviour_APP_INFO, applicationId)) {
 			@Override
-			protected InstancesInfo doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected InstancesInfo runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
+					throws CoreException {
 				try {
 					return client.getApplicationInstances(applicationId);
 				}
@@ -502,25 +563,25 @@ public class ClientRequestFactory {
 	 * @return request
 	 * @throws CoreException
 	 */
-	public BaseClientRequest<List<CloudApplication>> getBasicApplications() throws CoreException {
-		final String serverId = behaviour.getCloudFoundryServer().getServer().getId();
-		return new BehaviourRequest<List<CloudApplication>>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_APPS, serverId), behaviour) {
+	public ClientRequest<List<CloudApplication>> getBasicApplications() throws CoreException {
+		final String serverId = cloudServer.getServer().getId();
+		return new V1ClientRequest<List<CloudApplication>>(cloudServer, cfClient,
+				NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_APPS, serverId)) {
 
 			@Override
-			protected List<CloudApplication> doRun(CloudFoundryOperations client, SubMonitor progress)
+			protected List<CloudApplication> runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
 					throws CoreException {
-				AdditionalV1Operations externalClient = behaviour.getAdditionalV1ClientOperations(progress);
-				return externalClient.getBasicApplications();
+				AdditionalV1Operations additionalSupport = cfClient.getAdditionalV1Operations(monitor);
+				return additionalSupport.getBasicApplications();
 			}
 
 		};
 	}
 
-	public BaseClientRequest<CFV1Application> getCompleteApplication(final CloudApplication application)
+	public ClientRequest<CFV1Application> getCompleteApplication(final CloudApplication application)
 			throws CoreException {
-		return new ApplicationRequest<CFV1Application>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_GET_APPLICATION, application.getName()), behaviour) {
+		return new ApplicationRequest<CFV1Application>(cloudServer, cfClient,
+				NLS.bind(Messages.CloudFoundryServerBehaviour_GET_APPLICATION, application.getName())) {
 
 			@Override
 			protected String get503Error(Throwable rce) {
@@ -528,9 +589,10 @@ public class ClientRequestFactory {
 			}
 
 			@Override
-			protected CFV1Application doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				AdditionalV1Operations externalClient = behaviour.getAdditionalV1ClientOperations(progress);
-				return externalClient.getCompleteApplication(application);
+			protected CFV1Application runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
+					throws CoreException {
+				AdditionalV1Operations additionalSupport = cfClient.getAdditionalV1Operations(monitor);
+				return additionalSupport.getCompleteApplication(application);
 			}
 		};
 
@@ -549,15 +611,15 @@ public class ClientRequestFactory {
 	 * @return List of all applications in the Cloud space.
 	 * @throws CoreException
 	 */
-	public BaseClientRequest<List<CloudApplication>> getApplications() throws CoreException {
+	public ClientRequest<List<CloudApplication>> getApplications() throws CoreException {
 
-		final String serverId = behaviour.getCloudFoundryServer().getServer().getId();
+		final String serverId = cloudServer.getServer().getId();
 
 		final String label = NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_APPS, serverId);
 
-		return new ApplicationRequest<List<CloudApplication>>(label, behaviour) {
+		return new ApplicationRequest<List<CloudApplication>>(cloudServer, cfClient, label) {
 			@Override
-			protected List<CloudApplication> doRun(CloudFoundryOperations client, SubMonitor progress)
+			protected List<CloudApplication> runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
 					throws CoreException {
 				return client.getApplications();
 			}
@@ -573,76 +635,69 @@ public class ClientRequestFactory {
 	/**
 	 * For testing only.
 	 */
-	public BaseClientRequest<?> deleteAllApplications() throws CoreException {
-		return new BehaviourRequest<Object>("Deleting all applications", behaviour) { //$NON-NLS-1$
+	public ClientRequest<?> deleteAllApplications() throws CoreException {
+		return new V1ClientRequest<Object>(cloudServer, cfClient, "Deleting all applications") { //$NON-NLS-1$
 			@Override
-			protected Object doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Object runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
+					throws CoreException {
 				client.deleteAllApplications();
 				return null;
 			}
 		};
 	}
 
-	public BaseClientRequest<List<CFServiceInstance>> getServices() throws CoreException {
+	public ClientRequest<List<CFServiceInstance>> getServices() throws CoreException {
 
 		final String label = NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_SERVICES,
-				behaviour.getCloudFoundryServer().getServer().getId());
-		return new BehaviourRequest<List<CFServiceInstance>>(label, behaviour) {
+				cloudServer.getServer().getId());
+		return new V1ClientRequest<List<CFServiceInstance>>(cloudServer, cfClient, label) {
 			@Override
-			protected List<CFServiceInstance> doRun(CloudFoundryOperations client, SubMonitor progress)
+			protected List<CFServiceInstance> runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
 					throws CoreException {
 				return CloudServicesUtil.asServiceInstances(client.getServices());
 			}
 		};
 	}
 
-	public BaseClientRequest<List<CFServiceOffering>> getServiceOfferings() throws CoreException {
-		return new BehaviourRequest<List<CFServiceOffering>>("Getting available service options", behaviour) { //$NON-NLS-1$
+	public ClientRequest<List<CFServiceOffering>> getServiceOfferings() throws CoreException {
+		return new V1ClientRequest<List<CFServiceOffering>>(cloudServer, cfClient,
+				"Getting available service options") { //$NON-NLS-1$
 			@Override
-			protected List<CFServiceOffering> doRun(CloudFoundryOperations client, SubMonitor progress)
+			protected List<CFServiceOffering> runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
 					throws CoreException {
 				return CloudServicesUtil.asServiceOfferings(client.getServiceOfferings());
 			}
 		};
 	}
 
-	public BaseClientRequest<List<CloudDomain>> getDomainsForSpace() throws CoreException {
+	public ClientRequest<List<CloudDomain>> getDomainsForSpace() throws CoreException {
 
-		return new BehaviourRequest<List<CloudDomain>>(Messages.CloudFoundryServerBehaviour_DOMAINS_FOR_SPACE,
-				behaviour) {
+		return new V1ClientRequest<List<CloudDomain>>(cloudServer, cfClient,
+				Messages.CloudFoundryServerBehaviour_DOMAINS_FOR_SPACE) {
 			@Override
-			protected List<CloudDomain> doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected List<CloudDomain> runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
+					throws CoreException {
 				return client.getDomains();
 			}
 		};
 	}
 
-	public BaseClientRequest<List<CloudDomain>> getDomainsFromOrgs() throws CoreException {
-		return new BehaviourRequest<List<CloudDomain>>("Getting domains for orgs", behaviour) { //$NON-NLS-1$
+	public ClientRequest<List<CloudDomain>> getDomainsFromOrgs() throws CoreException {
+		return new V1ClientRequest<List<CloudDomain>>(cloudServer, cfClient, "Getting domains for orgs") { //$NON-NLS-1$
 			@Override
-			protected List<CloudDomain> doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected List<CloudDomain> runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
+					throws CoreException {
 				return client.getDomainsForOrg();
 			}
 		};
 	}
 
-	public BaseClientRequest<?> stopApplication(final String message, final CloudFoundryApplicationModule cloudModule) {
-		return new BehaviourRequest<Void>(message, behaviour) {
+	public ClientRequest<?> stopApplication(final String message, final CloudFoundryApplicationModule cloudModule) {
+		return new V1ClientRequest<Void>(cloudServer, cfClient, message) {
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
 				client.stopApplication(cloudModule.getDeployedApplicationName());
 				return null;
-			}
-		};
-	}
-
-	public BaseClientRequest<String> getFile(final CloudApplication app, final int instanceIndex, final String path,
-			boolean isDir) throws CoreException {
-		String label = NLS.bind(Messages.CloudFoundryServerBehaviour_FETCHING_FILE, path, app.getName());
-		return new FileRequest<String>(label, behaviour) {
-			@Override
-			protected String doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				return client.getFile(app.getName(), instanceIndex, path);
 			}
 		};
 	}
@@ -660,11 +715,12 @@ public class ClientRequestFactory {
 	 * necessary
 	 * @return true if the route was created, false otherwise
 	 */
-	public BaseClientRequest<Boolean> reserveRouteIfAvailable(final String host, final String domainName) {
-		return new BehaviourRequest<Boolean>(
-				Messages.bind(Messages.CloudFoundryServerBehaviour_CHECKING_HOSTNAME_AVAILABLE, host), behaviour) {
+	public ClientRequest<Boolean> reserveRouteIfAvailable(final String host, final String domainName) {
+		return new V1ClientRequest<Boolean>(cloudServer, cfClient,
+				Messages.bind(Messages.CloudFoundryServerBehaviour_CHECKING_HOSTNAME_AVAILABLE, host)) {
 			@Override
-			protected Boolean doRun(CloudFoundryOperations client, SubMonitor progress) {
+			protected Boolean runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
+					throws CoreException {
 
 				// Check if the route can be added. If successful, then it is
 				// not taken.
@@ -692,44 +748,198 @@ public class ClientRequestFactory {
 	 * @param domainName - the domainName part of the deployed URL
 	 * @return
 	 */
-	public BaseClientRequest<Void> deleteRoute(final String host, final String domainName) {
-		return new BehaviourRequest<Void>(
-				Messages.bind(Messages.CloudFoundryServerBehaviour_CLEANING_UP_RESERVED_HOSTNAME, host), behaviour) {
+	public ClientRequest<Void> deleteRoute(final String host, final String domainName) {
+		return new V1ClientRequest<Void>(cloudServer, cfClient,
+				Messages.bind(Messages.CloudFoundryServerBehaviour_CLEANING_UP_RESERVED_HOSTNAME, host)) {
 			@Override
-			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
 				client.deleteRoute(host, domainName);
 				return null;
 			}
 		};
 	}
 
-	public BaseClientRequest<List<String>> getBuildpacks() {
-		return new BehaviourRequest<List<String>>(Messages.ClientRequestFactory_BUILDPACKS, behaviour) {
+	public ClientRequest<List<String>> getBuildpacks() {
+		return new V1ClientRequest<List<String>>(cloudServer, cfClient, Messages.ClientRequestFactory_BUILDPACKS) {
 			@Override
-			protected List<String> doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				return BuildpackSupport.create(client, getCloudInfo(), getCloudServer().getProxyConfiguration(), 
-						behaviour.getCloudFoundryServer(), getCloudServer().isSelfSigned()).getBuildpacks();
+			protected List<String> runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
+					throws CoreException {
+				return BuildpackSupport.create(client, getCloudInfo(), getCloudServer().getProxyConfiguration(),
+						getCloudServer(), getCloudServer().isSelfSigned()).getBuildpacks();
+			}
+
+		};
+	}
+
+	public ClientRequest<Void> createApplication(final String appName, final Staging staging, final int memory,
+			final List<String> uris, final List<String> services) {
+
+		return new V1ClientRequest<Void>(cloudServer, cfClient,
+				NLS.bind(Messages.ClientRequestFactory_CREATE_APP, appName)) {
+			@Override
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
+				client.createApplication(appName, staging, memory, uris, services);
+				return null;
+			}
+
+		};
+	}
+
+	public ClientRequest<Void> uploadApplication(final String appName, final ApplicationArchive v1ArchiveWrapper,
+			final UploadStatusCallback uploadStatusCallback) {
+		return new V1ClientRequest<Void>(cloudServer, cfClient,
+				NLS.bind(Messages.ClientRequestFactory_UPLOADING_APP, appName)) {
+			@Override
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
+				try {
+					client.uploadApplication(appName, v1ArchiveWrapper, uploadStatusCallback);
+				}
+				catch (IOException e) {
+					throw CloudErrorUtil.toCoreException(e);
+				}
+				return null;
+			}
+		};
+
+	}
+
+	public ClientRequest<Void> stopApplication(final CloudFoundryApplicationModule cloudModule,
+			String stoppingApplicationMessage) {
+		return new V1ClientRequest<Void>(cloudServer, cfClient, stoppingApplicationMessage) {
+			@Override
+			protected Void runV1Request(CloudFoundryOperations client, IProgressMonitor monitor) throws CoreException {
+				client.stopApplication(cloudModule.getDeployedApplicationName());
+				return null;
+			}
+
+		};
+	}
+
+	private CFInfo getCloudInfo() throws CoreException {
+		return cfClient.getCloudInfo();
+	}
+
+	public ClientRequest<String> getFile(final CloudApplication app, final int instanceIndex, final String path,
+			final boolean isDir) throws CoreException {
+
+		// If ssh is not supported, try the default legacy file fetching
+
+		String label = NLS.bind(Messages.CloudFoundryServerBehaviour_FETCHING_FILE, path, app.getName());
+		return new V1ClientRequest<String>(cloudServer, cfClient, label) {
+			@Override
+			protected String runV1Request(CloudFoundryOperations client, IProgressMonitor progress)
+					throws CoreException {
+
+				if (path == null) {
+					return null;
+				}
+
+				if (!cfClient.supportsSsh()) {
+					return client.getFile(app.getName(), instanceIndex, path);
+				}
+
+				ISshClientSupport ssh = cloudServer.getBehaviour().getSshClientSupport(progress);
+				if (ssh == null) {
+					return null;
+				}
+
+				Session session = ssh.connect(app.getName(), instanceIndex, cloudServer.getServer(), progress);
+
+				String command = isDir ? "ls -p " + path //$NON-NLS-1$
+						// Basic work-around to scp which doesn't appear to work
+						// well. Returns empty content for existing files.
+						: "cat " + path; //$NON-NLS-1$
+
+				try {
+					Channel channel = session.openChannel("exec"); //$NON-NLS-1$
+					((ChannelExec) channel).setCommand(command);
+
+					return getContent(channel);
+				}
+				catch (JSchException e) {
+					throw CloudErrorUtil.toCoreException(e);
+				}
+				finally {
+					session.disconnect();
+				}
 			}
 		};
 	}
 
-	public CFInfo getCloudInfo() throws CoreException {
-		// cache the info to avoid frequent network connection to Cloud Foundry.
-		if (cachedInfo == null) {
-			CloudFoundryServer cloudServer = behaviour.getCloudFoundryServer();
-			cachedInfo = new CFInfo(new CloudCredentials(cloudServer.getUsername(), cloudServer.getPassword()),
-					cloudServer.getUrl(), cloudServer.getProxyConfiguration(), cloudServer.isSelfSigned());
+	protected String getContent(Channel channel) throws CoreException {
+		InputStream in = null;
+		OutputStream outStream = null;
+		try {
+			in = channel.getInputStream();
+			channel.connect();
+
+			if (in != null) {
+
+				ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
+				outStream = new BufferedOutputStream(byteArrayOut);
+				byte[] buffer = new byte[4096];
+				int bytesRead = -1;
+
+				while ((bytesRead = in.read(buffer)) != -1) {
+					outStream.write(buffer, 0, bytesRead);
+				}
+				outStream.flush();
+				byteArrayOut.flush();
+
+				return byteArrayOut.toString();
+			}
 		}
-		return cachedInfo;
+		catch (IOException e) {
+			throw CloudErrorUtil.toCoreException(e);
+		}
+		catch (JSchException e) {
+			throw CloudErrorUtil.toCoreException(e);
+		}
+		finally {
+			channel.disconnect();
+			try {
+				if (in != null) {
+					in.close();
+				}
+				if (outStream != null) {
+					outStream.close();
+				}
+			}
+			catch (IOException e) {
+				// Don't prevent any operation from completing if streams don't
+				// close. Just log error
+				CloudFoundryPlugin.logError(e);
+			}
+		}
+		return null;
 	}
 
-	public boolean supportsSsh() {
-		return false;
+	public ClientRequest<CloudOrgsAndSpaces> getCloudSpaces() {
+		V1ClientRequest<CloudOrgsAndSpaces> request = new V1ClientRequest<CloudOrgsAndSpaces>(cloudServer, cfClient,
+				Messages.GETTING_ORGS_AND_SPACES) {
+
+			@Override
+			protected CloudOrgsAndSpaces runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
+					throws CoreException {
+				List<CloudSpace> foundSpaces = client.getSpaces();
+				if (foundSpaces != null && !foundSpaces.isEmpty()) {
+					List<CloudSpace> actualSpaces = new ArrayList<CloudSpace>(foundSpaces);
+					CloudOrgsAndSpaces orgsAndSpaces = new CloudOrgsAndSpaces(actualSpaces);
+					return orgsAndSpaces;
+				}
+
+				return null;
+			}
+		};
+		return request;
 	}
 
-	public AdditionalV1Operations createAdditionalV1Operations(CloudFoundryOperations client, CloudSpace sessionSpace,
-			CFInfo cloudInfo, HttpProxyConfiguration httpProxyConfiguration, boolean selfSigned) throws CoreException {
-		return new AdditionalV1Operations(client, sessionSpace, getCloudInfo(), httpProxyConfiguration, behaviour.getCloudFoundryServer(), selfSigned);
+	abstract class BehaviourRequest<T> extends V1ClientRequest<T> {
+
+		public BehaviourRequest(CloudFoundryServer cloudServer, String label) {
+			super(cloudServer, ClientRequestFactory.this.cfClient, label);
+		}
+
 	}
 
 }

@@ -22,10 +22,8 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import java.io.IOException;
 import java.util.Set;
 
-import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
@@ -151,8 +149,7 @@ public class StartOperation extends RestartOperation {
 				// then we must throw an exception.
 				String message = NLS.bind(Messages.ERROR_StartOperation_UNSUPPORTED_MODULE_TYPE, new String[] {
 						deploymentName, actualModule.getModuleType().getId(), cloudServer.getServer().getId() });
-				throw new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID,
-						message)); 
+				throw new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID, message));
 			}
 
 			// Tell webtools the module has been published
@@ -179,30 +176,21 @@ public class StartOperation extends RestartOperation {
 			final CloudFoundryApplicationModule appModuleFin = appModule;
 			// Now push the application resources to the server
 
-			new BehaviourRequest<Void>(getOperationName() + " - " + deploymentName, getBehaviour()) { //$NON-NLS-1$
-				@Override
-				protected Void doRun(final CloudFoundryOperations client, SubMonitor progress)
-						throws CoreException, OperationCanceledException {
+			String pushOpLabel = getOperationName() + " - " + deploymentName; //$NON-NLS-1$
 
-					getBehaviour().printlnToConsole(appModuleFin, getRequestLabel());
+			getBehaviour().printlnToConsole(appModuleFin, pushOpLabel);
 
-					// Check for cancel here prior to pushing the
-					// application
-					if (progress.isCanceled()) {
-						throw new OperationCanceledException(
-								Messages.bind(Messages.OPERATION_CANCELED, getRequestLabel()));
-					}
-					pushApplication(client, appModuleFin, applicationArchiveFin, progress);
+			// Check for cancel here prior to pushing the
+			// application
+			if (subMonitor.isCanceled()) {
+				throw new OperationCanceledException(Messages.bind(Messages.OPERATION_CANCELED, pushOpLabel));
+			}
+			pushApplication(appModuleFin, applicationArchiveFin, subMonitor.newChild(70));
 
-					CloudFoundryPlugin.trace("Application " + deploymentName //$NON-NLS-1$
-							+ " pushed to Cloud Foundry server."); //$NON-NLS-1$
+			CloudFoundryPlugin.trace("Application " + deploymentName //$NON-NLS-1$
+					+ " pushed to Cloud Foundry server."); //$NON-NLS-1$
 
-					cloudServer.moduleAdditionCompleted(getModule());
-
-					return null;
-				}
-
-			}.run(subMonitor.newChild(70));
+			cloudServer.moduleAdditionCompleted(getModule());
 
 			getBehaviour().printlnToConsole(appModule, Messages.CONSOLE_APP_PUSHED_MESSAGE);
 
@@ -224,12 +212,11 @@ public class StartOperation extends RestartOperation {
 	 * the most recent {@link CloudApplication} in the app module is NOT updated
 	 * with newly created application. It is up to the caller to set the mapping
 	 * in {@link CloudFoundryApplicationModule}
-	 * @param client
 	 * @param appModule valid Cloud module with valid deployment info.
 	 * @param monitor
 	 * @throws CoreException if error creating the application
 	 */
-	protected void pushApplication(CloudFoundryOperations client, final CloudFoundryApplicationModule appModule,
+	protected void pushApplication(final CloudFoundryApplicationModule appModule,
 			CFApplicationArchive applicationArchive, final IProgressMonitor monitor) throws CoreException {
 
 		String appName = appModule.getDeploymentInfo().getDeploymentName();
@@ -250,94 +237,85 @@ public class StartOperation extends RestartOperation {
 			}
 		}
 
-		try {
-			// Now push the application content.
-			if (applicationArchive != null) {
-				// Handle the incremental publish case separately as it
-				// requires
-				// a partial war file generation of only the changed
-				// resources
-				// AFTER
-				// the server determines the list of missing file names.
-				try {
-					if (applicationArchive instanceof CachingApplicationArchive) {
-						final CachingApplicationArchive cachingArchive = (CachingApplicationArchive) applicationArchive;
-						ApplicationArchive v1ArchiveWrapper = ApplicationUtil.asV1ApplicationArchive(cachingArchive);
-						client.uploadApplication(appName, v1ArchiveWrapper, new UploadStatusCallback() {
+		// Now push the application content.
+		if (applicationArchive != null) {
+			// Handle the incremental publish case separately as it
+			// requires
+			// a partial war file generation of only the changed
+			// resources
+			// AFTER
+			// the server determines the list of missing file names.
+			try {
+				if (applicationArchive instanceof CachingApplicationArchive) {
+					final CachingApplicationArchive cachingArchive = (CachingApplicationArchive) applicationArchive;
+					ApplicationArchive v1ArchiveWrapper = ApplicationUtil.asV1ApplicationArchive(cachingArchive);
+					getBehaviour().getClient(monitor).uploadApplication(appName, v1ArchiveWrapper, new UploadStatusCallback() {
 
-							public void onProcessMatchedResources(int length) {
+						public void onProcessMatchedResources(int length) {
 
-							}
+						}
 
-							public void onMatchedFileNames(Set<String> matchedFileNames) {
-								cachingArchive.generatePartialWarFile(matchedFileNames);
-							}
+						public void onMatchedFileNames(Set<String> matchedFileNames) {
+							cachingArchive.generatePartialWarFile(matchedFileNames);
+						}
 
-							public void onCheckResources() {
+						public void onCheckResources() {
 
-							}
+						}
 
-							public boolean onProgress(String status) {
-								return false;
-							}
-						});
+						public boolean onProgress(String status) {
+							return false;
+						}
+					}, monitor);
 
-						// Once the application has run, do a clean up of the
-						// sha1
-						// cache for deleted resources
+					// Once the application has run, do a clean up of the
+					// sha1
+					// cache for deleted resources
 
-					}
-					else {
-						ApplicationArchive v1ArchiveWrapper = ApplicationUtil
-								.asV1ApplicationArchive(applicationArchive);
-
-						client.uploadApplication(appName, v1ArchiveWrapper, new UploadStatusCallback() {
-
-							public void onProcessMatchedResources(int length) {
-
-							}
-
-							public void onMatchedFileNames(Set<String> matchedFileNames) {
-
-							}
-
-							public void onCheckResources() {
-
-							}
-
-							public boolean onProgress(String status) {
-								return false;
-							}
-						});
-					}
-					// Check for cancel
-					if (monitor.isCanceled()) {
-						throw new OperationCanceledException(
-								Messages.bind(Messages.OPERATION_CANCELED, getOperationName()));
-					}
 				}
-				finally {
-					try {
-						applicationArchive.close();
-					}
-					catch (CoreException e) {
-						// Don't let errors in closing the archive stop the
-						// publish operation
-						CloudFoundryPlugin.logError(e);
-					}
+				else {
+					ApplicationArchive v1ArchiveWrapper = ApplicationUtil.asV1ApplicationArchive(applicationArchive);
+
+					getBehaviour().getClient(monitor).uploadApplication(appName, v1ArchiveWrapper, new UploadStatusCallback() {
+
+						public void onProcessMatchedResources(int length) {
+
+						}
+
+						public void onMatchedFileNames(Set<String> matchedFileNames) {
+
+						}
+
+						public void onCheckResources() {
+
+						}
+
+						public boolean onProgress(String status) {
+							return false;
+						}
+					}, monitor);
+				}
+				// Check for cancel
+				if (monitor.isCanceled()) {
+					throw new OperationCanceledException(
+							Messages.bind(Messages.OPERATION_CANCELED, getOperationName()));
 				}
 			}
-			else {
-				throw CloudErrorUtil.toCoreException(
-						"Failed to deploy application " + appModule.getDeploymentInfo().getDeploymentName() + //$NON-NLS-1$
-								" since no deployable war or application archive file was generated."); //$NON-NLS-1$
+			finally {
+				try {
+					applicationArchive.close();
+				}
+				catch (CoreException e) {
+					// Don't let errors in closing the archive stop the
+					// publish operation
+					CloudFoundryPlugin.logError(e);
+				}
 			}
 		}
-		catch (IOException e) {
-			throw new CoreException(CloudFoundryPlugin.getErrorStatus(
-					"Failed to deploy application " + //$NON-NLS-1$
-							appModule.getDeploymentInfo().getDeploymentName() + " due to " + e.getMessage(), //$NON-NLS-1$
-					e));
+		else {
+			throw CloudErrorUtil.toCoreException(
+					"Failed to deploy application " + appModule.getDeploymentInfo().getDeploymentName() + //$NON-NLS-1$
+							" since no deployable war or application archive file was generated."); //$NON-NLS-1$
 		}
 
 	}

@@ -21,30 +21,31 @@
 package org.eclipse.cft.server.core.internal.client;
 
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.IProgressMonitor;
 
 /**
- * [Bug 480364] - Fetching applications from Diego-enabled targets results
- * in 503 Server errors if application is starting. Retry the operation when
- * 503 is encountered.
+ * [Bug 480364] - Fetching applications from Diego-enabled targets results in
+ * 503 Server errors if application is starting. Retry the operation when 503 is
+ * encountered.
  */
-abstract public class ApplicationRequest<T> extends BehaviourRequest<T> {
+abstract public class ApplicationRequest<T> extends V1ClientRequest<T> {
 
-	public ApplicationRequest(String label, CloudFoundryServerBehaviour behaviour) {
-		super(label, behaviour);
+	public ApplicationRequest(CloudFoundryServer cloudServer, CloudServerCFClient client, String label) {
+		super(cloudServer, client, label);
 	}
 
 	@Override
-	protected long waitOnErrorInterval(Throwable exception, SubMonitor monitor) throws CoreException {
+	protected long getRetryInterval(Throwable exception, IProgressMonitor monitor) throws CoreException {
 		if (CloudErrorUtil.is503Error(exception)) {
 			return 2000;
 		}
-		return super.waitOnErrorInterval(exception, monitor);
+		return super.getRetryInterval(exception, monitor);
 	}
 
 	@Override
-	protected long getTotalTimeWait() {
+	protected long getRetryTimeout() {
 		return CloudOperationsConstants.DEFAULT_INTERVAL;
 	}
 

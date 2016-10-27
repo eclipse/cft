@@ -28,6 +28,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ValidationEvents;
+import org.eclipse.cft.server.core.internal.client.CFClient;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IStatus;
@@ -171,7 +172,7 @@ public abstract class ServerWizardValidator implements ServerValidator {
 
 	/**
 	 * Validates the server credentials and URL using a standalone disposable
-	 * Java client ( {@link CloudFoundryOperations} ).
+	 * Java client ( {@link CFClient} ).
 	 * @param validateAgainstServer true if credentials should be validated
 	 * against a server. False if validation should be local (e.g. checking
 	 * credential and URL syntax)

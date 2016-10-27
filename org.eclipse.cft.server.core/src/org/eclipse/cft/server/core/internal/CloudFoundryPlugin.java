@@ -27,10 +27,11 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import org.eclipse.cft.server.core.AbstractAppStateTracker;
+import org.eclipse.cft.server.core.internal.client.CFClientManagerRegistry;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryClientFactory;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
-import org.eclipse.cft.server.core.internal.client.diego.DiegoTarget;
+import org.eclipse.cft.server.core.internal.client.V1ClientManagerProvider;
 import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -280,7 +281,7 @@ public class CloudFoundryPlugin extends Plugin {
 
 	private static CloudFoundryCallback callback;
 
-	private static CloudFoundryTargetManager targetManager;
+	private static CFClientManagerRegistry clientManagerRegistry;
 
 	// Cached copy of app state tracker
 	private static List<AppStateTrackerEntry> appStateTrackerEntries;
@@ -340,16 +341,12 @@ public class CloudFoundryPlugin extends Plugin {
 		return callback;
 	}
 
-	public static synchronized CloudFoundryTargetManager getTargetManager() {
-		if (targetManager == null) {
-			targetManager = new CloudFoundryTargetManager();
-			// Hardcode this for now, as there is no extension point for
-			// contributing different targets yet.
-			// Targets are added in priority that they should be checked
-			targetManager.addTarget(new DiegoTarget());
-			targetManager.addTarget(CloudFoundryServerTarget.DEFAULT);
+	public static synchronized CFClientManagerRegistry getClientManagerRegistry() {
+		if (clientManagerRegistry == null) {
+			clientManagerRegistry = new CFClientManagerRegistry();
+			clientManagerRegistry.register(new V1ClientManagerProvider());
 		}
-		return targetManager;
+		return clientManagerRegistry;
 	}
 
 	public synchronized void setIncrementalPublish(boolean incrementalPublish) {
@@ -399,9 +396,10 @@ public class CloudFoundryPlugin extends Plugin {
 	}
 
 	/**
-	 * Returns a non-null client factory. A default factory is always used if a
+	 * Returns a non-null v1 client factory. A default factory is always used if a
 	 * factory has not been defined
 	 * @return non-null client factory
+	 * @deprecated this returns legacy v1 Java client factory. Use {@link CFClientManagerRegistry} instead through {@link #getClientManagerRegistry()}
 	 */
 	public static synchronized CloudFoundryClientFactory getCloudFoundryClientFactory() {
 		if (factory == null) {

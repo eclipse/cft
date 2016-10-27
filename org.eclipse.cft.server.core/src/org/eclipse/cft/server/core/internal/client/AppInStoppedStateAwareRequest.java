@@ -1,35 +1,44 @@
 /*******************************************************************************
- * Copied from Spring Tool Suite. Original license:
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others 
  * 
- * Copyright (c) 2015 Pivotal Software, Inc.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
+ * and Apache License v2.0 which accompanies this distribution. 
+ * 
+ * The Eclipse Public License is available at 
+ * 
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
+ * 
+ * and the Apache License v2.0 is available at 
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * You may elect to redistribute this code under either of these licenses.
+ *  
+ *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
- *******************************************************************************/
+ ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
 import org.cloudfoundry.client.lib.CloudFoundryException;
-import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.IProgressMonitor;
 
 /**
  * 
  * Reattempts the operation if a app in stopped state error is encountered.
  * 
  */
-abstract class AppInStoppedStateAwareRequest<T> extends BehaviourRequest<T> {
+abstract class AppInStoppedStateAwareRequest<T> extends V1ClientRequest<T> {
 
-	public AppInStoppedStateAwareRequest(String label, CloudFoundryServerBehaviour behaviour) {
-		super(label, behaviour);
+	public AppInStoppedStateAwareRequest(CloudFoundryServer cloudServer, CloudServerCFClient client, String label) {
+		super(cloudServer, client, label);
 	}
 
-	protected long waitOnErrorInterval(Throwable exception, SubMonitor monitor) throws CoreException {
+	@Override
+	protected long getRetryInterval(Throwable exception, IProgressMonitor monitor) throws CoreException {
 
 		if (exception instanceof CoreException) {
 			exception = ((CoreException) exception).getCause();
@@ -41,7 +50,4 @@ abstract class AppInStoppedStateAwareRequest<T> extends BehaviourRequest<T> {
 		}
 		return -1;
 	}
-
-	protected abstract T doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException;
-
 }

@@ -21,9 +21,10 @@
 package org.eclipse.cft.server.core.internal.log;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
-import org.cloudfoundry.client.lib.RestLogCallback;
-import org.cloudfoundry.client.lib.RestLogEntry;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.client.CFRestLogEntry;
+import org.eclipse.cft.server.core.internal.client.CFRestLogListener;
+import org.eclipse.cft.server.core.internal.client.CloudServerCFClient;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.osgi.service.prefs.BackingStoreException;
 
@@ -38,7 +39,7 @@ public class HttpTracer {
 
 	public static final String PREFERENCE_TRACE = CloudFoundryPlugin.PLUGIN_ID + ".http.tracing"; //$NON-NLS-1$
 
-	private RestLogCallback activeListener = null;
+	private CFRestLogListener activeListener = null;
 
 	private static boolean isEnabled;
 
@@ -62,7 +63,7 @@ public class HttpTracer {
 	 * being added on every call.
 	 * @param client whose HTTP requests need to be traced. Must not be null
 	 */
-	public synchronized void trace(CloudFoundryOperations client) {
+	public synchronized void trace(CloudServerCFClient client) {
 		if (client == null) {
 			return;
 		}
@@ -128,12 +129,12 @@ public class HttpTracer {
 		return isEnabled;
 	}
 
-	public static class PrintingApplicationLogListener implements RestLogCallback {
+	public static class PrintingApplicationLogListener implements CFRestLogListener {
 
 		public PrintingApplicationLogListener() {
 		}
 
-		public void onNewLogEntry(RestLogEntry restLogEntry) {
+		public void onNewLogEntry(CFRestLogEntry restLogEntry) {
 			CloudTracer.getCurrentCloudTracer().traceNewLogEntry(restLogEntry);
 		}
 	}

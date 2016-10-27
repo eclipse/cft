@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,15 +22,14 @@ package org.eclipse.cft.server.ui.internal.console;
 
 import java.util.List;
 
-import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.log.CloudLog;
 import org.eclipse.core.runtime.CoreException;
 
 /**
- * Application Log console that manages loggregator streams for a deployed
+ * Application Log console that manages CF log streams for a deployed
  * application. This console should only be created and used for applications
- * that are already published, as it initialises loggregator support which
+ * that are already published, as it initialises CF log stream support which
  * requires the application to exist in the Cloud server.
  * 
  * @author Steffen Pingel
@@ -43,9 +42,9 @@ class ApplicationLogConsole extends CloudFoundryConsole {
 		super(config);
 	}
 
-	public synchronized void writeApplicationLogs(List<ApplicationLog> logs) {
+	public synchronized void writeApplicationLogs(List<CloudLog> logs) {
 		if (logs != null) {
-			for (ApplicationLog log : logs) {
+			for (CloudLog log : logs) {
 				writeApplicationLog(log);
 			}
 		}
@@ -58,14 +57,15 @@ class ApplicationLogConsole extends CloudFoundryConsole {
 	 * loggregator.
 	 * @param log
 	 */
-	protected synchronized void writeApplicationLog(ApplicationLog log) {
+	protected synchronized void writeApplicationLog(CloudLog log) {
 		if (log == null) {
 			return;
 		}
 		try {
 			// Write to the application console stream directly, as the
 			// Application log stream does
-			// additional processing on the raw application log that may not be performed
+			// additional processing on the raw application log that may not be
+			// performed
 			// by the base CloudFoundryConsole
 			ConsoleStream stream = getStream(StandardLogContentType.APPLICATION_LOG);
 			if (stream instanceof ApplicationLogConsoleStream) {

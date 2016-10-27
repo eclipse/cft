@@ -31,7 +31,6 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
-import org.eclipse.cft.server.core.internal.client.diego.CloudInfoSsh;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.osgi.util.NLS;
@@ -99,11 +98,13 @@ public class SshDebugLaunchConfigDelegate extends CloudFoundryDebugDelegate {
 			throws CoreException {
 
 		CFInfo cloudInfo = cloudServer.getBehaviour().getCloudInfo();
-		if (cloudInfo instanceof CloudInfoSsh) {
+
+		if (cloudInfo.getSshHost() != null) {
 			ISshClientSupport ssh = cloudServer.getBehaviour().getSshClientSupport(monitor);
 			if (ssh == null) {
 				return null;
 			}
+
 			try {
 				printToConsole(appModule, cloudServer,
 						NLS.bind(Messages.SshDebugLaunchConfigDelegate_CONNECTING_FOR_USER,

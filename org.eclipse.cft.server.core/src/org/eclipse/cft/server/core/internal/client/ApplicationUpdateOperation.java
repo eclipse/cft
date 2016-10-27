@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,9 +33,9 @@ import org.eclipse.wst.server.core.IModule;
  */
 public class ApplicationUpdateOperation extends BehaviourOperation {
 
-	private final BaseClientRequest<?> request;
+	private final ClientRequest<?> request;
 
-	public ApplicationUpdateOperation(BaseClientRequest<?> request, CloudFoundryServerBehaviour behaviour, IModule module) {
+	public ApplicationUpdateOperation(ClientRequest<?> request, CloudFoundryServerBehaviour behaviour, IModule module) {
 		super(behaviour, module);
 		this.request = request;
 	}

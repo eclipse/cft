@@ -282,8 +282,6 @@ public class Messages extends NLS {
 
 	public static String DeleteModulesOperation_ERROR_DELETE_APP_MESSAGE;
 
-	public static String LocalServerRequest_SERVER_LABEL;
-
 	public static String ManifestParser_READING;
 
 	public static String ManifestParser_NO_APP_NAME;
@@ -356,8 +354,17 @@ public class Messages extends NLS {
 	
 	public static String SshClientSupport_NO_CLOUD_APP;
 
+	public static String ClientRequestFactory_CREATE_APP;
+	
+	public static String ClientRequestFactory_UPLOADING_APP;
+	
+	public static  String ClientRequest_SERVER_LABEL;
+
 
 	private static final String BUNDLE_NAME = CloudFoundryPlugin.PLUGIN_ID + ".internal.Messages"; //$NON-NLS-1$
+
+
+
 
 	static {
 		NLS.initializeMessages(BUNDLE_NAME, Messages.class);

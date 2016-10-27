@@ -30,13 +30,14 @@ import org.eclipse.core.runtime.IProgressMonitor;
 
 public class UpdateServicesOperation extends BehaviourOperation {
 
-	private final BaseClientRequest<List<CFServiceInstance>> request;
+	private final ClientRequest<List<CFServiceInstance>> request;
 
-	public UpdateServicesOperation(BaseClientRequest<List<CFServiceInstance>> request, CloudFoundryServerBehaviour behaviour) {
+	public UpdateServicesOperation(ClientRequest<List<CFServiceInstance>> request,
+			CloudFoundryServerBehaviour behaviour) {
 		super(behaviour, null);
 		this.request = request;
 	}
-	
+
 	@Override
 	public String getMessage() {
 		return Messages.UpdateServicesOperation_OPERATION_MESSAGE;
@@ -45,8 +46,7 @@ public class UpdateServicesOperation extends BehaviourOperation {
 	@Override
 	public void run(IProgressMonitor monitor) throws CoreException {
 		List<CFServiceInstance> existingServices = request.run(monitor);
-		ServerEventHandler.getDefault().fireServicesUpdated(getBehaviour().getCloudFoundryServer(),
-				existingServices);
+		ServerEventHandler.getDefault().fireServicesUpdated(getBehaviour().getCloudFoundryServer(), existingServices);
 	}
 
 }
