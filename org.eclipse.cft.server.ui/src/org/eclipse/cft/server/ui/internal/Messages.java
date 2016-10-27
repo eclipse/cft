@@ -1003,6 +1003,8 @@ public class Messages extends NLS {
 
 	public static String CloudFoundryServiceWizardPage_GETTING_AVAILABLE_SERVICES;
 
+	public static String CFCredentialsPart_ACQUIRING_SSO_URL;
+	
 	public static String TableColumn_NAME;
 	public static String TableColumn_SERVICE;
 	public static String TableColumn_VENDOR;

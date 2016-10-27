@@ -48,6 +48,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
@@ -197,6 +198,9 @@ public class CloudFoundryCredentialsPart extends UIPart implements IPartChangeLi
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				cfServer.setSso(sso.getSelection());
+				if(sso.getSelection()) {
+					updatePromptTextWithSsoUrl();
+				}
 				showPage(emailPasswordControl, passcodeControl);
 				updateUI(false);
 			}
@@ -206,9 +210,10 @@ public class CloudFoundryCredentialsPart extends UIPart implements IPartChangeLi
 
 			@Override
 			protected void setUpdatedSelectionInServer() {
-
 				super.setUpdatedSelectionInServer();
-				prompt.setText(CFUiUtil.getPromptText(cfServer));
+				if(sso.getSelection()) {
+					updatePromptTextWithSsoUrl();
+				}
 				updateUI(false);
 			}
 
@@ -219,7 +224,6 @@ public class CloudFoundryCredentialsPart extends UIPart implements IPartChangeLi
 		String url = urlWidget.getURLSelection();
 		if (url != null) {
 			cfServer.setUrl(CFUiUtil.getUrlFromDisplayText(url));
-			prompt.setText(CFUiUtil.getPromptText(cfServer));
 		}
 
 		final Composite validateComposite = new Composite(composite, SWT.NONE);
@@ -291,8 +295,6 @@ public class CloudFoundryCredentialsPart extends UIPart implements IPartChangeLi
 		gd = new GridData(SWT.FILL, SWT.FILL, true, false);
 		gd.horizontalSpan = 2;
 		prompt.setLayoutData(gd);
-		String ssoUrl = CFUiUtil.getPromptText(cfServer);
-		prompt.setText(ssoUrl);
 		prompt.addListener(SWT.Selection, new Listener() {
 			
 			@Override
@@ -327,7 +329,30 @@ public class CloudFoundryCredentialsPart extends UIPart implements IPartChangeLi
 		});
 		return composite;
 	}
-	
+
+	/** Acquire the SSO url on a separate thread, then update the prompt label accordingly*/
+	private void updatePromptTextWithSsoUrl() {
+		
+		CFUiUtil.runOnUIThreadUntilTimeout(Messages.CFCredentialsPart_ACQUIRING_SSO_URL, new Runnable() {
+
+			@Override
+			public void run() {
+				final String ssoPromptText = CFUiUtil.getPromptText(cfServer);
+				
+				Display.getDefault().syncExec(new Runnable() {
+
+					@Override
+					public void run() {
+						prompt.setText(ssoPromptText);
+					}
+					
+				});				
+
+			}
+			
+		} );
+	}
+		
 	private Control createEmailPasswordControl(Composite parent) {
 		Composite composite = new Composite(parent, SWT.NONE);
 		composite.setLayout(new GridLayout(2, false));
