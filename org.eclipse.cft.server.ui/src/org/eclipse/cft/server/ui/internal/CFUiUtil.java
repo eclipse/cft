@@ -29,8 +29,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
@@ -56,6 +55,7 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.DialogPage;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableContext;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.ISelection;
@@ -908,4 +908,71 @@ public class CFUiUtil {
 		return ssoUrl;
 	}
 
+
+	/** Run on the UI thread for 1 second, at which point switch to a cancellable progress monitor dialog off the UI thread.*/
+	public static void runOnUIThreadUntilTimeout(final String taskName, final Runnable r) {  
+		final AtomicBoolean threadStarted = new AtomicBoolean(false); // synchronize on access, probably not necessary but can't hurt
+		
+		final Thread runnableThread = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				synchronized(threadStarted) {
+					threadStarted.set(true);
+				}
+				r.run();
+			}
+			
+		});
+		runnableThread.setDaemon(true);
+		runnableThread.setName(r.getClass().getName());
+		runnableThread.start();
+		
+		try {
+			// First wait 1 seconds
+			runnableThread.join(1 * 1000);
+			
+			boolean switchToDialog = false;
+			synchronized(threadStarted) {
+				// The thread has not started, or it is started and still running
+				// In either case, we need to switch to waiting for the task OFF the UI thread
+				if(!threadStarted.get() || runnableThread.isAlive()) {
+					switchToDialog = true;
+				}
+			}
+			
+			if(switchToDialog) {
+				ProgressMonitorDialog monitorDlg = new ProgressMonitorDialog(getShell());
+				monitorDlg.run(true, true, new IRunnableWithProgress() {
+	
+					@Override
+					public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
+						
+						monitor.setTaskName(taskName);
+						
+						boolean continueRunning = true;
+						
+						while(continueRunning && !monitor.isCanceled()) {
+							
+							synchronized(threadStarted) {
+								if(threadStarted.get() && !runnableThread.isAlive()) {
+									continueRunning = false;
+								}
+							}
+							
+							if(continueRunning) {
+								Thread.sleep(100);
+							}
+							
+						} 
+					}
+				});
+			}
+
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e); // Convert to unchecked exception
+		} catch (InvocationTargetException e) {
+			throw new RuntimeException(e); // Convert to unchecked exception
+		}
+	}
 }
