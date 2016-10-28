@@ -604,7 +604,9 @@ public class Messages extends NLS {
 
 	public static String CloudFoundryApplicationServicesWizardPage_TEXT_VERIFY_SERVICE_PROGRESS;
 	
-	public static String CloudFoundryApplicationServicesWizardPage_NO_INSTANCE_TO_BIND_TO;
+	public static String CloudFoundryApplicationServicesWizardPage_SERVICE_DOES_NOT_EXIST_ONE;
+	
+	public static String CloudFoundryApplicationServicesWizardPage_SERVICE_DOES_NOT_EXIST_MULTI;
 
 	public static String CloudFoundryApplicationWizard_TITLE_APP;
 
@@ -1005,6 +1007,8 @@ public class Messages extends NLS {
 
 	public static String CloudFoundryServiceWizardPage_GETTING_AVAILABLE_SERVICES;
 
+	public static String CFCredentialsPart_ACQUIRING_SSO_URL;
+	
 	public static String TableColumn_NAME;
 	public static String TableColumn_SERVICE;
 	public static String TableColumn_VENDOR;

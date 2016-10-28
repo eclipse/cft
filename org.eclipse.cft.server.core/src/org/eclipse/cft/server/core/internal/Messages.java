@@ -212,6 +212,13 @@ public class Messages extends NLS {
 	public static String CloudFoundryServerBehaviour_RECONNECTING_SERVER;
 
 	public static String CloudFoundryServerBehaviour_UPDATE_APP_MEMORY;
+	
+	public static String CloudFoundryServerBehaviour_ENABLING_DIEGO;
+	
+	public static String CloudFoundryServerBehaviour_DISABLING_DIEGO;
+	
+	public static String CloudFoundryServerBehaviour_ENABLING_SSH;
+	public static String CloudFoundryServerBehaviour_DISABLING_SSH;
 
 	public static String CloudFoundryServerBehaviour_UPDATE_APP_URLS;
 
@@ -252,7 +259,7 @@ public class Messages extends NLS {
 	public static String CONSOLE_APP_STOPPED;
 
 	public static String PushApplicationOperation_PUSH_MESSAGE;
-
+	
 	public static String PushApplicationOperation_UPDATE_APP_MESSAGE;
 
 	public static String CONSOLE_APP_CREATION;
@@ -346,6 +353,9 @@ public class Messages extends NLS {
 	public static String UpdateModuleOperation_OPERATION_MESSAGE;
 	
 	public static String UpdateServicesOperation_OPERATION_MESSAGE;
+	
+	public static String SshClientSupport_NO_CLOUD_APP;
+
 
 	private static final String BUNDLE_NAME = CloudFoundryPlugin.PLUGIN_ID + ".internal.Messages"; //$NON-NLS-1$
 

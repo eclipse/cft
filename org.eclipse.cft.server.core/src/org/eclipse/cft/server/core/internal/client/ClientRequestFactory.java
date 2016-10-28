@@ -93,6 +93,45 @@ public class ClientRequestFactory {
 		};
 	}
 
+	public BaseClientRequest<?> updateApplicationDiego(final CloudFoundryApplicationModule appModule, final boolean diego) {
+		
+		String message;
+		if(diego) {
+			message = NLS.bind(Messages.CloudFoundryServerBehaviour_ENABLING_DIEGO,
+					appModule.getDeployedApplicationName());
+		} else {
+			message = NLS.bind(Messages.CloudFoundryServerBehaviour_DISABLING_DIEGO,
+					appModule.getDeployedApplicationName());			
+		}
+		
+		return new AppInStoppedStateAwareRequest<Void>(message, behaviour) {
+			@Override
+			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+				client.updateApplicationDiego(appModule.getDeployedApplicationName(), diego);
+				return null;
+			}
+		};
+	}
+
+	public BaseClientRequest<?> updateApplicationEnableSsh(final CloudFoundryApplicationModule appModule, final boolean enableSsh) {
+		String message;
+		if(enableSsh) {
+			message = NLS.bind(Messages.CloudFoundryServerBehaviour_ENABLING_SSH,
+					appModule.getDeployedApplicationName());
+		} else {
+			message = NLS.bind(Messages.CloudFoundryServerBehaviour_DISABLING_SSH,
+					appModule.getDeployedApplicationName());			
+		}
+		
+		return new AppInStoppedStateAwareRequest<Void>(message, behaviour) {
+			@Override
+			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
+				client.updateApplicationEnableSsh(appModule.getDeployedApplicationName(), enableSsh);
+				return null;
+			}
+		};
+	}
+
 	public BaseClientRequest<List<CloudRoute>> getRoutes(final String domainName) throws CoreException {
 
 		return new BehaviourRequest<List<CloudRoute>>(NLS.bind(Messages.ROUTES, domainName), behaviour) {

@@ -51,8 +51,13 @@ public class CloudUIUtil {
 	 * @throws CoreException basically if operation is cancelled.
 	 */
 	public static List<AbstractCloudFoundryUrl> getAllUrls(String serverTypeId) throws CoreException {
-		return CloudServerUIUtil.getAllUrls(serverTypeId, null);
+		return CloudServerUIUtil.getAllUrls(serverTypeId, null, true);
 	}
+	
+	public static List<AbstractCloudFoundryUrl> getAllUrls(String serverTypeId, boolean runningOnUIThread) throws CoreException {
+		return CloudServerUIUtil.getAllUrls(serverTypeId, null, runningOnUIThread);
+	}
+
 
 	/**
 	 * Returns the available default url (if there is one) for the given server
@@ -64,8 +69,13 @@ public class CloudUIUtil {
 	 * @throws CoreException basically if operation is cancelled.
 	 */
 	public static AbstractCloudFoundryUrl getDefaultUrl(String serverTypeId) throws CoreException {
-		return CloudServerUIUtil.getDefaultUrl(serverTypeId, null);
+		return CloudServerUIUtil.getDefaultUrl(serverTypeId, null, true);
 	}
+	
+	public static AbstractCloudFoundryUrl getDefaultUrl(String serverTypeId, boolean runningOnUIThread) throws CoreException {
+		return CloudServerUIUtil.getDefaultUrl(serverTypeId, null, runningOnUIThread);
+	}
+
 
 	/**
 	 * Returns the list of all non-default Urls (provided by the framework or
@@ -77,6 +87,11 @@ public class CloudUIUtil {
 	 * @throws CoreException basically if operation is cancelled.
 	 */
 	public static List<AbstractCloudFoundryUrl> getUrls(String serverTypeId) throws CoreException {
-		return CloudServerUIUtil.getUrls(serverTypeId, null);
+		return CloudServerUIUtil.getUrls(serverTypeId, null, true);
 	}
+	
+	public static List<AbstractCloudFoundryUrl> getUrls(String serverTypeId, boolean runningOnUIThread) throws CoreException {
+		return CloudServerUIUtil.getUrls(serverTypeId, null, runningOnUIThread);
+	}
+
 }

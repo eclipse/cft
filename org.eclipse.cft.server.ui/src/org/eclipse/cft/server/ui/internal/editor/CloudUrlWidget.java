@@ -92,7 +92,7 @@ public class CloudUrlWidget {
 		}
 
 		// Get updated list of URLs
-		List<AbstractCloudFoundryUrl> cloudUrls = CloudServerUIUtil.getAllUrls(serverTypeId, runnableContext);
+		List<AbstractCloudFoundryUrl> cloudUrls = CloudServerUIUtil.getAllUrls(serverTypeId, runnableContext, true);
 		String[] updatedUrls = new String[cloudUrls.size()];
 
 		// If there is a last edited URL, set that as the selection in the combo
@@ -185,7 +185,7 @@ public class CloudUrlWidget {
 
 				if (index >= 0 && index != comboIndex) {
 					try {
-						List <AbstractCloudFoundryUrl> allUrls = CloudServerUIUtil.getAllUrls(serverTypeId, runnableContext); 
+						List <AbstractCloudFoundryUrl> allUrls = CloudServerUIUtil.getAllUrls(serverTypeId, runnableContext, true); 
 						AbstractCloudFoundryUrl cloudUrl = allUrls.get(index);
 						if (cloudUrl.getUrl().contains("{")) { //$NON-NLS-1$
 							AbstractCloudFoundryUrl newUrl = CloudServerUIUtil.getWildcardUrl(cloudUrl,
