@@ -27,6 +27,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -55,7 +56,6 @@ import org.eclipse.cft.server.core.ISshClientSupport;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
-import org.eclipse.cft.server.core.internal.UpdateOperationsScheduler;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryLoginHandler;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
@@ -63,17 +63,23 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudFoundryServerTarget;
 import org.eclipse.cft.server.core.internal.CloudFoundryTargetManager;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
+import org.eclipse.cft.server.core.internal.CloudServerUtil;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ModuleResourceDeltaWrapper;
 import org.eclipse.cft.server.core.internal.OperationScheduler;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
+import org.eclipse.cft.server.core.internal.UpdateOperationsScheduler;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.application.CachingApplicationArchive;
-import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
-import org.eclipse.cft.server.core.internal.client.diego.CloudInfoSsh;
 import org.eclipse.cft.server.core.internal.debug.ApplicationDebugLauncher;
 import org.eclipse.cft.server.core.internal.jrebel.CFRebelServerIntegration;
+import org.eclipse.cft.server.core.internal.log.AppLogUtil;
+import org.eclipse.cft.server.core.internal.log.CFApplicationLogListener;
+import org.eclipse.cft.server.core.internal.log.CFStreamingLogToken;
+import org.eclipse.cft.server.core.internal.log.CloudLog;
+import org.eclipse.cft.server.core.internal.log.V1CFApplicationLogListener;
+import org.eclipse.cft.server.core.internal.log.V1StreamingLogToken;
 import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
 import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
 import org.eclipse.cft.server.core.internal.ssh.SshClientSupport;
@@ -141,6 +147,8 @@ import org.springframework.web.client.RestClientException;
 public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	private CloudFoundryOperations client;
+	
+	private CFClient hybridClient;
 
 	private AdditionalV1Operations additionalClientSupport;
 
@@ -789,6 +797,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 	protected void internalResetClient() {
 		client = null;
+		hybridClient = null;
 		additionalClientSupport = null;
 		applicationUrlLookup = null;
 		cloudBehaviourOperations = null;
@@ -835,6 +844,16 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		return null;
 	}
 
+	/**
+	 * 
+	 * @param appName
+	 * @param listener
+	 * @return
+	 * @deprecated This is for app streaming using the old CF Java client
+	 * version v1. Use
+	 * {@link #startAppLogStreaming(String, CFApplicationLogListener)}
+	 * instead.
+	 */
 	public StreamingLogToken addApplicationLogListener(final String appName, final ApplicationLogListener listener) {
 		if (appName != null && listener != null) {
 			try {
@@ -856,6 +875,14 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		return null;
 	}
 
+	/**
+	 * 
+	 * @param appName
+	 * @param monitor
+	 * @return
+	 * @throws CoreException
+	 * @deprecated
+	 */
 	public List<ApplicationLog> getRecentApplicationLogs(final String appName, IProgressMonitor monitor)
 			throws CoreException {
 		return getRequestFactory().getRecentApplicationLogs(appName).run(monitor);
@@ -2154,12 +2181,103 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 */
 	public ISshClientSupport getSshClientSupport(IProgressMonitor monitor) throws CoreException {
 		CFInfo cloudInfo = getCloudInfo();
-		if (cloudInfo instanceof CloudInfoSsh) {
-			ISshClientSupport ssh = SshClientSupport.create(getClient(monitor), (CloudInfoSsh) cloudInfo,
+		if (cloudInfo.getSshHost() != null && cloudInfo.getSshClientId() != null) {
+			ISshClientSupport ssh = SshClientSupport.create(getClient(monitor),  cloudInfo,
 					getCloudFoundryServer().getProxyConfiguration(), getCloudFoundryServer(),
 					getCloudFoundryServer().isSelfSigned());
-
 			return ssh;
+		}
+
+        return null;
+	}
+
+
+	private CFClient getHybridClient(IProgressMonitor monitor) throws CoreException {
+
+		if (hybridClient != null) {
+			return hybridClient;
+		}
+
+		CFClientProvider clientProvider = CFClientProviderRegistry.INSTANCE
+				.getClientProvider(getCloudFoundryServer().getUrl(), getCloudInfo());
+		CloudFoundryOperations v1Client = getClient(monitor);
+
+		if (clientProvider != null) {
+
+			CloudFoundryServer cloudServer = getCloudFoundryServer();
+			CFCloudCredentials credentials = CloudServerUtil.getCredentials(cloudServer);
+			CloudFoundrySpace cloudFoundrySpace = cloudServer.getCloudFoundrySpace();
+			CFClient otherClient = clientProvider.getClient(cloudServer.getServer(), credentials, cloudFoundrySpace,
+					monitor);
+			if (otherClient != null) {
+				hybridClient = new HybridClient(v1Client, otherClient);
+			}
+		}
+
+		return hybridClient;
+	}
+
+	public List<CloudLog> getRecentAppLogs(final String appName, IProgressMonitor monitor) throws CoreException {
+		
+		CFClient hybridClient = getHybridClient(monitor);
+		if (hybridClient != null) {
+			String message = "Getting existing application logs for: " + appName; //$NON-NLS-1$
+			return new CloudServerRequest<List<CloudLog>>(getCloudFoundryServer(), hybridClient, message) {
+
+				@Override
+				protected List<CloudLog> runRequest(CFClient client, IProgressMonitor monitor)
+						throws CoreException{
+					List<CloudLog> logs = null;
+					if (appName != null) {
+						logs = client.getRecentLogs(appName);
+					}
+					if (logs == null) {
+						logs = Collections.emptyList();
+					}
+					return logs;
+				}
+			}.run(monitor);
+		}
+		else {
+			List<ApplicationLog> v1Logs = getRecentApplicationLogs(appName, monitor);
+			List<CloudLog> logs = new ArrayList<>();
+			for (ApplicationLog log : v1Logs) {
+				logs.add(AppLogUtil.getLogFromV1(log));
+			}
+			return logs;
+		}
+	}
+
+	public CFStreamingLogToken startAppLogStreaming(final String appName, final CFApplicationLogListener listener, IProgressMonitor monitor) throws CoreException {
+		if (appName != null && listener != null) {
+
+			CFClient hybridClient = getHybridClient(monitor);
+			if (hybridClient != null) {
+				try {
+					return new CloudServerRequest<CFStreamingLogToken>(getCloudFoundryServer(), hybridClient,
+							Messages.ADDING_APPLICATION_LOG_LISTENER) {
+
+						@Override
+						protected CFStreamingLogToken runRequest(CFClient client, IProgressMonitor monitor)
+								throws CoreException {
+							return client.streamLogs(appName, listener);
+						}
+
+					}.run(monitor);
+				}
+				catch (CoreException e) {
+					CloudFoundryPlugin
+							.logError(NLS.bind(Messages.ERROR_APPLICATION_LOG_LISTENER, appName, e.getMessage()), e);
+				}
+			}
+			else {
+				// Otherwise delegate to old V1 application log stream
+				StreamingLogToken logToken = addApplicationLogListener(appName,
+						new V1CFApplicationLogListener(listener));
+				if (logToken != null) {
+					return new V1StreamingLogToken(logToken);
+				}
+			}
 		}
 		return null;
 	}

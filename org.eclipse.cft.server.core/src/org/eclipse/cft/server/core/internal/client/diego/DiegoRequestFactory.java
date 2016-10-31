@@ -37,6 +37,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.client.BaseClientRequest;
 import org.eclipse.cft.server.core.internal.client.BehaviourRequest;
+import org.eclipse.cft.server.core.internal.client.CFInfo;
 import org.eclipse.cft.server.core.internal.client.ClientRequestFactory;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
@@ -185,21 +186,21 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 	}
 
 	@Override
-	public CloudInfoSsh getCloudInfo() throws CoreException {
+	public CFInfo getCloudInfo() throws CoreException {
 		if (cachedInfo == null) {
 			CloudFoundryServer cloudServer = behaviour.getCloudFoundryServer();
-			cachedInfo = new CloudInfoSsh(new CloudCredentials(cloudServer.getUsername(), cloudServer.getPassword()),
+			cachedInfo = new CFInfo(new CloudCredentials(cloudServer.getUsername(), cloudServer.getPassword()),
 					cloudServer.getUrl(), cloudServer.getProxyConfiguration(), cloudServer.isSelfSigned());
 		}
-		return (CloudInfoSsh) cachedInfo;
+		return cachedInfo;
 	}
 
 	@Override
 	public boolean supportsSsh() {
 		try {
-			CloudInfoSsh infoDiego = getCloudInfo();
-			return infoDiego != null && infoDiego.getSshClientId() != null && infoDiego.getSshHost() != null
-					&& infoDiego.getSshHost().getHost() != null && infoDiego.getSshHost().getFingerPrint() != null;
+			CFInfo info = getCloudInfo();
+			return info != null && info.getSshClientId() != null && info.getSshHost() != null
+					&& info.getSshHost().getHost() != null && info.getSshHost().getFingerPrint() != null;
 		}
 		catch (CoreException e) {
 			CloudFoundryPlugin.logError(e);

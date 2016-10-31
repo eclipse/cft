@@ -20,7 +20,7 @@ import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
+import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -28,7 +28,6 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Contains helper methods to allow access to certain components of an existing
@@ -101,10 +100,10 @@ public class CFClientV1Support {
 			public String getAuthorizationHeader() {
 				OAuth2AccessToken token = cfClient.login();
 				
-				if(cfServer != null && cfServer.isSso()) {
+				if(cfServer != null) {
 					// In the SSO case, store the token for later use
 					try {
-						String tokenValue = new ObjectMapper().writeValueAsString(token);
+						String tokenValue = CloudUtil.getTokenAsJson(token);
 						cfServer.setAndSaveToken(tokenValue);
 					}
 					catch (JsonProcessingException e) {

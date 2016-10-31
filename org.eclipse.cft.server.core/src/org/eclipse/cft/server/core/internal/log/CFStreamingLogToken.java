@@ -18,10 +18,10 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.core.internal.client;
+package org.eclipse.cft.server.core.internal.log;
 
-abstract class FileRequest<T> extends StagingAwareRequest<T> {
-	FileRequest(String label, CloudFoundryServerBehaviour behaviour) {
-		super(label, behaviour);
-	}
+public interface CFStreamingLogToken {
+
+	public void cancel();
+
 }

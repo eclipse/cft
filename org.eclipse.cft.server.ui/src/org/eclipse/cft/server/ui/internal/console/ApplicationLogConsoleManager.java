@@ -22,18 +22,19 @@
 package org.eclipse.cft.server.ui.internal.console;
 
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
+import org.eclipse.cft.server.core.internal.log.CloudLog;
 import org.eclipse.cft.server.core.internal.log.LogContentType;
 import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
 import org.eclipse.core.runtime.CoreException;
@@ -213,9 +214,10 @@ public class ApplicationLogConsoleManager extends CloudConsoleManager {
 		if (console instanceof ApplicationLogConsole) {
 			ApplicationLogConsole logConsole = (ApplicationLogConsole) console;
 			CloudFoundryServerBehaviour behaviour = server.getBehaviour();
-			List<ApplicationLog> logs;
+			List<CloudLog> logs;
 			try {
-				logs = behaviour.getRecentApplicationLogs(appModule.getDeployedApplicationName(), monitor);
+				logs = behaviour.getRecentAppLogs(appModule.getDeployedApplicationName(), monitor);
+
 				if (!logs.isEmpty()) {
 					logConsole.writeApplicationLogs(logs);
 				}

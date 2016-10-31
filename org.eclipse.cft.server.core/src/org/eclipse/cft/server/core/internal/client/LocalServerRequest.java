@@ -40,6 +40,7 @@ import org.eclipse.wst.server.core.internal.Server;
  * instead user the {@link ClientRequest}
  * 
  * @param <T>
+ * @deprecated
  */
 @SuppressWarnings("restriction")
 public abstract class LocalServerRequest<T> extends ClientRequest<T> {

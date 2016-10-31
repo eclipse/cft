@@ -18,7 +18,7 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.core.internal.client.diego;
+package org.eclipse.cft.server.core.internal.client;
 
 import java.util.Map;
 
@@ -26,7 +26,8 @@ import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.util.CloudUtil;
 import org.cloudfoundry.client.lib.util.JsonUtil;
-import org.eclipse.cft.server.core.internal.client.RestUtils;
+import org.eclipse.cft.server.core.internal.ssh.SshHost;
+import org.osgi.framework.Version;
 import org.springframework.web.client.RestTemplate;
 
 public class CFInfo {
@@ -53,15 +54,53 @@ public class CFInfo {
 	public String getCloudControllerUrl() {
 		return this.ccUrl;
 	}
+	
+	public String getDopplerUrl() {
+		return getProp("doppler_logging_endpoint"); //$NON-NLS-1$
+	}
 
+	/**
+	 * 
+	 * @deprecated use {@link #getCCApiVersion()} instead
+	 */
 	public String getCloudControllerApiVersion() {
 		return getProp("api_version"); //$NON-NLS-1$
+	}
+	
+	public Version getCCApiVersion() {
+		String version  = getCloudControllerApiVersion();
+		if (version != null) {
+			return new Version(version);
+		}
+		
+		return null;
 	}
 
 	public String getProp(String name) {
 		Map<String, Object> map = getMap();
 		if (map != null) {
 			return CloudUtil.parse(String.class, map.get(name));
+		}
+		return null;
+	}
+	
+	public String getSshClientId() {
+		return getProp("app_ssh_oauth_client"); //$NON-NLS-1$
+	}
+
+	public SshHost getSshHost() {
+		String fingerPrint = getProp("app_ssh_host_key_fingerprint"); //$NON-NLS-1$
+		String host = getProp("app_ssh_endpoint"); //$NON-NLS-1$
+		int port = 22; // Default ssh port
+		if (host != null) {
+			if (host.contains(":")) { //$NON-NLS-1$
+				String[] pieces = host.split(":"); //$NON-NLS-1$
+				host = pieces[0];
+				port = Integer.parseInt(pieces[1]);
+			}
+		}
+		if (host != null || fingerPrint != null) {
+			return new SshHost(host, port, fingerPrint);
 		}
 		return null;
 	}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2014, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -41,6 +41,7 @@ import org.eclipse.osgi.util.NLS;
  * 
  * @param <T> type of expected result from request. User {@link Void} if no
  * result is expected
+ * @deprecated Only used for v1 client support. Use {@link CloudServerRequest} for wrapper client support
  */
 public abstract class BaseClientRequest<T> {
 

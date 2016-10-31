@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 Pivotal Software, Inc.
+ * Copyright (c) 2014, 2016 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,8 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.log;
 
+import java.util.Date;
+
 /**
  * A log message that contains the message and message type. This may be used to
  * model both local log messages (for example writing to local standard out) or
@@ -33,9 +35,44 @@ public class CloudLog {
 
 	private final String message;
 
+	private String appId;
+
+	private Date timestamp;
+
+	private String sourceName;
+
+	private String sourceId;
+
+	public CloudLog(String appId, String message, Date timestamp, LogContentType logType, String sourceName,
+			String sourceId) {
+		this.appId = appId;
+		this.message = message;
+		this.timestamp = timestamp;
+		this.logType = logType;
+		this.sourceName = sourceName;
+		this.sourceId = sourceId;
+	}
+
 	public CloudLog(String message, LogContentType logType) {
 		this.message = message;
 		this.logType = logType;
+	}
+
+
+	public String getAppId() {
+		return appId;
+	}
+
+	public Date getTimestamp() {
+		return timestamp;
+	}
+
+	public String getSourceName() {
+		return sourceName;
+	}
+
+	public String getSourceId() {
+		return sourceId;
 	}
 
 	public LogContentType getLogType() {

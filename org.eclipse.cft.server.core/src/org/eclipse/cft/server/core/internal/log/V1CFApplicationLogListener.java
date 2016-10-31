@@ -18,10 +18,36 @@
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
-package org.eclipse.cft.server.core.internal.client;
+package org.eclipse.cft.server.core.internal.log;
 
-abstract class FileRequest<T> extends StagingAwareRequest<T> {
-	FileRequest(String label, CloudFoundryServerBehaviour behaviour) {
-		super(label, behaviour);
+import org.cloudfoundry.client.lib.ApplicationLogListener;
+import org.cloudfoundry.client.lib.domain.ApplicationLog;
+
+/**
+ * 
+ *
+ */
+public class V1CFApplicationLogListener implements ApplicationLogListener {
+
+	final private CFApplicationLogListener cfListener;
+
+	public V1CFApplicationLogListener(CFApplicationLogListener cfListener) {
+		this.cfListener = cfListener;
 	}
+
+	@Override
+	public void onComplete() {
+		cfListener.onComplete();
+	}
+
+	@Override
+	public void onError(Throwable error) {
+		cfListener.onError(error);
+	}
+
+	@Override
+	public void onMessage(ApplicationLog log) {
+		cfListener.onMessage(AppLogUtil.getLogFromV1(log));
+	}
+
 }
