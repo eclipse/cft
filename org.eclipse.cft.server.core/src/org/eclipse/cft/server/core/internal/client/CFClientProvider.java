@@ -20,34 +20,28 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import org.cloudfoundry.client.lib.CloudFoundryOperations;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.ProviderPriority;
+import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.wst.server.core.IServer;
 
-/**
- * 
- *
- * @deprecated Only used for v1 client support. Use {@link CloudServerRequest}
- * for wrapper client support
- */
-abstract public class BehaviourRequest<T> extends LocalServerRequest<T> {
+public interface CFClientProvider {
 
-	protected final CloudFoundryServerBehaviour behaviour;
+	public ProviderPriority getPriority();
 
-	public BehaviourRequest(String label, CloudFoundryServerBehaviour behaviour) {
-		super(label);
-		this.behaviour = behaviour;
-	}
+	public boolean supports(String serverUrl, CFInfo info);
 
-	@Override
-	protected CloudFoundryOperations getClient(IProgressMonitor monitor) throws CoreException {
-		return this.behaviour.getClient(monitor);
-	}
-
-	@Override
-	protected CloudFoundryServer getCloudServer() throws CoreException {
-		return this.behaviour.getCloudFoundryServer();
-	}
+	/**
+	 * Creates a non-null {@link CFClient} which is associated with the given
+	 * cloud server instance.
+	 * @param cloudServer
+	 * @param credentials
+	 * @param cloudFoundrySpace
+	 * @return non-null client
+	 * @throws CoreException if client failed to be created
+	 */
+	public CFClient getClient(IServer cloudServer, CFCloudCredentials credentials, CloudFoundrySpace cloudFoundrySpace,
+			IProgressMonitor monitor) throws CoreException;
 
 }

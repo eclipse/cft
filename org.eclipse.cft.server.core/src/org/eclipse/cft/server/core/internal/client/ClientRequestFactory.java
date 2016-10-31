@@ -50,9 +50,9 @@ import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudServicesUtil;
+import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
-import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -64,7 +64,6 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.RestClientException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * A general pre-Diego Client request factory based off the v1 Cloud Foundry
@@ -381,14 +380,12 @@ public class ClientRequestFactory {
 			@Override
 			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 				OAuth2AccessToken token = client.login();
-				if(cloudServer.isSso()) {
-					try {
-						String tokenValue = new ObjectMapper().writeValueAsString(token);
-						cloudServer.setAndSaveToken(tokenValue);
-					}
-					catch (JsonProcessingException e) {
-						CloudFoundryPlugin.logWarning(e.getMessage());
-					}
+				try {
+					String tokenValue = CloudUtil.getTokenAsJson(token);
+					cloudServer.setAndSaveToken(tokenValue);
+				}
+				catch (JsonProcessingException e) {
+					CloudFoundryPlugin.logWarning(e.getMessage());
 				}
 
 				return null;

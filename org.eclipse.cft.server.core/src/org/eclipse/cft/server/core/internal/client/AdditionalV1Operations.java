@@ -39,7 +39,6 @@ import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
 import org.eclipse.core.runtime.CoreException;
 import org.springframework.http.HttpStatus;
 

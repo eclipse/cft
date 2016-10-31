@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2016 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,33 +20,29 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal;
 
-import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.eclipse.cft.server.core.internal.client.AbstractWaitWithProgressJob;
+import org.eclipse.cft.server.core.internal.client.CFClient;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+public class CFLoginHandler {
 
-public class CloudFoundryLoginHandler {
-
-	private final CloudFoundryOperations operations;
+	private final CFClient client;
 
 	private static final String DEFAULT_PROGRESS_LABEL = Messages.CloudFoundryLoginHandler_LABEL_PERFORM_CF_OPERATION;
 
 	private static final int DEFAULT_PROGRESS_TICKS = 100;
 
-	// Optional
 	private CloudFoundryServer server;
 	
 	/**
 	 * 
-	 * @param operations must not be null
+	 * @param client must not be null
 	 * @param cloudServer can be null if no server has been created yet
 	 */
-	public CloudFoundryLoginHandler(CloudFoundryOperations operations, CloudFoundryServer server) {
-		this.operations = operations;
+	public CFLoginHandler(CFClient client, CloudFoundryServer server) {
+		this.client = client;
 		this.server = server;
 	}
 
@@ -54,8 +50,9 @@ public class CloudFoundryLoginHandler {
 	 * Attempts to log in once. If login fails, Core exception is thrown
 	 * @throws CoreException if login failed. The reason for the login failure
 	 * is contained in the core exception's
+	 * @return accessToken in JSON form
 	 */
-	public OAuth2AccessToken login(IProgressMonitor monitor) throws CoreException {
+	public String login(IProgressMonitor monitor) throws CoreException {
 		return login(monitor, 1, 0);
 	}
 
@@ -64,34 +61,28 @@ public class CloudFoundryLoginHandler {
 	 * specified sleep time between each attempt. If at the end of the attempts,
 	 * login has failed, Core exception is thrown.
 	 */
-	public OAuth2AccessToken login(IProgressMonitor monitor, int tries, long sleep) throws CoreException {
+	public String login(IProgressMonitor monitor, int tries, long sleep) throws CoreException {
 		return internalLogin(monitor, tries, sleep);
 	}
 
-	protected OAuth2AccessToken internalLogin(IProgressMonitor monitor, int tries, long sleep) throws CoreException {
-		return new AbstractWaitWithProgressJob<OAuth2AccessToken>(tries, sleep) {
+	protected String internalLogin(IProgressMonitor monitor, int tries, long sleep) throws CoreException {
+		return new AbstractWaitWithProgressJob<String>(tries, sleep) {
 
 			@Override
-			protected OAuth2AccessToken runInWait(IProgressMonitor monitor) throws CoreException {
+			protected String runInWait(IProgressMonitor monitor) throws CoreException {
 				// Do not wrap CloudFoundryException or RestClientException in a
 				// CoreException.
 				// as they are uncaught exceptions and can be inspected directly
 				// by the shouldRetryOnError(..) method.
-				OAuth2AccessToken token = operations.login();
+				String tokenValue = client.login();
 				
 				// Save the token for both SSO and credentials.
 				if(server != null) {
 					// Store the SSO token in the server
-					try {
-						String tokenValue = CloudUtil.getTokenAsJson(token);
-						server.setAndSaveToken(tokenValue);
-					}
-					catch (JsonProcessingException e) {
-						CloudFoundryPlugin.logWarning(e.getMessage());
-					}					
+					server.setAndSaveToken(tokenValue);					
 				}
 				
-				return token;
+				return tokenValue;
 				
 			}
 
@@ -111,36 +102,4 @@ public class CloudFoundryLoginHandler {
 	public boolean shouldAttemptClientLogin(Throwable t) {
 		return CloudErrorUtil.getInvalidCredentialsError(t) != null;
 	}
-
-	/**
-	 * 
-	 * @return true if there was a proxy update. False any other case.
-	 * @throws CoreException
-	 */
-	public boolean updateProxyInClient(CloudFoundryOperations client) throws CoreException {
-		// if (client != null && cloudURL != null) {
-		// try {
-		// URL actualUrl = new URL(cloudURL);
-		// HttpProxyConfiguration proxyConfiguration =
-		// CloudFoundryClientFactory.getProxy(actualUrl);
-		// // FIXNS: As of CF Java client-lib version 1.0.2, update proxy
-		// // API has been removed. Therefore unless a new client
-		// // is created on proxy change, or the client indirectly detects
-		// // proxy changes via system properties
-		// // Proxy support for CF Eclipse will not work unless a user
-		// // reconnects the server instance when the client
-		// // is created.
-		// client.updateHttpProxyConfiguration(proxyConfiguration);
-		//
-		// return true;
-		// }
-		// catch (MalformedURLException e) {
-		// throw
-		// CloudErrorUtil.toCoreException("Failed to update proxy settings due to "
-		// + e.getMessage(), e);
-		// }
-		// }
-		return false;
-	}
-
 }

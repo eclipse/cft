@@ -20,8 +20,23 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-abstract class FileRequest<T> extends StagingAwareRequest<T> {
-	FileRequest(String label, CloudFoundryServerBehaviour behaviour) {
-		super(label, behaviour);
-	}
+import java.util.List;
+
+import org.eclipse.cft.server.core.internal.log.CFApplicationLogListener;
+import org.eclipse.cft.server.core.internal.log.CFStreamingLogToken;
+import org.eclipse.cft.server.core.internal.log.CloudLog;
+import org.eclipse.core.runtime.CoreException;
+
+public interface CFClient {
+
+	/**
+	 * 
+	 * @throws CoreException if failed to login.
+	 */
+	public String login() throws CoreException;
+
+	public CFStreamingLogToken streamLogs(String appName, CFApplicationLogListener listener) throws CoreException;
+
+	public List<CloudLog> getRecentLogs(String appName) throws CoreException;
+
 }

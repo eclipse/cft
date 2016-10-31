@@ -66,6 +66,7 @@ import org.eclipse.wst.server.core.util.ModuleFolder;
 import org.eclipse.wst.server.core.util.PublishHelper;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -495,9 +496,8 @@ public class CloudUtil {
 		CloudCredentials credentials = null;
 		if (tokenValue != null && !tokenValue.isEmpty()) {
 			try {
-				OAuth2AccessToken token = new ObjectMapper().readValue(tokenValue, OAuth2AccessToken.class);
-				credentials = new CloudCredentials(passcode, token);
-				
+				OAuth2AccessToken token = getTokenAsOAuth2Access(tokenValue);
+				credentials = new CloudCredentials(passcode, token);	
 			}
 			catch (IOException e) {
 				// ignore
@@ -508,5 +508,12 @@ public class CloudUtil {
 		}
 		return credentials;
 	}
+	
+	public static OAuth2AccessToken getTokenAsOAuth2Access(String authToken) throws IOException {
+		return new ObjectMapper().readValue(authToken, OAuth2AccessToken.class);
+	}
 
+	public static String getTokenAsJson(OAuth2AccessToken token) throws JsonProcessingException {
+		return new ObjectMapper().writeValueAsString(token);
+	}
 }

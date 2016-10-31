@@ -25,7 +25,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.cloudfoundry.client.lib.CloudCredentials;
+import org.eclipse.cft.server.core.internal.client.CFCloudCredentials;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
+import org.eclipse.cft.server.core.internal.client.V1CloudCredentials;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
@@ -137,5 +140,18 @@ public class CloudServerUtil {
 			return CloudFoundryBrandingExtensionPoint.getServerTypeIds().contains(serverId);
 		}
 		return false;
+	}
+	
+	public static CFCloudCredentials getCredentials(CloudFoundryServer cloudServer) throws CoreException {
+		CloudCredentials v1Credentials = null;
+		if (cloudServer.isSso()) {
+			v1Credentials = CloudUtil.createSsoCredentials(cloudServer.getPasscode(), cloudServer.getToken());
+		}
+		else {
+			String userName = cloudServer.getUsername();
+			String password = cloudServer.getPassword();
+			v1Credentials = new CloudCredentials(userName, password);
+		}
+		return new V1CloudCredentials(v1Credentials);
 	}
 }

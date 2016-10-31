@@ -21,7 +21,6 @@ import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.client.diego.CFInfo;
 
 public class BuildpackSupport extends CFClientV1Support {
 

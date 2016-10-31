@@ -45,7 +45,7 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
  * further retries aside from connection errors.
  * 
  * 
- * 
+ * @deprecated Only used for v1 client support. Use {@link CloudServerRequest} for wrapper client support
  */
 public abstract class ClientRequest<T> extends BaseClientRequest<T> {
 
