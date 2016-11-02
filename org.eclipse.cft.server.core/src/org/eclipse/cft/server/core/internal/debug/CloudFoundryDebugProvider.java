@@ -39,7 +39,7 @@ import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
 
 public abstract class CloudFoundryDebugProvider extends AbstractDebugProvider {
-	
+
 	public abstract String getLaunchConfigurationType(CloudFoundryApplicationModule appModule,
 			CloudFoundryServer cloudServer);
 
@@ -59,10 +59,9 @@ public abstract class CloudFoundryDebugProvider extends AbstractDebugProvider {
 		return idBuffer.toString();
 	}
 
-	public String getApplicationDebugLaunchId(IModule module, IServer server,
-			int appInstance) throws CoreException {
+	public String getApplicationDebugLaunchId(IModule module, IServer server, int appInstance) throws CoreException {
 		StringBuilder idBuffer = new StringBuilder();
-		
+
 		CloudFoundryServer cloudServer = getCloudServer(server);
 		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, cloudServer);
 
@@ -91,10 +90,9 @@ public abstract class CloudFoundryDebugProvider extends AbstractDebugProvider {
 	 * name.
 	 * @throws CoreException if unable to resolve launch configuration.
 	 */
-	public ILaunchConfiguration getLaunchConfiguration(IModule module,
-			IServer server, int appInstance, int remoteDebugPort, IProgressMonitor monitor)
-					throws CoreException {
-		
+	public ILaunchConfiguration getLaunchConfiguration(IModule module, IServer server, int appInstance,
+			int remoteDebugPort, IProgressMonitor monitor) throws CoreException {
+
 		CloudFoundryServer cloudServer = getCloudServer(server);
 		CloudFoundryApplicationModule appModule = getCloudFoundryApplicationModule(module, cloudServer);
 
@@ -135,7 +133,7 @@ public abstract class CloudFoundryDebugProvider extends AbstractDebugProvider {
 		}
 
 	}
-	
+
 	/**
 	 * Get the CloudFoundryServer for the given IServer
 	 * @param server The server
@@ -145,7 +143,7 @@ public abstract class CloudFoundryDebugProvider extends AbstractDebugProvider {
 	protected CloudFoundryServer getCloudServer(IServer server) throws CoreException {
 		return CloudServerUtil.getCloudServer(server);
 	}
-	
+
 	/**
 	 * Get the CloudFoundryApplicationModule for the given IModule
 	 * @param module The module
@@ -156,6 +154,11 @@ public abstract class CloudFoundryDebugProvider extends AbstractDebugProvider {
 	 */
 	protected CloudFoundryApplicationModule getCloudFoundryApplicationModule(IModule module,
 			CloudFoundryServer cloudServer) throws CoreException {
+		if (module == null) {
+			throw CloudErrorUtil.toCoreException(NLS.bind(Messages.CloudFoundryDebugProvider_NO_APPLICATION_FOUND,
+					cloudServer.getServer().getId()));
+
+		}
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
 		if (appModule == null) {
 			throw CloudErrorUtil.toCoreException(NLS.bind(Messages.CloudFoundryDebugProvider_NO_CLOUD_MODULE_FOUND,

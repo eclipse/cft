@@ -42,6 +42,10 @@ public class DebugProviderRegistry {
 
 	protected static AbstractDebugProvider getDebugProvider(CloudFoundryApplicationModule appModule,
 			CloudFoundryServer cloudServer) {
+		
+		if (appModule == null || appModule.getLocalModule() == null) {
+			return null;
+		}
 
 		for (DebugProviderExtension provider : providerExtensions) {
 			if (provider.isDebugSupported(cloudServer, appModule))
