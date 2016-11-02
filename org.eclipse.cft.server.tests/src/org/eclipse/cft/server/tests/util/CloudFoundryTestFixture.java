@@ -597,34 +597,37 @@ public class CloudFoundryTestFixture {
 	private static Properties loadProperties() throws Exception {
 		String propertiesLocation = System.getProperty(CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY);
 
-		if (propertiesLocation != null) {
+		if (propertiesLocation == null) {
+			throw CloudErrorUtil.toCoreException(
+					"No Cloud Foundry credential properties file found. Ensure that the launch configuration arguments includes a property: "
+							+ CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY
+							+ " that points to a file containing CF credentials. See Readme file in CFT test plugin.");
+		}
+		File propertiesFile = new File(propertiesLocation);
 
-			File propertiesFile = new File(propertiesLocation);
-
-			InputStream fileInputStream = null;
-			try {
-				if (propertiesFile.exists() && propertiesFile.canRead()) {
-					fileInputStream = new FileInputStream(propertiesFile);
-					Properties properties = new Properties();
-					properties.load(fileInputStream);
-					return properties;
-				}
+		InputStream fileInputStream = null;
+		try {
+			if (propertiesFile.exists() && propertiesFile.canRead()) {
+				fileInputStream = new FileInputStream(propertiesFile);
+				Properties properties = new Properties();
+				properties.load(fileInputStream);
+				return properties;
 			}
-			catch (FileNotFoundException e) {
-				throw CloudErrorUtil.toCoreException(e);
+		}
+		catch (FileNotFoundException e) {
+			throw CloudErrorUtil.toCoreException(e);
+		}
+		catch (IOException e) {
+			throw CloudErrorUtil.toCoreException(e);
+		}
+		finally {
+			try {
+				if (fileInputStream != null) {
+					fileInputStream.close();
+				}
 			}
 			catch (IOException e) {
-				throw CloudErrorUtil.toCoreException(e);
-			}
-			finally {
-				try {
-					if (fileInputStream != null) {
-						fileInputStream.close();
-					}
-				}
-				catch (IOException e) {
-					e.printStackTrace();
-				}
+				e.printStackTrace();
 			}
 		}
 

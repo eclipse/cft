@@ -261,26 +261,40 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		refreshListener.dispose();
 	}
 
-	public void testExternalCreatedServiceRefresh() throws Exception {
+	public void testUpdateExistingServices() throws Exception {
 		CloudFoundryOperations client = getTestFixture().createExternalClient();
 		client.login();
 		CFServiceInstance service = getCloudServiceToCreate("testExternalCreatedServiceRefresh", "elephantsql",
 				"turtle");
 
+		// Create services outside of CFT
 		client.createService(CloudServicesUtil.asLegacyV1Service(service));
 
-		ModulesRefreshListener refreshListener = new ModulesRefreshListener(cloudServer,
+		// Update all operation in the server fires various events, therefore
+		// have refresh listeners for
+		// the events that are
+		// of interest
+		ModulesRefreshListener servicesUpdateCompletedListener = new ModulesRefreshListener(cloudServer,
+				CloudServerEvent.EVENT_SERVICES_UPDATED);
+
+		ModulesRefreshListener updateCompletedListener = new ModulesRefreshListener(cloudServer,
 				CloudServerEvent.EVENT_UPDATE_COMPLETED);
 
+		// Refresh server to update with the externally created services
 		serverBehavior.asyncUpdateAll();
 
-		assertTrue(refreshListener.modulesRefreshed(new NullProgressMonitor()));
+		// Wait for the async op to complete
+		assertTrue(servicesUpdateCompletedListener.modulesRefreshed(new NullProgressMonitor()));
+		assertTrue(updateCompletedListener.modulesRefreshed(new NullProgressMonitor()));
 
-		assertEquals(CloudServerEvent.EVENT_UPDATE_COMPLETED, refreshListener.getMatchedEvent().getType());
+		assertEquals(CloudServerEvent.EVENT_UPDATE_COMPLETED, updateCompletedListener.getMatchedEvent().getType());
+		assertEquals(CloudServerEvent.EVENT_SERVICES_UPDATED,
+				servicesUpdateCompletedListener.getMatchedEvent().getType());
+
 		assertTrue("Expected " + ServicesUpdatedEvent.class,
-				refreshListener.getMatchedEvent() instanceof ServicesUpdatedEvent);
+				servicesUpdateCompletedListener.getMatchedEvent() instanceof ServicesUpdatedEvent);
 
-		ServicesUpdatedEvent cloudEvent = (ServicesUpdatedEvent) refreshListener.getMatchedEvent();
+		ServicesUpdatedEvent cloudEvent = (ServicesUpdatedEvent) servicesUpdateCompletedListener.getMatchedEvent();
 		List<CFServiceInstance> eventServices = cloudEvent.getServices();
 		assertTrue("Expected 1 service in cloud refresh event", eventServices.size() == 1);
 		assertEquals("testExternalCreatedServiceRefresh", eventServices.get(0).getName());
