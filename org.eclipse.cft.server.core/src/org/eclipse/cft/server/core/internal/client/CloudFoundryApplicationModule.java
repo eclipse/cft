@@ -364,6 +364,11 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 				}
 			}
 		}
+
+		if(newModule == null) {
+			/** The local module is no longer available (for example, it is no longer linked to cloud module) */
+			return this;
+		}
 		
 		return newModule;
 	
