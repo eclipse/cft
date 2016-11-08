@@ -29,6 +29,7 @@ import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.eclipse.cft.server.core.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
+import org.eclipse.cft.server.core.internal.application.ApplicationRunState;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
@@ -188,6 +189,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 		assertTrue("Expected application to be started",
 				appModule.getApplication().getState().equals(AppState.STARTED));
 		assertTrue("Expected application to be started", appModule.getState() == Server.STATE_STARTED);
+		assertTrue("Expected application to be started", appModule.getRunState() == ApplicationRunState.STARTED);
 
 		// Stop the app
 		cloudServer.getBehaviour().operations().applicationDeployment(appModule, ApplicationAction.STOP)
@@ -213,6 +215,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 		assertTrue("Expected application to be stopped",
 				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
+		assertTrue("Expected application to be stopped", appModule.getRunState() == ApplicationRunState.STOPPED);
 
 		cloudServer.getBehaviour().operations().applicationDeployment(appModule, ApplicationAction.START)
 				.run(new NullProgressMonitor());
@@ -244,6 +247,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 		assertTrue("Expected application to be stopped",
 				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
+		assertTrue("Expected application to be stopped", appModule.getRunState() == ApplicationRunState.STOPPED);
 
 		cloudServer.getBehaviour().operations().applicationDeployment(appModule, ApplicationAction.RESTART)
 				.run(new NullProgressMonitor());
@@ -253,6 +257,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 		assertTrue("Expected application to be started",
 				appModule.getApplication().getState().equals(AppState.STARTED));
 		assertTrue("Expected application to be started", appModule.getState() == Server.STATE_STARTED);
+		assertTrue("Expected application to be started", appModule.getRunState() == ApplicationRunState.STARTED);
 
 		// Verify that instances info is available
 		assertEquals("Expected instances information for running app", 1,
@@ -277,6 +282,7 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 		assertTrue("Expected application to be stopped",
 				appModule.getApplication().getState().equals(AppState.STOPPED));
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
+		assertTrue("Expected application to be stopped", appModule.getRunState() == ApplicationRunState.STOPPED);
 
 		cloudServer.getBehaviour().operations().applicationDeployment(appModule, ApplicationAction.UPDATE_RESTART)
 				.run(new NullProgressMonitor());
@@ -285,7 +291,8 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
 		assertTrue("Expected application to be started",
 				appModule.getApplication().getState().equals(AppState.STARTED));
-		assertTrue("Expected application to be started", appModule.getState() == Server.STATE_STARTED);
+		assertEquals("Expected application to be started", appModule.getState(), Server.STATE_STARTED);
+		assertTrue("Expected application to be started", appModule.getRunState() == ApplicationRunState.STARTED);
 
 		// Verify that instances info is available
 		assertEquals("Expected instances information for running app", 1,
@@ -296,9 +303,9 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 		assertEquals("Expected instance stats for running app", 1, appModule.getApplicationStats().getRecords().size());
 	}
 
-	public void testPushApplicationStopMode() throws Exception {
+	public void testApplicationStopState() throws Exception {
 
-		String prefix = "testPushApplicationStopMode";
+		String prefix = "testApplicationStopState";
 		String expectedAppName = harness.getWebAppName(prefix);
 		IProject project = createWebApplicationProject();
 		boolean startApp = false;
@@ -312,14 +319,28 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(expectedAppName);
 
-		assertTrue("Expected application to be stopped",
-				appModule.getApplication().getState().equals(AppState.STOPPED));
+		// Check all the API that return stopped state, including state
+		// in the local server as well as in Cloud Foundry
+
+		// Test the deprecated API. Should still return correct state
 		assertTrue("Expected application to be stopped", appModule.getState() == Server.STATE_STOPPED);
+
+		// This is the old v1 client app state.
+		assertTrue("Expected application to be stopped in v1 CF client",
+				appModule.getApplication().getState().equals(AppState.STOPPED));
+
+		// This is the WST module state in the server
+		assertTrue("Expected application to be stopped in the WST CF server",
+				appModule.getStateInServer() == Server.STATE_STOPPED);
+
+		// This is CFT application run state, independent of client
+		assertTrue("Expected application to be stopped in CFT framework",
+				appModule.getRunState() == ApplicationRunState.STOPPED);
 	}
 
-	public void testPushApplicationStartMode() throws Exception {
+	public void testApplicationStartState() throws Exception {
 
-		String prefix = "testPushApplicationStartMode";
+		String prefix = "testApplicationStartState";
 
 		String expectedAppName = harness.getWebAppName(prefix);
 		IProject project = createWebApplicationProject();
@@ -334,9 +355,23 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(expectedAppName);
 
-		assertTrue("Expected application to be started",
-				appModule.getApplication().getState().equals(AppState.STARTED));
+		// Check all the API that return started state, including started state
+		// in the local server as well as in Cloud Foundry
+
+		// Test the deprecated API. Should still return correct state
 		assertTrue("Expected application to be started", appModule.getState() == Server.STATE_STARTED);
+
+		// This is the old v1 client app state.
+		assertTrue("Expected application to be started in v1 CF client",
+				appModule.getApplication().getState().equals(AppState.STARTED));
+
+		// This is the WST module state in the server
+		assertTrue("Expected application to be started in the WST CF server",
+				appModule.getStateInServer() == Server.STATE_STARTED);
+
+		// This is CFT application run state, independent of client
+		assertTrue("Expected application to be started in CFT framework",
+				appModule.getRunState() == ApplicationRunState.STARTED);
 
 		// Verify that instances info is available
 		assertEquals("Expected instances information for running app", 1,
@@ -346,5 +381,4 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
 		assertEquals("Expected instance stats for running app", 1, appModule.getApplicationStats().getRecords().size());
 	}
-
 }
