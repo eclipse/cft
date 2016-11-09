@@ -143,6 +143,8 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	
 	public static final String PROP_PASSCODE_ID = "org.eclipse.cft.passcode"; //$NON-NLS-1$
 
+	private static final long DEFAULT_SSL_HANDSHAKE_TIMEOUT = 60;
+
 	protected void updateState(Server server, CloudFoundryApplicationModule appModule) throws CoreException {
 		IModule[] localModule = new IModule[] { appModule.getLocalModule() };
 		server.setModuleState(localModule, appModule.getState());
@@ -1574,5 +1576,11 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		
 		return "";
 	}
-	
+
+	/**
+	 * Only used by certain clients, like CF Java client v2.
+	 */
+	public long getSslHandshakeTimeout() {
+		return DEFAULT_SSL_HANDSHAKE_TIMEOUT;
+	}
 }
