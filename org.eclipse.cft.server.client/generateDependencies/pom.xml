@@ -147,5 +147,5 @@
 			</plugin>
 		</plugins>
 	</build>
-
+	<groupId>v2-client</groupId>
 </project>

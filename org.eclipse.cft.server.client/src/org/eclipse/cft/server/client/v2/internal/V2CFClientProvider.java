@@ -36,8 +36,6 @@ import org.eclipse.wst.server.core.IServer;
 import org.osgi.framework.Version;
 
 public class V2CFClientProvider implements CFClientProvider {
-	
-
 
 	@Override
 	public ProviderPriority getPriority() {
@@ -54,10 +52,11 @@ public class V2CFClientProvider implements CFClientProvider {
 			IProgressMonitor monitor) throws CoreException {
 		// Passcode not supported yet
 		if (credentials.isPasscodeSet()) {
-			throw CloudErrorUtil.toCoreException("One-time passcode not supported in this version of v2 client for doppler log streaming.");
+			throw CloudErrorUtil.toCoreException(
+					"One-time passcode not supported in this version of v2 client for doppler log streaming."); //$NON-NLS-1$
 		}
 		CloudFoundryServer cfServer = CloudServerUtil.getCloudServer(cloudServer);
-		if (cfServer  != null) {
+		if (cfServer != null) {
 			return new V2Client(cfServer, credentials, cloudFoundrySpace);
 		}
 		return null;
