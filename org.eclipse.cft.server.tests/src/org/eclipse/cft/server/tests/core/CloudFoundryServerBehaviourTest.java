@@ -234,7 +234,6 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		int modStateInCFAM = appModule.getStateInServer();
 		assertEquals(IServer.STATE_STARTED, modStateInCFAM);
-
 	}
 
 	public void testBug492609_ModuleDeployBuildpackError() throws Exception {
