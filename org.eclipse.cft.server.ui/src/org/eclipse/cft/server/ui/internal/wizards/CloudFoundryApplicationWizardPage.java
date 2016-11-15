@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
+import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.ModuleCache;
@@ -402,7 +403,7 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 				if (url != null) {
 					UniqueSubdomain uniqueSubdomain;
 					try {
-						uniqueSubdomain = CFUiUtil.getUniqueSubdomain(url, server, monitor);
+						uniqueSubdomain = CFUiUtil.getUniqueSubdomain(url, server, CloudFoundryBrandingExtensionPoint.isSupportUpperCaseURL(serverTypeId), monitor);
 					} catch (CoreException e) {
 						// Return the exception to calling class
 						return e.getStatus();
