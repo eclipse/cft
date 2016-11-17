@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -70,6 +70,8 @@ public class CloudFoundryBrandingExtensionPoint {
 	public static String ATTR_SIGNUP_URL = "signupURL"; //$NON-NLS-1$
 	
 	public static String ATTR_URL_PROVIDER_CLASS = "urlProviderClass"; //$NON-NLS-1$
+	
+	public static String ATTR_SUPPORT_UPPER_CASE_URL = "supportUpperCaseURL"; //$NON-NLS-1$
 
 	public static String POINT_ID = "org.eclipse.cft.server.core.branding"; //$NON-NLS-1$
 
@@ -426,6 +428,19 @@ public class CloudFoundryBrandingExtensionPoint {
 		return url != null && (url.endsWith("cloudfoundry.me") || url.endsWith("vcap.me")); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
+	public static boolean isSupportUpperCaseURL(String serverTypeId) {
+		if (!read) {
+			readBrandingDefinitions();
+		}
+		IConfigurationElement config = brandingDefinitions.get(serverTypeId);
+		if (config != null) {
+			String isSupportUpperCaseURL = config.getAttribute(ATTR_SUPPORT_UPPER_CASE_URL);
+			// Defaults to true if the attribute is not found.
+			return isSupportUpperCaseURL == null ? true : Boolean.valueOf(isSupportUpperCaseURL);
+		}
+		return true;
+	}
+	
 	public static String getSignupURL(String serverTypeId, String url) {
 		if (url != null) {
 			// First check the defaultURL to see if there is an associated

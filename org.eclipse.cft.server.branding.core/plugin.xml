@@ -89,7 +89,8 @@
            provideServices="true"
            remoteSystemTypeId="org.cloudfoundry.cloudfoundryserver"
            serverDisplayName="Cloud Foundry"
-           serverTypeId="org.cloudfoundry.appcloudserver.10">
+           serverTypeId="org.cloudfoundry.appcloudserver.10"
+           supportUpperCaseURL="false">
     </service>
      </extension>
 

@@ -607,14 +607,21 @@ public class CFUiUtil {
 	 * 
 	 * @param url
 	 * @param server
+	 * @param isSupportUpperCaseURL support upper case URL; if false, only lower case will be used in URL.
 	 * @param monitor
 	 * @return the unused subdomain String
 	 * @throws CoreException
 	 */
-	public static UniqueSubdomain getUniqueSubdomain(String url, CloudFoundryServer server, IProgressMonitor monitor)
+	public static UniqueSubdomain getUniqueSubdomain(String url, CloudFoundryServer server, boolean isSupportUpperCaseURL, IProgressMonitor monitor)
 			throws CoreException {
-		if (url == null)
+		if (url == null) {
 			return null; // Incorrect usage. Provide a non-null string
+		}
+		
+		if (!isSupportUpperCaseURL) {
+			// Convert to lower case only URL as the base.
+			url = url.toLowerCase();
+		}
 
 		ApplicationUrlLookupService lookup = ApplicationUrlLookupService.getCurrentLookup(server);
 		CloudApplicationURL cloudUrl = null;
