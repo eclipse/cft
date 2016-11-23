@@ -43,6 +43,8 @@ import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
 import org.eclipse.wst.server.core.internal.ExternalModule;
@@ -169,6 +171,11 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 
 	private InstancesInfo instancesInfo;
 
+	/*
+	 * Created lazily, and its creation is an indicator of a valid module. For example, module would be valid 
+	 * only when the actual existing Cloud application is set in the module (i.e., association established between the two), or the info is completed
+	 * externally and saved through a deployment info working copy (e.g., during initial deployment)
+	 */
 	private ApplicationDeploymentInfo deploymentInfo;
 
 	private StartingInfo startingInfo;
@@ -317,20 +324,40 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		return wc;
 	}
 
+	
 	/**
 	 * 
 	 * @see AbstractApplicationDelegate#validateDeploymentInfo(ApplicationDeploymentInfo)
-	 * @return OK status if deployment information is complete and valid. Error
-	 * if failed to validate, or is invalid (i.e. it is missing information).
+	 * @return OK status if deployment information is complete and valid. Returns an error status
+	 * if invalid (i.e. it is missing some information).
+	 * 
 	 */
 	public synchronized IStatus validateDeploymentInfo() {
-		AbstractApplicationDelegate delegate = ApplicationRegistry.getApplicationDelegate(getLocalModule());
-		if (delegate == null) {
-			return CloudUtil.basicValidateDeploymentInfo(deploymentInfo);
+		// Bug: 507637 . CloudFoundryApplicationModule may be out of sync with the underlying server. 
+		// Note that missing deployment information at the time of validation means the server is out of sync. All CFAM that
+		// are successfully created should have a valid deployment information, regardless of whether the actual application
+		// is published or not.
+		if (deploymentInfo == null) {
+			String message = NLS.bind(Messages.CloudFoundryApplicationModule_SERVER_OUT_OF_SYNC, server.getId());
+			IStatus status = CloudFoundryPlugin.getErrorStatus(message);
+			setStatus(status);
+			return status;
 		}
-		IStatus status = delegate.validateDeploymentInfo(deploymentInfo);
-		setStatus(status);
-		return status;
+		else {
+			AbstractApplicationDelegate delegate = ApplicationRegistry.getApplicationDelegate(getLocalModule());
+			IStatus status = delegate != null ? delegate.validateDeploymentInfo(deploymentInfo)
+					: CloudUtil.basicValidateDeploymentInfo(deploymentInfo);
+
+			if (status == null) {
+				status = Status.OK_STATUS;
+			}
+			if (!status.isOK()) {
+				status = CloudFoundryPlugin.getErrorStatus(NLS.bind(Messages.ERROR_APP_DEPLOYMENT_VALIDATION_ERROR,
+						getDeployedApplicationName(), status.getMessage()));
+			}
+			setStatus(status);
+			return status;
+		}
 	}
 
 	/**

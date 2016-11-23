@@ -158,7 +158,9 @@ public class Messages extends NLS {
 	public static String CloudFoundryApplicationModule_STATE_UPLOADING;
 
 	public static String CloudFoundryApplicationModule_STATE_WAITING_TO_LAUNCH;
-
+	
+	public static String CloudFoundryApplicationModule_SERVER_OUT_OF_SYNC;
+	
 	public static String CloudFoundryConstants_LABEL_SIGNUP;
 	
 	public static String CloudFoundryDebugProvider_NO_CLOUD_MODULE_FOUND;
