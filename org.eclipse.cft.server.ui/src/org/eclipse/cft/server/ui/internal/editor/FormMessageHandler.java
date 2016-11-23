@@ -95,6 +95,7 @@ public class FormMessageHandler {
 				}
 			}
 
+			String fullMessage = buffer.toString();
 			if (buffer.length() > MAX_MESSAGE_DISPLAY_SIZE) {
 				String endingSegment = Messages.CloudFoundryApplicationsEditorPage_TEXT_SEE_ERRORLOG;
 
@@ -103,15 +104,15 @@ public class FormMessageHandler {
 				// Only log to Eclipse log if the message is too long to be
 				// shown in editor
 				if (messageProviderType == IMessageProvider.ERROR) {
-					CloudFoundryPlugin.logError(message);
+					// Log the full error
+					CloudFoundryPlugin.logError(fullMessage);
+				} else {
+					// Log the full message as an Info
+					CloudFoundryPlugin.logInfo(fullMessage);
 				}
-				else {
-					CloudFoundryPlugin.logInfo(message);
-				}
-
 			}
 			else {
-				message = buffer.toString();
+				message = fullMessage;
 			}
 
 			
