@@ -29,7 +29,7 @@ import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryLoginHandler;
 import org.eclipse.cft.server.tests.sts.util.StsTestUtil;
 import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture;
-import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture.CredentialProperties;
+import org.eclipse.cft.server.tests.util.CredentialProperties;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.junit.Assert;
 

@@ -48,8 +48,7 @@ import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
-import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture;
-import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture.CredentialProperties;
+import org.eclipse.cft.server.tests.util.CredentialProperties;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -90,48 +89,6 @@ import junit.framework.Assert;
  */
 public class StsTestUtil {
 
-	public static void validateCredentials(CredentialProperties credentials) throws CoreException {
-		String missingInfo = "";
-
-		if (credentials == null) {
-			missingInfo = "No credentials and Cloud target information available to run the junits.";
-		}
-		else {
-			String userEmail = credentials.userEmail;
-			String password = credentials.password;
-			String org = credentials.organization;
-			String space = credentials.space;
-
-			if (userEmail == null || password == null) {
-				userEmail = System.getProperty("vcap.email", "");
-				password = System.getProperty("vcap.passwd", "");
-			}
-
-			if (userEmail == null) {
-				missingInfo += "-Username-";
-			}
-
-			if (password == null) {
-				missingInfo += "-Password-";
-			}
-
-			if (org == null) {
-				missingInfo += "-Org-";
-			}
-
-			if (space == null) {
-				missingInfo += "-Space-";
-			}
-		}
-
-		if (missingInfo.length() > 0) {
-			missingInfo = "Failed to run tests due to missing information: " + missingInfo;
-			throw CloudErrorUtil.toCoreException(missingInfo
-					+ ". Ensure Cloud Foundry credentials are set as properties in a properties file and passed as an argument to the VM using \"-D"
-					+ CloudFoundryTestFixture.CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY + "=[full file location]\"");
-		}
-	}
-
 	/**
 	 *
 	 * @return standalone client based on the harness credentials, org and
@@ -140,8 +97,6 @@ public class StsTestUtil {
 	 */
 	public static CloudFoundryOperations createStandaloneClient(CredentialProperties credentials, String url)
 			throws CoreException {
-
-		validateCredentials(credentials);
 
 		try {
 			return CloudFoundryPlugin.getCloudFoundryClientFactory().getCloudFoundryOperations(
@@ -161,7 +116,8 @@ public class StsTestUtil {
 	 */
 	public static CloudFoundryOperations createStandaloneClient(String userName, String password, String org,
 			String space, String url, boolean selfsigned) throws CoreException {
-		CredentialProperties credentials = new CredentialProperties(null, userName, password, org, space, selfsigned);
+		CredentialProperties credentials = new CredentialProperties(null, userName, password, org, space, null,
+				selfsigned);
 		return createStandaloneClient(credentials, url);
 	}
 
@@ -424,8 +380,8 @@ public class StsTestUtil {
 	 *
 	 * "" length = 0 => type of resource is IWorkspaceRoot "foo" length = 1 =>
 	 * type of resource is IProject "foo/src/Foo.java" length > 1 and no
-	 * trailing "/" => type is IFile
-	 * "foo/src/          length > 1 and a trailing "/" => type is IFolder
+	 * trailing "/" => type is IFile "foo/src/ length > 1 and a trailing "/" =>
+	 * type is IFolder
 	 */
 	public static IResource getResource(String pathToFile) {
 		return getResource(Path.ROOT.append(pathToFile));
