@@ -28,7 +28,7 @@ public class PropertiesLoaderFromEnvVar extends CredentialsLoader {
 
 	private static final String CFT_TEST_ORG = "CFT_TEST_ORG";
 
-	private static final String CF_TEST_PASSWORD = "CFT_TEST_PASSWORD";
+	private static final String CFT_TEST_PASSWORD = "CFT_TEST_PASSWORD";
 
 	private static final String CFT_TEST_USER = "CFT_TEST_USER";
 
@@ -59,7 +59,7 @@ public class PropertiesLoaderFromEnvVar extends CredentialsLoader {
 	@Override
 	public CredentialProperties getCredentialProperties() throws Exception {
 		CredentialProperties properties = new CredentialProperties(getRequiredEnv(CFT_TEST_URL),
-				getRequiredEnv(CFT_TEST_USER), getRequiredEnv(CF_TEST_PASSWORD), getRequiredEnv(CFT_TEST_ORG),
+				getRequiredEnv(CFT_TEST_USER), getRequiredEnv(CFT_TEST_PASSWORD), getRequiredEnv(CFT_TEST_ORG),
 				getRequiredEnv(CFT_TEST_SPACE), getEnv(CFT_TEST_BUILDPACK), getEnvBoolean(CFT_TEST_SKIP_SSL));
 		properties.setSuccessLoadedMessage(getSuccessLoadedMessage());
 		return properties;
