@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc.
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,22 +22,21 @@ package org.eclipse.cft.server.tests.util;
 
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 
-public abstract class CredentialsLoader {
+public abstract class PropertiesLoader {
 
-	private static final CredentialsLoader[] LOADERS = new CredentialsLoader[] { new PropertiesLoaderFromFile(),
+	private static final PropertiesLoader[] LOADERS = new PropertiesLoader[] { new PropertiesLoaderFromFile(),
 			new PropertiesLoaderFromEnvVar() };
 
-	public abstract CredentialProperties getCredentialProperties() throws Exception;
+	public abstract HarnessProperties getProperties() throws Exception;
 
-	public static CredentialProperties loadProperties() throws Exception {
+	public static HarnessProperties loadProperties() throws Exception {
 
-		CredentialProperties properties = null;
+		HarnessProperties properties = null;
 		Exception error = null;
-		for (CredentialsLoader credentialsLoader : LOADERS) {
+		for (PropertiesLoader credentialsLoader : LOADERS) {
 			try {
-				properties = credentialsLoader.getCredentialProperties();
+				properties = credentialsLoader.getProperties();
 				if (properties != null) {
-					CloudFoundryTestFixture.log(properties.getSuccessLoadedMessage());
 					break;
 				}
 			}
@@ -52,7 +51,7 @@ public abstract class CredentialsLoader {
 			}
 			else {
 				throw CloudErrorUtil.toCoreException(
-						"No Cloud credential properties found. Ensure Cloud account information is either set in environment variables or defined in a credentials file.");
+						"No Cloud properties found for the test harness. Ensure Cloud account information is either set in environment variables or defined in a properties file.");
 			}
 		}
 		else {

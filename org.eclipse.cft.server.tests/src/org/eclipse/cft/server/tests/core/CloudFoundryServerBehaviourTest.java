@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,12 +33,10 @@ import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
-import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.CloudServicesUtil;
 import org.eclipse.cft.server.core.internal.ModuleCache.ServerData;
 import org.eclipse.cft.server.core.internal.application.ApplicationRunState;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
@@ -76,13 +74,6 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		String expectedAppName = harness.getWebAppName(prefix);
 
-		CloudFoundryOperations client = getTestFixture().createExternalClient();
-		client.login();
-		CFServiceInstance service = getCloudServiceToCreate("sqlService", "elephantsql", "turtle");
-		List<CFServiceInstance> servicesToBind = new ArrayList<CFServiceInstance>();
-		servicesToBind.add(service);
-		client.createService(CloudServicesUtil.asLegacyV1Service(service));
-
 		EnvironmentVariable variable = new EnvironmentVariable();
 		variable.setVariable("JAVA_OPTS");
 		variable.setValue("-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n");
@@ -93,8 +84,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		boolean startApp = true;
 		CloudFoundryApplicationModule appModule = deployApplication(prefix,
-				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, vars, servicesToBind,
-				harness.getDefaultBuildpack());
+				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, vars,
+				/* no services to bind */ null, harness.getDefaultBuildpack());
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
@@ -129,9 +120,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		assertTrue(actualApp.getEnvAsMap().containsKey("JAVA_OPTS"));
 		assertEquals("-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n",
 				actualApp.getEnvAsMap().get("JAVA_OPTS"));
-		assertEquals("sqlService", appModule.getDeploymentInfo().getServices().get(0).getName());
-		assertEquals("sqlService", actualApp.getServices().get(0));
-
+		assertTrue("Expected no bound services", appModule.getDeploymentInfo().getServices().isEmpty());
 	}
 
 	public void testCloudFoundryModuleCreationNonWSTPublish() throws Exception {

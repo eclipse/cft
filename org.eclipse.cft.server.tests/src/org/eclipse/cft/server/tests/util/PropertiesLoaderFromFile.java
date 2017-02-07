@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc.
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,7 @@ import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.ValueValidationUtil;
 import org.eclipse.core.runtime.Assert;
 
-public class PropertiesLoaderFromFile extends CredentialsLoader {
+public class PropertiesLoaderFromFile extends PropertiesLoader {
 
 	public static final String CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY = "test.credentials";
 
@@ -48,6 +48,12 @@ public class PropertiesLoaderFromFile extends CredentialsLoader {
 	public static final String BUILDPACK_PROPERTY = "buildpack";
 
 	public static final String SELF_SIGNED_CERTIFICATE_PROPERTY = "selfsigned";
+
+	private static final String SERVICE_PLAN_PROP = "serviceplan";
+
+	private static final String SERVICE_NAME_PROP = "servicename";
+
+	public static final String SERVICE_TYPE_PROP = "servicetype";
 
 	protected Properties readFromFile(String propertiesLocation) throws Exception {
 
@@ -98,13 +104,14 @@ public class PropertiesLoaderFromFile extends CredentialsLoader {
 	protected String getRequiredProperty(String property, Properties properties) {
 		String value = properties.getProperty(property);
 		Assert.isLegal(!ValueValidationUtil.isEmpty(value),
-				"The property '" + property + "' must be set in a credentials text file and the file must passed as a VM arg:  \"-D"
+				"The property '" + property
+						+ "' must be set in a credentials text file and the file must passed as a VM arg:  \"-D"
 						+ CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY);
 		return value;
 	}
 
 	@Override
-	public CredentialProperties getCredentialProperties() throws Exception {
+	public HarnessProperties getProperties() throws Exception {
 		String propertiesLocation = System.getProperty(CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY);
 
 		if (propertiesLocation == null) {
@@ -116,15 +123,25 @@ public class PropertiesLoaderFromFile extends CredentialsLoader {
 
 		Properties properties = readFromFile(propertiesLocation);
 		if (properties != null) {
-			CredentialProperties credentialsProps = new CredentialProperties(getUrl(properties),
-					getRequiredProperty(USEREMAIL_PROPERTY, properties),
-					getRequiredProperty(PASSWORD_PROPERTY, properties), getRequiredProperty(ORG_PROPERTY, properties),
-					getRequiredProperty(SPACE_PROPERTY, properties), properties.getProperty(BUILDPACK_PROPERTY),
-					getSkipSsl(properties));
+			String url = getUrl(properties);
+			String user = getRequiredProperty(USEREMAIL_PROPERTY, properties);
+			String password = getRequiredProperty(PASSWORD_PROPERTY, properties);
+			String org = getRequiredProperty(ORG_PROPERTY, properties);
+			String space = getRequiredProperty(SPACE_PROPERTY, properties);
+			String buildpack = properties.getProperty(BUILDPACK_PROPERTY);
+			String serviceName = getRequiredProperty(SERVICE_NAME_PROP, properties);
+			String serviceType = getRequiredProperty(SERVICE_TYPE_PROP, properties);
+			String servicePlan = getRequiredProperty(SERVICE_PLAN_PROP, properties);
+
+			boolean skipSsl = getSkipSsl(properties);
 
 			String successfulLoadedMessage = "Successfully loaded Cloud account information from credentials file : "
 					+ propertiesLocation;
-			credentialsProps.setSuccessLoadedMessage(successfulLoadedMessage);
+
+			HarnessProperties credentialsProps = HarnessPropertiesBuilder.instance().target(url, org, space, skipSsl)
+					.credentials(user, password).buildpack(buildpack).service(serviceName, serviceType, servicePlan)
+					.successfulLoadedMessage(successfulLoadedMessage).build();
+
 			return credentialsProps;
 		}
 

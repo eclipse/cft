@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,7 @@ import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryLoginHandler;
 import org.eclipse.cft.server.tests.sts.util.StsTestUtil;
 import org.eclipse.cft.server.tests.util.CloudFoundryTestFixture;
-import org.eclipse.cft.server.tests.util.CredentialProperties;
+import org.eclipse.cft.server.tests.util.HarnessProperties;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.junit.Assert;
 
@@ -53,16 +53,16 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 
 	public void testConnectToNonSecureUrl() throws Exception {
 
-		CredentialProperties credentials = getTestFixture().getCredentialProperties();
+		HarnessProperties props = getTestFixture().getHarnessProperties();
 
-		String url = credentials.url;
+		String url = props.getApiUrl();
 
 		URL ur = new URL(url);
 		String host = ur.getHost();
 		String httpUrl = "http://" + host;
 
-		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(credentials.userEmail, credentials.password,
-				credentials.organization, credentials.space, httpUrl, credentials.selfSignedCertificate);
+		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(props.getUsername(), props.getPassword(),
+				props.getOrg(), props.getSpace(), httpUrl, props.skipSslValidation());
 
 		new CloudFoundryLoginHandler(client, null).login(new NullProgressMonitor());
 
@@ -71,16 +71,16 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 	}
 
 	public void testConnectToSecureUrl() throws Exception {
-		CredentialProperties credentials = getTestFixture().getCredentialProperties();
+		HarnessProperties props = getTestFixture().getHarnessProperties();
 
-		String url = credentials.url;
+		String url = props.getApiUrl();
 
 		URL ur = new URL(url);
 		String host = ur.getHost();
 		String httpUrl = "https://" + host;
 
-		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(credentials.userEmail, credentials.password,
-				credentials.organization, credentials.space, httpUrl, credentials.selfSignedCertificate);
+		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(props.getUsername(), props.getPassword(),
+				props.getOrg(), props.getSpace(), httpUrl, props.skipSslValidation());
 
 		new CloudFoundryLoginHandler(client, null).login(new NullProgressMonitor());
 
@@ -90,10 +90,10 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 
 	public void testValidCredentials() throws Exception {
 
-		CredentialProperties credentials = getTestFixture().getCredentialProperties();
+		HarnessProperties props = getTestFixture().getHarnessProperties();
 
-		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(credentials.userEmail, credentials.password,
-				credentials.organization, credentials.space, credentials.url, credentials.selfSignedCertificate);
+		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(props.getUsername(), props.getPassword(),
+				props.getOrg(), props.getSpace(), props.getApiUrl(), props.skipSslValidation());
 
 		CloudInfo cloudInfo = client.getCloudInfo();
 		Assert.assertNotNull(cloudInfo);
@@ -102,10 +102,10 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 
 	public void testValidCredentialsLoginHandler() throws Exception {
 
-		CredentialProperties credentials = getTestFixture().getCredentialProperties();
+		HarnessProperties props = getTestFixture().getHarnessProperties();
 
-		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(credentials.userEmail, credentials.password,
-				credentials.organization, credentials.space, credentials.url, credentials.selfSignedCertificate);
+		CloudFoundryOperations client = StsTestUtil.createStandaloneClient(props.getUsername(), props.getPassword(),
+				props.getOrg(), props.getSpace(), props.getApiUrl(), props.skipSslValidation());
 
 		CloudFoundryLoginHandler operationsHandler = new CloudFoundryLoginHandler(client, null);
 
@@ -117,14 +117,14 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 	}
 
 	public void testInvalidUsername() throws Exception {
-		CredentialProperties credentials = getTestFixture().getCredentialProperties();
+		HarnessProperties props = getTestFixture().getHarnessProperties();
 
 		String invalidUsername = "invalid@username";
 
 		CloudFoundryException cfe = null;
 		try {
-			StsTestUtil.createStandaloneClient(invalidUsername, credentials.password, credentials.organization,
-					credentials.space, credentials.url, credentials.selfSignedCertificate);
+			StsTestUtil.createStandaloneClient(invalidUsername, props.getPassword(), props.getOrg(), props.getSpace(),
+					props.getApiUrl(), props.skipSslValidation());
 		}
 		catch (CloudFoundryException e) {
 			cfe = e;
@@ -135,14 +135,14 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 	}
 
 	public void testInvalidPassword() throws Exception {
-		CredentialProperties credentials = getTestFixture().getCredentialProperties();
+		HarnessProperties props = getTestFixture().getHarnessProperties();
 
 		String invalidPassword = "wrongpassword";
 
 		CloudFoundryException cfe = null;
 		try {
-			StsTestUtil.createStandaloneClient(credentials.userEmail, invalidPassword, credentials.organization,
-					credentials.space, credentials.url, credentials.selfSignedCertificate);
+			StsTestUtil.createStandaloneClient(props.getUsername(), invalidPassword, props.getOrg(), props.getSpace(),
+					props.getApiUrl(), props.skipSslValidation());
 		}
 		catch (CloudFoundryException e) {
 			cfe = e;
@@ -153,14 +153,14 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 	}
 
 	public void testInvalidOrg() throws Exception {
-		CredentialProperties credentials = getTestFixture().getCredentialProperties();
+		HarnessProperties props = getTestFixture().getHarnessProperties();
 
 		String wrongOrg = "wrongorg";
 
 		IllegalArgumentException error = null;
 		try {
-			StsTestUtil.createStandaloneClient(credentials.userEmail, credentials.password, wrongOrg, credentials.space,
-					credentials.url, credentials.selfSignedCertificate);
+			StsTestUtil.createStandaloneClient(props.getUsername(), props.getPassword(), wrongOrg, props.getSpace(),
+					props.getApiUrl(), props.skipSslValidation());
 		}
 		catch (IllegalArgumentException e) {
 			error = e;
@@ -171,14 +171,14 @@ public class CloudFoundryClientConnectionTest extends TestCase {
 	}
 
 	public void testInvalidSpace() throws Exception {
-		CredentialProperties credentials = getTestFixture().getCredentialProperties();
+		HarnessProperties props = getTestFixture().getHarnessProperties();
 
 		String wrongSpace = "wrongSpace";
 
 		IllegalArgumentException error = null;
 		try {
-			StsTestUtil.createStandaloneClient(credentials.userEmail, credentials.password, credentials.organization,
-					wrongSpace, credentials.url, credentials.selfSignedCertificate);
+			StsTestUtil.createStandaloneClient(props.getUsername(), props.getPassword(),
+					props.getOrg(), wrongSpace, props.getApiUrl(), props.skipSslValidation());
 		}
 		catch (IllegalArgumentException e) {
 			error = e;

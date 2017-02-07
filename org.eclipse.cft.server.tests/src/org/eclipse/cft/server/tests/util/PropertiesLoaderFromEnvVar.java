@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc.
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,7 @@ package org.eclipse.cft.server.tests.util;
 import org.eclipse.cft.server.core.internal.ValueValidationUtil;
 import org.eclipse.core.runtime.Assert;
 
-public class PropertiesLoaderFromEnvVar extends CredentialsLoader {
+public class PropertiesLoaderFromEnvVar extends PropertiesLoader {
 	private static final String CFT_TEST_SPACE = "CFT_TEST_SPACE";
 
 	private static final String CFT_TEST_ORG = "CFT_TEST_ORG";
@@ -37,6 +37,12 @@ public class PropertiesLoaderFromEnvVar extends CredentialsLoader {
 	private static final String CFT_TEST_SKIP_SSL = "CFT_TEST_SKIP_SSL";
 
 	private static final String CFT_TEST_BUILDPACK = "CFT_TEST_BUILDPACK";
+
+	private static final String CFT_TEST_SERVICE_NAME = "CFT_TEST_SERVICE_NAME";
+
+	private static final String CFT_TEST_SERVICE_TYPE = "CFT_TEST_SERVICE_TYPE";
+
+	private static final String CFT_TEST_SERVICE_PLAN = "CFT_TEST_SERVICE_PLAN";
 
 	public String getRequiredEnv(String name) throws Exception {
 		String value = System.getenv(name);
@@ -57,11 +63,25 @@ public class PropertiesLoaderFromEnvVar extends CredentialsLoader {
 	}
 
 	@Override
-	public CredentialProperties getCredentialProperties() throws Exception {
-		CredentialProperties properties = new CredentialProperties(getRequiredEnv(CFT_TEST_URL),
-				getRequiredEnv(CFT_TEST_USER), getRequiredEnv(CFT_TEST_PASSWORD), getRequiredEnv(CFT_TEST_ORG),
-				getRequiredEnv(CFT_TEST_SPACE), getEnv(CFT_TEST_BUILDPACK), getEnvBoolean(CFT_TEST_SKIP_SSL));
-		properties.setSuccessLoadedMessage(getSuccessLoadedMessage());
+	public HarnessProperties getProperties() throws Exception {
+		String url = getRequiredEnv(CFT_TEST_URL);
+		if (!url.startsWith("http")) {
+			url = "http://" + url;
+		}
+
+		String user = getRequiredEnv(CFT_TEST_USER);
+		String password = getRequiredEnv(CFT_TEST_PASSWORD);
+		String org = getRequiredEnv(CFT_TEST_ORG);
+		String space = getRequiredEnv(CFT_TEST_SPACE);
+		String buildpack = getEnv(CFT_TEST_BUILDPACK);
+		boolean skipSsl = getEnvBoolean(CFT_TEST_SKIP_SSL);
+		String serviceName = getRequiredEnv(CFT_TEST_SERVICE_NAME);
+		String serviceType = getRequiredEnv(CFT_TEST_SERVICE_TYPE);
+		String servicePlan = getRequiredEnv(CFT_TEST_SERVICE_PLAN);
+
+		HarnessProperties properties = HarnessPropertiesBuilder.instance().target(url, org, space, skipSsl)
+				.credentials(user, password).buildpack(buildpack).service(serviceName, serviceType, servicePlan)
+				.successfulLoadedMessage(getSuccessLoadedMessage()).build();
 		return properties;
 
 	}

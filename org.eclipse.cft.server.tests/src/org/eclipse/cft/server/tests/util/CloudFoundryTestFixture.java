@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -127,6 +127,8 @@ public class CloudFoundryTestFixture {
 
 		private final String serverUrl;
 
+		private final HarnessProperties properties;
+
 		// Added to the application name in order to avoid host name taken
 		// errors
 		// Even when clearing routes, host name taken errors are occasionally
@@ -136,9 +138,14 @@ public class CloudFoundryTestFixture {
 
 		private final String defaultBuildpack;
 
-		public Harness(String serverUrl, String defaultBuildpack) {
-			this.serverUrl = serverUrl;
-			this.defaultBuildpack = defaultBuildpack;
+		public Harness(HarnessProperties properties) {
+			this.serverUrl = properties.getApiUrl();
+			this.defaultBuildpack = properties.getBuildpack();
+			this.properties = properties;
+		}
+
+		public HarnessProperties getProperties() {
+			return this.properties;
 		}
 
 		/**
@@ -193,13 +200,13 @@ public class CloudFoundryTestFixture {
 			IServerWorkingCopy serverWC = server.createWorkingCopy();
 			CloudFoundryServer cloudFoundryServer = (CloudFoundryServer) serverWC.loadAdapter(CloudFoundryServer.class,
 					null);
-			cloudFoundryServer.setPassword(credentials.password);
-			cloudFoundryServer.setUsername(credentials.userEmail);
+			cloudFoundryServer.setPassword(properties.getPassword());
+			cloudFoundryServer.setUsername(properties.getUsername());
 
 			cloudFoundryServer.setUrl(getUrl());
-			cloudFoundryServer.setSelfSigned(credentials.selfSignedCertificate);
+			cloudFoundryServer.setSelfSigned(properties.skipSslValidation());
 
-			setCloudSpace(cloudFoundryServer, credentials.organization, credentials.space);
+			setCloudSpace(cloudFoundryServer, properties.getOrg(), properties.getSpace());
 
 			serverWC.save(true, null);
 			return server;
@@ -248,7 +255,7 @@ public class CloudFoundryTestFixture {
 			clearCloudTarget();
 		}
 
-		public void deleteService(CFServiceInstance serviceToDelete) throws CoreException {
+		private void deleteService(CFServiceInstance serviceToDelete) throws CoreException {
 			CloudFoundryServerBehaviour serverBehavior = getBehaviour();
 
 			String serviceName = serviceToDelete.getName();
@@ -258,7 +265,7 @@ public class CloudFoundryTestFixture {
 			serverBehavior.operations().deleteServices(services).run(new NullProgressMonitor());
 		}
 
-		public List<CFServiceInstance> getAllServices() throws CoreException {
+		public List<CFServiceInstance> getCFServices() throws CoreException {
 			List<CFServiceInstance> services = getBehaviour().getServices(new NullProgressMonitor());
 			if (services == null) {
 				services = new ArrayList<CFServiceInstance>(0);
@@ -281,7 +288,7 @@ public class CloudFoundryTestFixture {
 		}
 
 		public void deleteTestServices() throws CoreException {
-			List<CFServiceInstance> services = getAllServices();
+			List<CFServiceInstance> services = getCFServices();
 			for (CFServiceInstance service : services) {
 				deleteService(service);
 				CloudFoundryTestUtil.waitIntervals(1000);
@@ -413,12 +420,12 @@ public class CloudFoundryTestFixture {
 	 */
 	public static CloudFoundryTestFixture getSafeTestFixture() throws Exception {
 		if (current == null) {
-			CredentialProperties credentials = CredentialsLoader.loadProperties();
-			current = new CloudFoundryTestFixture(credentials, credentials.buildPack);
+			HarnessProperties properties = PropertiesLoader.loadProperties();
+			current = new CloudFoundryTestFixture(properties);
 			log("Setting up CFT test harness to connect to:");
-			log("Cloud URL: " + credentials.url);
-			log("Cloud org: " + credentials.organization);
-			log("Cloud space: " + credentials.space);
+			log("Cloud URL: " + properties.getApiUrl());
+			log("Cloud org: " + properties.getOrg());
+			log("Cloud space: " + properties.getSpace());
 		}
 		return current;
 	}
@@ -427,12 +434,12 @@ public class CloudFoundryTestFixture {
 		System.out.println(CFT_TEST_HARNESS_LOG_PREFIX + message);
 	}
 
-	public static CloudFoundryOperations createExternalClient(CredentialProperties cred) throws Exception {
-		return StsTestUtil.createStandaloneClient(cred, cred.url);
+	public static CloudFoundryOperations createExternalClient(HarnessProperties props) throws Exception {
+		return StsTestUtil.createStandaloneClient(props);
 	}
 
 	public CloudFoundryOperations createExternalClient() throws Exception {
-		return createExternalClient(getCredentialProperties());
+		return createExternalClient(getHarnessProperties());
 	}
 
 	/**
@@ -474,9 +481,7 @@ public class CloudFoundryTestFixture {
 
 	private final ServerHandler handler;
 
-	private final CredentialProperties credentials;
-
-	private final String defaultBuildpack;
+	private final HarnessProperties properties;
 
 	/**
 	 * This will create a Cloud server instances based either on the URL in a
@@ -486,9 +491,8 @@ public class CloudFoundryTestFixture {
 	 * instead
 	 * @param serverDomain default domain to use for the Cloud space.
 	 */
-	public CloudFoundryTestFixture(CredentialProperties credentials, String defaultBuildpack) {
-		this.credentials = credentials;
-		this.defaultBuildpack = defaultBuildpack;
+	public CloudFoundryTestFixture(HarnessProperties properties) {
+		this.properties = properties;
 
 		ServerDescriptor descriptor = new ServerDescriptor("server") {
 			{
@@ -502,7 +506,7 @@ public class CloudFoundryTestFixture {
 		handler = new ServerHandler(descriptor);
 	}
 
-	public static void checkSafeTarget(CredentialProperties cred) throws Exception {
+	public static void checkSafeTarget(HarnessProperties cred) throws Exception {
 
 		// To avoid junits deleting contents of a target by accident, ensure
 		// the target is empty
@@ -512,19 +516,19 @@ public class CloudFoundryTestFixture {
 		if (apps != null && !apps.isEmpty()) {
 			throw CloudErrorUtil.toCoreException(NLS.bind(
 					"Empty Cloud target required to run junits. Existing number of applications {0} found in: server = {1}, org = {2}, space = {3}",
-					new Object[] { apps.size(), cred.url, cred.organization, cred.space }));
+					new Object[] { apps.size(), cred.getApiUrl(), cred.getOrg(), cred.getSpace() }));
 		}
 		List<CloudService> services = ops.getServices();
 		if (services != null && !services.isEmpty()) {
 			throw CloudErrorUtil.toCoreException(NLS.bind(
 					"Empty Cloud target required to run junits. Existing number of services {0} found in: server = {1}, org = {2}, space = {3}",
-					new Object[] { services.size(), cred.url, cred.organization, cred.space }));
+					new Object[] { services.size(), cred.getApiUrl(), cred.getOrg(), cred.getSpace() }));
 		}
 
 	}
 
-	public CredentialProperties getCredentialProperties() {
-		return this.credentials;
+	public HarnessProperties getHarnessProperties() {
+		return this.properties;
 	}
 
 	/**
@@ -536,7 +540,7 @@ public class CloudFoundryTestFixture {
 	 * @return new Harness. Never null
 	 */
 	public Harness createHarness() {
-		return new Harness(getCredentialProperties().url, this.defaultBuildpack);
+		return new Harness(getHarnessProperties());
 	}
 
 	public long getAppStartingTimeout() {

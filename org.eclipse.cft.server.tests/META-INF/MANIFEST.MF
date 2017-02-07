@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Cloud Foundry Tools (Tests)
 Bundle-SymbolicName: org.eclipse.cft.server.tests;singleton:=true
-Bundle-Version: 1.0.4.qualifier
+Bundle-Version: 1.0.5.qualifier
 Bundle-Vendor: Eclipse Tools for Cloud Foundry
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.resources,
@@ -17,7 +17,7 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.jdt.core,
  org.eclipse.core.net,
  org.eclipse.ui.console
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Export-Package: org.eclipse.cft.server.tests;x-internal:=true,
  org.eclipse.cft.server.tests.core;x-internal:=true,
  org.eclipse.cft.server.tests.server;x-internal:=true,

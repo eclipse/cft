@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -48,7 +48,8 @@ import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
-import org.eclipse.cft.server.tests.util.CredentialProperties;
+import org.eclipse.cft.server.tests.util.HarnessProperties;
+import org.eclipse.cft.server.tests.util.HarnessPropertiesBuilder;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -95,13 +96,12 @@ public class StsTestUtil {
 	 * space. This is not the client used by the server instance, but a new
 	 * client for testing purposes only.
 	 */
-	public static CloudFoundryOperations createStandaloneClient(CredentialProperties credentials, String url)
-			throws CoreException {
+	public static CloudFoundryOperations createStandaloneClient(HarnessProperties prop) throws CoreException {
 
 		try {
 			return CloudFoundryPlugin.getCloudFoundryClientFactory().getCloudFoundryOperations(
-					new CloudCredentials(credentials.userEmail, credentials.password), new URL(url),
-					credentials.organization, credentials.space, credentials.selfSignedCertificate);
+					new CloudCredentials(prop.getUsername(), prop.getPassword()), new URL(prop.getApiUrl()),
+					prop.getOrg(), prop.getSpace(), prop.skipSslValidation());
 		}
 		catch (MalformedURLException e) {
 			throw CloudErrorUtil.toCoreException(e);
@@ -116,9 +116,10 @@ public class StsTestUtil {
 	 */
 	public static CloudFoundryOperations createStandaloneClient(String userName, String password, String org,
 			String space, String url, boolean selfsigned) throws CoreException {
-		CredentialProperties credentials = new CredentialProperties(null, userName, password, org, space, null,
-				selfsigned);
-		return createStandaloneClient(credentials, url);
+		HarnessProperties properties = HarnessPropertiesBuilder.instance().credentials(userName, password)
+				.target(url, org, space, selfsigned).build();
+
+		return createStandaloneClient(properties);
 	}
 
 	public static final long WAIT_TIME = 2000;
