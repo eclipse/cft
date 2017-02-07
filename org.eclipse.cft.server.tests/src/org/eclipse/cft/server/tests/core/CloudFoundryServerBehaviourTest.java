@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,13 +33,12 @@ import org.cloudfoundry.client.lib.domain.CloudApplication.AppState;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
-import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.ApplicationInstanceRunningTracker;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.CloudServicesUtil;
 import org.eclipse.cft.server.core.internal.ModuleCache.ServerData;
+import org.eclipse.cft.server.core.internal.application.ApplicationRunState;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.tests.util.CloudFoundryTestUtil;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -75,13 +74,6 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		String expectedAppName = harness.getWebAppName(prefix);
 
-		CloudFoundryOperations client = getTestFixture().createExternalClient();
-		client.login();
-		CFServiceInstance service = getCloudServiceToCreate("sqlService", "elephantsql", "turtle");
-		List<CFServiceInstance> servicesToBind = new ArrayList<CFServiceInstance>();
-		servicesToBind.add(service);
-		client.createService(CloudServicesUtil.asLegacyV1Service(service));
-
 		EnvironmentVariable variable = new EnvironmentVariable();
 		variable.setVariable("JAVA_OPTS");
 		variable.setValue("-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n");
@@ -92,8 +84,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		boolean startApp = true;
 		CloudFoundryApplicationModule appModule = deployApplication(prefix,
-				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, vars, servicesToBind,
-				harness.getDefaultBuildpack());
+				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, vars,
+				/* no services to bind */ null, harness.getDefaultBuildpack());
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
@@ -128,9 +120,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		assertTrue(actualApp.getEnvAsMap().containsKey("JAVA_OPTS"));
 		assertEquals("-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n",
 				actualApp.getEnvAsMap().get("JAVA_OPTS"));
-		assertEquals("sqlService", appModule.getDeploymentInfo().getServices().get(0).getName());
-		assertEquals("sqlService", actualApp.getServices().get(0));
-
+		assertTrue("Expected no bound services", appModule.getDeploymentInfo().getServices().isEmpty());
 	}
 
 	public void testCloudFoundryModuleCreationNonWSTPublish() throws Exception {
@@ -224,12 +214,15 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 				appModule.getApplication());
 
 		assertEquals(IServer.STATE_STARTED, appModule.getState());
+		assertTrue("Expected application to be started", appModule.getRunState() == ApplicationRunState.STARTED);
 		assertEquals(AppState.STARTED, appModule.getApplication().getState());
 
 		// Check the module state in the WST server is correct
 		int moduleState = server.getModuleState(new IModule[] { module });
 		assertEquals(IServer.STATE_STARTED, moduleState);
 
+		int modStateInCFAM = appModule.getStateInServer();
+		assertEquals(IServer.STATE_STARTED, modStateInCFAM);
 	}
 
 	public void testBug492609_ModuleDeployBuildpackError() throws Exception {
@@ -340,6 +333,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 				appModule.getApplication());
 
 		assertEquals(IServer.STATE_STOPPED, appModule.getState());
+		assertTrue("Expected application to be stopped", appModule.getRunState() == ApplicationRunState.STOPPED);
 		assertEquals(AppState.STOPPED, appModule.getApplication().getState());
 
 		// Check the module state in the WST server is correct
@@ -370,6 +364,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		// Cloud module wrapper
 		assertTrue("Expected application to be stopped",
 				appModule.getApplication().getState().equals(AppState.STOPPED));
+		assertTrue("Expected application to be stopped", appModule.getRunState() == ApplicationRunState.STOPPED);
 		assertTrue("Expected application to be stopped", appModule.getState() == IServer.STATE_STOPPED);
 	}
 
@@ -380,6 +375,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
 		assertTrue("Expected application to be started", appModule.getState() == IServer.STATE_STARTED);
+		assertTrue("Expected application to be started", appModule.getRunState() == ApplicationRunState.STARTED);
 
 		serverBehavior.stopModule(new IModule[] { appModule.getLocalModule() }, new NullProgressMonitor());
 
@@ -415,6 +411,9 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		String appName = harness.getWebAppName(prefix);
 
 		// Verify start states in the module are correct
+		assertTrue(appModule.getStateInServer() == IServer.STATE_STARTED);
+		assertTrue("Expected application to be started", appModule.getRunState() == ApplicationRunState.STARTED);
+
 		assertTrue(appModule.getState() == IServer.STATE_STARTED);
 		assertEquals(InstanceState.RUNNING, appModule.getApplicationStats().getRecords().get(0).getState());
 
@@ -443,8 +442,10 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 
 		// Verify start states in the module are correct
+		assertTrue(appModule.getStateInServer() == IServer.STATE_STOPPED);
 		assertTrue(appModule.getState() == IServer.STATE_STOPPED);
 		assertTrue(appModule.getApplication().getState() == AppState.STOPPED);
+		assertTrue("Expected application to be stopped", appModule.getRunState() == ApplicationRunState.STOPPED);
 	}
 
 	public void testApplicationModuleRunningState() throws Exception {
@@ -460,6 +461,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		String appName = harness.getWebAppName(prefix);
 
 		// Verify start states in the module are correct
+		assertTrue(appModule.getStateInServer() == IServer.STATE_STARTED);
+		assertTrue("Expected application to be started", appModule.getRunState() == ApplicationRunState.STARTED);
 		assertTrue(appModule.getState() == IServer.STATE_STARTED);
 		assertEquals(InstanceState.RUNNING, appModule.getApplicationStats().getRecords().get(0).getState());
 
@@ -498,6 +501,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		boolean startApp = true;
 		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 		assertTrue(appModule.getState() == IServer.STATE_STARTED);
+		assertTrue("Expected application to be started", appModule.getRunState() == ApplicationRunState.STARTED);
 	}
 
 	public void testStartModuleInvalidUsername() throws Exception {
@@ -527,6 +531,7 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		boolean startApp = true;
 		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 		assertTrue(appModule.getState() == IServer.STATE_STARTED);
+		assertTrue("Expected application to be started", appModule.getRunState() == ApplicationRunState.STARTED);
 	}
 
 	/*

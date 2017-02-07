@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,14 +21,10 @@
 package org.eclipse.cft.server.tests.util;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.Random;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
@@ -87,21 +83,7 @@ public class CloudFoundryTestFixture {
 
 	public static final String DYNAMIC_WEBPROJECT_NAME = "basic-dynamic-webapp";
 
-	public static final String PASSWORD_PROPERTY = "password";
-
-	public static final String USEREMAIL_PROPERTY = "username";
-
-	public static final String ORG_PROPERTY = "org";
-
-	public static final String SPACE_PROPERTY = "space";
-
-	public static final String URL_PROPERTY = "url";
-
-	public static final String BUILDPACK_PROPERTY = "buildpack";
-
-	public static final String SELF_SIGNED_CERTIFICATE_PROPERTY = "selfsigned";
-
-	public static final String CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY = "test.credentials";
+	private static final String CFT_TEST_HARNESS_LOG_PREFIX = "CFT TEST HARNESS: ";
 
 	/**
 	 *
@@ -145,6 +127,8 @@ public class CloudFoundryTestFixture {
 
 		private final String serverUrl;
 
+		private final HarnessProperties properties;
+
 		// Added to the application name in order to avoid host name taken
 		// errors
 		// Even when clearing routes, host name taken errors are occasionally
@@ -154,9 +138,14 @@ public class CloudFoundryTestFixture {
 
 		private final String defaultBuildpack;
 
-		public Harness(String serverUrl, String defaultBuildpack) {
-			this.serverUrl = serverUrl;
-			this.defaultBuildpack = defaultBuildpack;
+		public Harness(HarnessProperties properties) {
+			this.serverUrl = properties.getApiUrl();
+			this.defaultBuildpack = properties.getBuildpack();
+			this.properties = properties;
+		}
+
+		public HarnessProperties getProperties() {
+			return this.properties;
 		}
 
 		/**
@@ -211,13 +200,13 @@ public class CloudFoundryTestFixture {
 			IServerWorkingCopy serverWC = server.createWorkingCopy();
 			CloudFoundryServer cloudFoundryServer = (CloudFoundryServer) serverWC.loadAdapter(CloudFoundryServer.class,
 					null);
-			cloudFoundryServer.setPassword(credentials.password);
-			cloudFoundryServer.setUsername(credentials.userEmail);
+			cloudFoundryServer.setPassword(properties.getPassword());
+			cloudFoundryServer.setUsername(properties.getUsername());
 
 			cloudFoundryServer.setUrl(getUrl());
-			cloudFoundryServer.setSelfSigned(credentials.selfSignedCertificate);
+			cloudFoundryServer.setSelfSigned(properties.skipSslValidation());
 
-			setCloudSpace(cloudFoundryServer, credentials.organization, credentials.space);
+			setCloudSpace(cloudFoundryServer, properties.getOrg(), properties.getSpace());
 
 			serverWC.save(true, null);
 			return server;
@@ -266,7 +255,7 @@ public class CloudFoundryTestFixture {
 			clearCloudTarget();
 		}
 
-		public void deleteService(CFServiceInstance serviceToDelete) throws CoreException {
+		private void deleteService(CFServiceInstance serviceToDelete) throws CoreException {
 			CloudFoundryServerBehaviour serverBehavior = getBehaviour();
 
 			String serviceName = serviceToDelete.getName();
@@ -276,7 +265,7 @@ public class CloudFoundryTestFixture {
 			serverBehavior.operations().deleteServices(services).run(new NullProgressMonitor());
 		}
 
-		public List<CFServiceInstance> getAllServices() throws CoreException {
+		public List<CFServiceInstance> getCFServices() throws CoreException {
 			List<CFServiceInstance> services = getBehaviour().getServices(new NullProgressMonitor());
 			if (services == null) {
 				services = new ArrayList<CFServiceInstance>(0);
@@ -299,7 +288,7 @@ public class CloudFoundryTestFixture {
 		}
 
 		public void deleteTestServices() throws CoreException {
-			List<CFServiceInstance> services = getAllServices();
+			List<CFServiceInstance> services = getCFServices();
 			for (CFServiceInstance service : services) {
 				deleteService(service);
 				CloudFoundryTestUtil.waitIntervals(1000);
@@ -431,31 +420,26 @@ public class CloudFoundryTestFixture {
 	 */
 	public static CloudFoundryTestFixture getSafeTestFixture() throws Exception {
 		if (current == null) {
-			Properties properties = loadProperties();
-
-			CredentialProperties credentials = getCredentialsFromProperties(properties, getDefaultCloudTargetDomain());
-			String buildpack = getBuildpack(properties);
-			current = new CloudFoundryTestFixture(credentials, buildpack);
+			HarnessProperties properties = PropertiesLoader.loadProperties();
+			current = new CloudFoundryTestFixture(properties);
+			log("Setting up CFT test harness to connect to:");
+			log("Cloud URL: " + properties.getApiUrl());
+			log("Cloud org: " + properties.getOrg());
+			log("Cloud space: " + properties.getSpace());
 		}
 		return current;
 	}
 
-	/**
-	 *
-	 * @return a default Cloud target domain. Note that this is not the full
-	 * Cloud API URL, but just a Cloud domain
-	 */
-	public static String getDefaultCloudTargetDomain() {
-		return "run.pivotal.io";
+	public static void log(String message) {
+		System.out.println(CFT_TEST_HARNESS_LOG_PREFIX + message);
 	}
 
-	public static CloudFoundryOperations createExternalClient(CredentialProperties cred) throws Exception {
-		StsTestUtil.validateCredentials(cred);
-		return StsTestUtil.createStandaloneClient(cred, cred.url);
+	public static CloudFoundryOperations createExternalClient(HarnessProperties props) throws Exception {
+		return StsTestUtil.createStandaloneClient(props);
 	}
 
 	public CloudFoundryOperations createExternalClient() throws Exception {
-		return createExternalClient(getCredentialProperties());
+		return createExternalClient(getHarnessProperties());
 	}
 
 	/**
@@ -497,9 +481,7 @@ public class CloudFoundryTestFixture {
 
 	private final ServerHandler handler;
 
-	private final CredentialProperties credentials;
-
-	private final String defaultBuildpack;
+	private final HarnessProperties properties;
 
 	/**
 	 * This will create a Cloud server instances based either on the URL in a
@@ -509,9 +491,8 @@ public class CloudFoundryTestFixture {
 	 * instead
 	 * @param serverDomain default domain to use for the Cloud space.
 	 */
-	public CloudFoundryTestFixture(CredentialProperties credentials, String defaultBuildpack) {
-		this.credentials = credentials;
-		this.defaultBuildpack = defaultBuildpack;
+	public CloudFoundryTestFixture(HarnessProperties properties) {
+		this.properties = properties;
 
 		ServerDescriptor descriptor = new ServerDescriptor("server") {
 			{
@@ -525,9 +506,7 @@ public class CloudFoundryTestFixture {
 		handler = new ServerHandler(descriptor);
 	}
 
-	public static void checkSafeTarget(CredentialProperties cred) throws Exception {
-
-		StsTestUtil.validateCredentials(cred);
+	public static void checkSafeTarget(HarnessProperties cred) throws Exception {
 
 		// To avoid junits deleting contents of a target by accident, ensure
 		// the target is empty
@@ -537,19 +516,19 @@ public class CloudFoundryTestFixture {
 		if (apps != null && !apps.isEmpty()) {
 			throw CloudErrorUtil.toCoreException(NLS.bind(
 					"Empty Cloud target required to run junits. Existing number of applications {0} found in: server = {1}, org = {2}, space = {3}",
-					new Object[] { apps.size(), cred.url, cred.organization, cred.space }));
+					new Object[] { apps.size(), cred.getApiUrl(), cred.getOrg(), cred.getSpace() }));
 		}
 		List<CloudService> services = ops.getServices();
 		if (services != null && !services.isEmpty()) {
 			throw CloudErrorUtil.toCoreException(NLS.bind(
 					"Empty Cloud target required to run junits. Existing number of services {0} found in: server = {1}, org = {2}, space = {3}",
-					new Object[] { services.size(), cred.url, cred.organization, cred.space }));
+					new Object[] { services.size(), cred.getApiUrl(), cred.getOrg(), cred.getSpace() }));
 		}
 
 	}
 
-	public CredentialProperties getCredentialProperties() {
-		return this.credentials;
+	public HarnessProperties getHarnessProperties() {
+		return this.properties;
 	}
 
 	/**
@@ -561,116 +540,11 @@ public class CloudFoundryTestFixture {
 	 * @return new Harness. Never null
 	 */
 	public Harness createHarness() {
-		return new Harness(getCredentialProperties().url, this.defaultBuildpack);
+		return new Harness(getHarnessProperties());
 	}
 
 	public long getAppStartingTimeout() {
 		return 5 * 60 * 1000;
-	}
-
-	public static class CredentialProperties {
-
-		public final String userEmail;
-
-		public final String password;
-
-		public final String organization;
-
-		public final String space;
-
-		public final String url;
-
-		public final boolean selfSignedCertificate;
-
-		public CredentialProperties(String url, String userEmail, String password, String organization, String space,
-				boolean selfSignedCertificate) {
-			this.url = url;
-			this.userEmail = userEmail;
-			this.password = password;
-			this.organization = organization;
-			this.space = space;
-			this.selfSignedCertificate = selfSignedCertificate;
-		}
-
-	}
-
-	private static Properties loadProperties() throws Exception {
-		String propertiesLocation = System.getProperty(CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY);
-
-		if (propertiesLocation == null) {
-			throw CloudErrorUtil.toCoreException(
-					"No Cloud Foundry credential properties file found. Ensure that the launch configuration arguments includes a property: "
-							+ CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY
-							+ " that points to a file containing CF credentials. See Readme file in CFT test plugin.");
-		}
-		File propertiesFile = new File(propertiesLocation);
-
-		InputStream fileInputStream = null;
-		try {
-			if (propertiesFile.exists() && propertiesFile.canRead()) {
-				fileInputStream = new FileInputStream(propertiesFile);
-				Properties properties = new Properties();
-				properties.load(fileInputStream);
-				return properties;
-			}
-		}
-		catch (FileNotFoundException e) {
-			throw CloudErrorUtil.toCoreException(e);
-		}
-		catch (IOException e) {
-			throw CloudErrorUtil.toCoreException(e);
-		}
-		finally {
-			try {
-				if (fileInputStream != null) {
-					fileInputStream.close();
-				}
-			}
-			catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-
-		return null;
-	}
-
-	private static String getBuildpack(Properties properties) {
-		return properties.getProperty(BUILDPACK_PROPERTY);
-	}
-
-	/**
-	 * Reads properties to connect to a CF target (e.g API URL, org, space,
-	 * username, password). If the properties does not include a API URL, the
-	 * passed defaultDomain will be used to construct a API URL Returns non-null
-	 * credentials, although values of the credentials may be empty if failed to
-	 * read credentials
-	 * @return
-	 */
-	private static CredentialProperties getCredentialsFromProperties(Properties properties, String defaultDomain)
-			throws CoreException {
-
-		String selfSignedVal = properties.getProperty(SELF_SIGNED_CERTIFICATE_PROPERTY);
-
-		String org = properties.getProperty(ORG_PROPERTY);
-		String space = properties.getProperty(SPACE_PROPERTY);
-		String password = properties.getProperty(PASSWORD_PROPERTY);
-		String username = properties.getProperty(USEREMAIL_PROPERTY);
-		String url = properties.getProperty(URL_PROPERTY);
-
-		boolean selfSignedCertificate = "true".equals(selfSignedVal) || "TRUE".equals(selfSignedVal);
-
-		if (url == null) {
-			url = "http://api." + defaultDomain;
-		}
-		else if (!url.startsWith("http")) {
-			url = "http://" + url;
-		}
-
-		CredentialProperties cred = new CredentialProperties(url, username, password, org, space,
-				selfSignedCertificate);
-		StsTestUtil.validateCredentials(cred);
-		return cred;
-
 	}
 
 }

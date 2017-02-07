@@ -1,0 +1,25 @@
+To generate the v2 client and its dependencies:
+
+1. Open the pom in  /generateDependencies, and update the versions of v2 and reactor that need to be built. Look for this section in the pom:
+	<dependencies>
+    <dependency>
+        <groupId>org.cloudfoundry</groupId>
+        <artifactId>cloudfoundry-client-reactor</artifactId>
+        <version>2.0.1.RELEASE</version>
+    </dependency>
+    ...
+    The complete list of dependencies and their repositories that need to be included in the pom can be found in the v2 Java client github main page:
+    https://github.com/cloudfoundry/cf-java-client#cloud-foundry-java-client
+    
+    Generally, just copy/paste the XML shown in CF v2 client  github page.
+    
+2. Clean package the pom in /generateDependencies folder (i.e. mvn clean package) using command line
+
+3. DELETE the ENTIRE /dependencies folder in the v2 client plugin
+
+4. In generateDependencies/target directory, move the /dependencies folder to top-level in the v2 client plugin (essentially the old /dependencies is replaced with a new one)
+
+5. DELETE all the old /dependecies jars in .classpath and MANIFEST.MF in the v2 client plugin
+
+6. Add all the NEW jar dependencies (via Eclipse plugin editor UI) to .classpath and MANIFEST.MF
+

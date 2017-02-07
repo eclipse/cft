@@ -100,10 +100,9 @@ public abstract class ApplicationOperation extends AbstractPublishApplicationOpe
 			configuration = prepareForDeployment(appModule, subMonitor.newChild(20));
 
 			IStatus validationStatus = appModule.validateDeploymentInfo();
+			
 			if (!validationStatus.isOK()) {
-				throw CloudErrorUtil.toCoreException(NLS.bind(Messages.ERROR_APP_DEPLOYMENT_VALIDATION_ERROR,
-						appModule.getDeployedApplicationName(), validationStatus.getMessage()));
-
+				throw CloudErrorUtil.toCoreException(validationStatus.getMessage());
 			}
 
 			// NOTE: Only print to a console AFTER an application has been

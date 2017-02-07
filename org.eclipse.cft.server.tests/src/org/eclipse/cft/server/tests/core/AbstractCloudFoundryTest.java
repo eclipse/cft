@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,10 +25,7 @@ import java.util.List;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.CFServiceInstance;
-import org.eclipse.cft.server.core.CFServiceOffering;
-import org.eclipse.cft.server.core.CFServicePlan;
 import org.eclipse.cft.server.core.EnvironmentVariable;
-import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
@@ -308,46 +305,6 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 			if (projectName.equals(module.getName())) {
 				return module;
 			}
-		}
-		return null;
-	}
-
-	protected CFServiceOffering getServiceConfiguration(String vendor) throws CoreException {
-		List<CFServiceOffering> serviceConfigurations = serverBehavior.getServiceOfferings(new NullProgressMonitor());
-		if (serviceConfigurations != null) {
-			for (CFServiceOffering serviceConfiguration : serviceConfigurations) {
-				if (vendor.equals(serviceConfiguration.getName())) {
-					return serviceConfiguration;
-				}
-			}
-		}
-		return null;
-	}
-
-	protected CFServiceInstance getCloudServiceToCreate(String name, String label, String plan) throws CoreException {
-		CFServiceOffering serviceConfiguration = getServiceConfiguration(label);
-		if (serviceConfiguration != null) {
-			CFServiceInstance service = new CFServiceInstance(name);
-			service.setService(label);
-			service.setVersion(serviceConfiguration.getVersion());
-
-			boolean planExists = false;
-
-			List<CFServicePlan> plans = serviceConfiguration.getServicePlans();
-
-			for (CFServicePlan pln : plans) {
-				if (plan.equals(pln.getName())) {
-					planExists = true;
-					break;
-				}
-			}
-
-			if (!planExists) {
-				throw CloudErrorUtil.toCoreException("No plan: " + plan + " found for service :" + label);
-			}
-			service.setPlan(plan);
-
-			return service;
 		}
 		return null;
 	}

@@ -117,6 +117,13 @@ IMPORTANT: It is highly recommended that any Url provider implements a cache mec
                </appInfo>
             </annotation>
          </attribute>
+         <attribute name="supportUpperCaseURL" type="boolean">
+            <annotation>
+               <documentation>
+                  Set to true if the server type supports upper case URL; otherwise, the suggested URLs will always use lower case letters. Default value is true if not specified.
+               </documentation>
+            </annotation>
+         </attribute>
       </complexType>
    </element>
 

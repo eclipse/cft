@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.cft.server.core.client">
+      <clientProvider
+            class="org.eclipse.cft.server.client.v2.internal.V2CFClientProvider">
+      </clientProvider>
+   </extension>
+
+</plugin>

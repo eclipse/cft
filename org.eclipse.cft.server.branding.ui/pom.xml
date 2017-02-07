@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.eclipse.cft.server</groupId>
     <artifactId>org.eclipse.cft.server.parent</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
   </parent>
   <artifactId>org.eclipse.cft.server.branding.ui</artifactId>
   <packaging>eclipse-plugin</packaging>

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,39 +26,53 @@ import java.util.List;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.CFServiceInstance;
+import org.eclipse.cft.server.core.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudServicesUtil;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.ServicesUpdatedEvent;
+import org.eclipse.cft.server.tests.util.CloudFoundryTestUtil;
 import org.eclipse.cft.server.tests.util.ModulesRefreshListener;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
 public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 
-	public static final String SERVICE_NAME = "cfEclipseRegressionTestService";
-
 	public void testCreateAndDeleteService() throws Exception {
-		CFServiceInstance service = createDefaultService();
-		assertServiceExists(service);
 
+		String expectedServiceName = harness.getProperties().serviceToCreate().serviceName;
+		String expectedServicePlan = harness.getProperties().serviceToCreate().servicePlan;
+		String expectedServiceType = harness.getProperties().serviceToCreate().serviceType;
+
+		CFServiceInstance toCreate = asCFServiceInstance(expectedServiceName, expectedServicePlan, expectedServiceType);
+		serverBehavior.operations().createServices(new CFServiceInstance[] { toCreate }).run(new NullProgressMonitor());
+
+		// Verify it was created
 		List<CFServiceInstance> existingServices = serverBehavior.getServices(new NullProgressMonitor());
 		assertTrue("Expected 1 service", existingServices.size() == 1);
-		assertEquals(SERVICE_NAME, existingServices.get(0).getName());
-		assertEquals("elephantsql", existingServices.get(0).getService());
-		assertEquals("turtle", existingServices.get(0).getPlan());
+		assertEquals(expectedServiceName, existingServices.get(0).getName());
+		assertEquals(expectedServiceType, existingServices.get(0).getService());
+		assertEquals(expectedServicePlan, existingServices.get(0).getPlan());
 
-		assertServiceExists(existingServices.get(0));
+		// Delete the service
+		List<String> toDelete = new ArrayList<String>();
+		toDelete.add(expectedServiceName);
 
-		deleteService(service);
-		assertServiceNotExist(SERVICE_NAME);
+		serverBehavior.operations().deleteServices(toDelete).run(new NullProgressMonitor());
 
-		existingServices = serverBehavior.getServices(new NullProgressMonitor());
-		assertTrue("Expected empty list of services", existingServices.isEmpty());
+		List<CFServiceInstance> remainingServices = serverBehavior.getServices(new NullProgressMonitor());
+		assertTrue("Expected empty list of services", remainingServices.isEmpty());
 	}
 
 	public void testServiceBindingInDeploymentInfo() throws Exception {
-		CFServiceInstance serviceToCreate = createDefaultService();
+		String expectedServiceName = harness.getProperties().serviceToCreate().serviceName;
+		String expectedServicePlan = harness.getProperties().serviceToCreate().servicePlan;
+		String expectedServiceType = harness.getProperties().serviceToCreate().serviceType;
+
+		CFServiceInstance toCreate = asCFServiceInstance(expectedServiceName, expectedServicePlan, expectedServiceType);
+		serverBehavior.operations().createServices(new CFServiceInstance[] { toCreate }).run(new NullProgressMonitor());
+
 		String prefix = "testServiceBindingInDeploymentInfo";
 		createWebApplicationProject();
 
@@ -67,46 +81,56 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 
 		CloudApplication app = appModule.getApplication();
 
-		getBindServiceOp(appModule, serviceToCreate).run(new NullProgressMonitor());
+		getBindServiceOp(appModule, toCreate).run(new NullProgressMonitor());
 
-		assertServiceBound(serviceToCreate.getName(), app);
+		assertServiceBound(toCreate.getName(), app);
 
 		// Get Updated cloud module
 		CloudFoundryApplicationModule updatedModule = cloudServer.getBehaviour()
 				.updateDeployedModule(appModule.getLocalModule(), new NullProgressMonitor());
 		List<CFServiceInstance> boundServices = updatedModule.getDeploymentInfo().getServices();
 		assertEquals(1, boundServices.size());
-		assertEquals(serviceToCreate.getName(), boundServices.get(0).getName());
+		assertEquals(toCreate.getName(), boundServices.get(0).getName());
 	}
 
 	public void testServiceBindingUnbindingAppStarted() throws Exception {
-		CFServiceInstance service = createDefaultService();
+		String expectedServiceName = harness.getProperties().serviceToCreate().serviceName;
+		String expectedServicePlan = harness.getProperties().serviceToCreate().servicePlan;
+		String expectedServiceType = harness.getProperties().serviceToCreate().serviceType;
+
+		CFServiceInstance toCreate = asCFServiceInstance(expectedServiceName, expectedServicePlan, expectedServiceType);
+		serverBehavior.operations().createServices(new CFServiceInstance[] { toCreate }).run(new NullProgressMonitor());
 
 		String prefix = "testSBUAppStarted";
 		createWebApplicationProject();
 		boolean startApp = true;
 		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
-		getBindServiceOp(appModule, service).run(new NullProgressMonitor());
+		getBindServiceOp(appModule, toCreate).run(new NullProgressMonitor());
 
 		appModule = cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
 				new NullProgressMonitor());
-		assertServiceBound(service.getName(), appModule.getApplication());
+		assertServiceBound(toCreate.getName(), appModule.getApplication());
 		assertEquals(1, appModule.getDeploymentInfo().getServices().size());
-		assertEquals(SERVICE_NAME, appModule.getDeploymentInfo().getServices().get(0).getName());
+		assertEquals(toCreate.getName(), appModule.getDeploymentInfo().getServices().get(0).getName());
 
-		getUnbindServiceOp(appModule, service).run(new NullProgressMonitor());
+		getUnbindServiceOp(appModule, toCreate).run(new NullProgressMonitor());
 
 		appModule = cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
 				new NullProgressMonitor());
 
-		assertServiceNotBound(service.getName(), appModule.getApplication());
+		assertServiceNotBound(toCreate.getName(), appModule.getApplication());
 		assertEquals(0, appModule.getDeploymentInfo().getServices().size());
 
 	}
 
 	public void testServiceBindingUnbindingAppStopped() throws Exception {
-		CFServiceInstance service = createDefaultService();
+		String expectedServiceName = harness.getProperties().serviceToCreate().serviceName;
+		String expectedServicePlan = harness.getProperties().serviceToCreate().servicePlan;
+		String expectedServiceType = harness.getProperties().serviceToCreate().serviceType;
+
+		CFServiceInstance toCreate = asCFServiceInstance(expectedServiceName, expectedServicePlan, expectedServiceType);
+		serverBehavior.operations().createServices(new CFServiceInstance[] { toCreate }).run(new NullProgressMonitor());
 
 		String prefix = "testSBUAppStopped";
 		createWebApplicationProject();
@@ -114,133 +138,77 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		boolean startApp = false;
 		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
 
-		getBindServiceOp(appModule, service).run(new NullProgressMonitor());
+		getBindServiceOp(appModule, toCreate).run(new NullProgressMonitor());
 
 		appModule = cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
 				new NullProgressMonitor());
-		assertServiceBound(service.getName(), appModule.getApplication());
+		assertServiceBound(toCreate.getName(), appModule.getApplication());
 		assertEquals(1, appModule.getDeploymentInfo().getServices().size());
-		assertEquals(SERVICE_NAME, appModule.getDeploymentInfo().getServices().get(0).getName());
+		assertEquals(toCreate.getName(), appModule.getDeploymentInfo().getServices().get(0).getName());
 
-		getUnbindServiceOp(appModule, service).run(new NullProgressMonitor());
+		getUnbindServiceOp(appModule, toCreate).run(new NullProgressMonitor());
 
 		appModule = cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
 				new NullProgressMonitor());
-		assertServiceNotBound(service.getName(), appModule.getApplication());
+		assertServiceNotBound(toCreate.getName(), appModule.getApplication());
 		assertEquals(0, appModule.getDeploymentInfo().getServices().size());
-	}
-
-	public void testServiceCreationEvent() throws Exception {
-		// Test service creation operation and that asynchronous service
-		// creation triggers a service change event
-
-		CFServiceInstance service = getCloudServiceToCreate(SERVICE_NAME, "elephantsql", "turtle");
-		serverBehavior.operations().createServices(new CFServiceInstance[] { service }).run(new NullProgressMonitor());
-		assertServiceExists(service);
-
-		List<CFServiceInstance> existingServices = serverBehavior.getServices(new NullProgressMonitor());
-		assertEquals(SERVICE_NAME, existingServices.get(0).getName());
-	}
-
-	public void testServiceDeletionEvent() throws Exception {
-		// Test service deletion operation and that asynchronous service
-		// creation triggers a service change event
-
-		final CFServiceInstance service = createDefaultService();
-		assertServiceExists(service);
-
-		String serviceName = service.getName();
-		List<String> services = new ArrayList<String>();
-		services.add(serviceName);
-
-		serverBehavior.operations().deleteServices(services).run(new NullProgressMonitor());
-
-		assertServiceNotExist(SERVICE_NAME);
-
-		List<CFServiceInstance> existingServices = serverBehavior.getServices(new NullProgressMonitor());
-		assertTrue("Expected empty list of services", existingServices.isEmpty());
-	}
-
-	public void testServiceCreationOp() throws Exception {
-
-		CFServiceInstance toCreate = getCloudServiceToCreate("testServiceCreationOp", "elephantsql", "turtle");
-		CFServiceInstance[] services = new CFServiceInstance[] { toCreate };
-
-		serverBehavior.operations().createServices(services).run(new NullProgressMonitor());
-
-		List<CFServiceInstance> existing = serverBehavior.getServices(new NullProgressMonitor());
-		assertTrue("Expected 1 service", existing.size() == 1);
-		assertEquals("testServiceCreationOp", existing.get(0).getName());
-		assertEquals("elephantsql", existing.get(0).getService());
-		assertEquals("turtle", existing.get(0).getPlan());
-
-		assertServiceExists(existing.get(0));
-	}
-
-	public void testServiceDeletionOp() throws Exception {
-
-		CFServiceInstance toCreate = getCloudServiceToCreate("testServiceDeletionOp", "elephantsql", "turtle");
-		CFServiceInstance[] services = new CFServiceInstance[] { toCreate };
-
-		serverBehavior.operations().createServices(services).run(new NullProgressMonitor());
-
-		List<CFServiceInstance> existing = serverBehavior.getServices(new NullProgressMonitor());
-		assertTrue("Expected 1 service", existing.size() == 1);
-		assertEquals("testServiceDeletionOp", existing.get(0).getName());
-		assertEquals("elephantsql", existing.get(0).getService());
-		assertEquals("turtle", existing.get(0).getPlan());
-
-		assertServiceExists(existing.get(0));
-
-		List<String> toDelete = new ArrayList<String>();
-		toDelete.add("testServiceDeletionOp");
-
-		serverBehavior.operations().deleteServices(toDelete).run(new NullProgressMonitor());
-
-		List<CFServiceInstance> remainingServices = serverBehavior.getServices(new NullProgressMonitor());
-		assertTrue("Expected empty list of services", remainingServices.isEmpty());
 	}
 
 	public void testServiceCreationServicesInEvent() throws Exception {
 
-		CFServiceInstance toCreate = getCloudServiceToCreate("testServiceCreationServicesInEvent", "elephantsql",
-				"turtle");
-		CFServiceInstance[] services = new CFServiceInstance[] { toCreate };
+		String expectedServiceName = harness.getProperties().serviceToCreate().serviceName;
+		String expectedServicePlan = harness.getProperties().serviceToCreate().servicePlan;
+		String expectedServiceType = harness.getProperties().serviceToCreate().serviceType;
+
+		CFServiceInstance toCreate = asCFServiceInstance(expectedServiceName, expectedServicePlan, expectedServiceType);
 
 		ModulesRefreshListener refreshListener = new ModulesRefreshListener(cloudServer,
 				CloudServerEvent.EVENT_SERVICES_UPDATED);
 
-		serverBehavior.operations().createServices(services).run(new NullProgressMonitor());
+		serverBehavior.operations().createServices(new CFServiceInstance[] { toCreate }).run(new NullProgressMonitor());
 
+		// Verify it was created
+		List<CFServiceInstance> existingServices = serverBehavior.getServices(new NullProgressMonitor());
+		assertEquals(expectedServiceName, existingServices.get(0).getName());
+
+		// Verify the event after module refreshed
 		assertTrue(refreshListener.modulesRefreshed(new NullProgressMonitor()));
 		assertEquals(CloudServerEvent.EVENT_SERVICES_UPDATED, refreshListener.getMatchedEvent().getType());
 
 		assertTrue("Expected " + ServicesUpdatedEvent.class,
 				refreshListener.getMatchedEvent() instanceof ServicesUpdatedEvent);
-		ServicesUpdatedEvent cloudEvent = (ServicesUpdatedEvent) refreshListener.getMatchedEvent();
-		List<CFServiceInstance> existing = cloudEvent.getServices();
-		assertTrue("Expected 1 created service in cloud refresh event", existing.size() == 1);
-		assertEquals("testServiceCreationServicesInEvent", existing.get(0).getName());
-		assertEquals("elephantsql", existing.get(0).getService());
-		assertEquals("turtle", existing.get(0).getPlan());
 
-		assertServiceExists(existing.get(0));
+		// Test the event that it contains the correct information
+		ServicesUpdatedEvent cloudEvent = (ServicesUpdatedEvent) refreshListener.getMatchedEvent();
+		List<CFServiceInstance> serviceInEvent = cloudEvent.getServices();
+		assertTrue("Expected 1 created service in cloud refresh event", serviceInEvent.size() == 1);
+		assertEquals(expectedServiceName, serviceInEvent.get(0).getName());
+		assertEquals(expectedServiceType, serviceInEvent.get(0).getService());
+		assertEquals(expectedServicePlan, serviceInEvent.get(0).getPlan());
 
 		refreshListener.dispose();
 	}
 
 	public void testServiceDeletionServicesInEvent() throws Exception {
 
-		CFServiceInstance service = createCloudService("testServiceDeletionServicesInEvent", "elephantsql", "turtle");
-		assertServiceExists(service);
-		service = createCloudService("testAnotherService", "elephantsql", "turtle");
-		List<CFServiceInstance> services = serverBehavior.getServices(new NullProgressMonitor());
-		assertEquals("Expected 2 services", 2, services.size());
+		String expectedServiceName = harness.getProperties().serviceToCreate().serviceName;
+		String expectedServicePlan = harness.getProperties().serviceToCreate().servicePlan;
+		String expectedServiceType = harness.getProperties().serviceToCreate().serviceType;
 
+		CFServiceInstance toCreate = asCFServiceInstance(expectedServiceName, expectedServicePlan, expectedServiceType);
+
+		serverBehavior.operations().createServices(new CFServiceInstance[] { toCreate }).run(new NullProgressMonitor());
+
+		// Verify it was created
+		List<CFServiceInstance> existingServices = serverBehavior.getServices(new NullProgressMonitor());
+		assertEquals(expectedServiceName, existingServices.get(0).getName());
+
+		// Add the refresh listener to listen for the deletion event AFTER
+		// services has been created, because service
+		// creation also fires service events
 		ModulesRefreshListener refreshListener = new ModulesRefreshListener(cloudServer,
 				CloudServerEvent.EVENT_SERVICES_UPDATED);
-
-		serverBehavior.operations().deleteServices(Arrays.asList(new String[] { "testServiceDeletionServicesInEvent" }))
+		serverBehavior.operations().deleteServices(Arrays.asList(new String[] { expectedServiceName }))
 				.run(new NullProgressMonitor());
 
 		assertTrue(refreshListener.modulesRefreshed(new NullProgressMonitor()));
@@ -251,24 +219,23 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		ServicesUpdatedEvent cloudEvent = (ServicesUpdatedEvent) refreshListener.getMatchedEvent();
 		List<CFServiceInstance> eventServices = cloudEvent.getServices();
 
-		assertTrue("Expected 1 service in cloud refresh event", eventServices.size() == 1);
-		assertEquals("testAnotherService", eventServices.get(0).getName());
-		assertEquals("elephantsql", eventServices.get(0).getService());
-		assertEquals("turtle", eventServices.get(0).getPlan());
-
-		assertServiceExists(eventServices.get(0));
+		assertTrue("Expected 0 service in cloud refresh event", eventServices.size() == 0);
 
 		refreshListener.dispose();
 	}
 
-	public void testUpdateExistingServices() throws Exception {
-		CloudFoundryOperations client = getTestFixture().createExternalClient();
-		client.login();
-		CFServiceInstance service = getCloudServiceToCreate("testExternalCreatedServiceRefresh", "elephantsql",
-				"turtle");
+	public void testExternallyCreatedService() throws Exception {
 
 		// Create services outside of CFT
-		client.createService(CloudServicesUtil.asLegacyV1Service(service));
+		CloudFoundryOperations externalClient = getTestFixture().createExternalClient();
+		externalClient.login();
+
+		String expectedServiceName = harness.getProperties().serviceToCreate().serviceName;
+		String expectedServicePlan = harness.getProperties().serviceToCreate().servicePlan;
+		String expectedServiceType = harness.getProperties().serviceToCreate().serviceType;
+
+		CFServiceInstance toCreate = asCFServiceInstance(expectedServiceName, expectedServicePlan, expectedServiceType);
+		externalClient.createService(CloudServicesUtil.asLegacyV1Service(toCreate));
 
 		// Update all operation in the server fires various events, therefore
 		// have refresh listeners for
@@ -287,6 +254,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		assertTrue(servicesUpdateCompletedListener.modulesRefreshed(new NullProgressMonitor()));
 		assertTrue(updateCompletedListener.modulesRefreshed(new NullProgressMonitor()));
 
+		// Test the refresh events contain the externally created service
 		assertEquals(CloudServerEvent.EVENT_UPDATE_COMPLETED, updateCompletedListener.getMatchedEvent().getType());
 		assertEquals(CloudServerEvent.EVENT_SERVICES_UPDATED,
 				servicesUpdateCompletedListener.getMatchedEvent().getType());
@@ -297,33 +265,77 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		ServicesUpdatedEvent cloudEvent = (ServicesUpdatedEvent) servicesUpdateCompletedListener.getMatchedEvent();
 		List<CFServiceInstance> eventServices = cloudEvent.getServices();
 		assertTrue("Expected 1 service in cloud refresh event", eventServices.size() == 1);
-		assertEquals("testExternalCreatedServiceRefresh", eventServices.get(0).getName());
-		assertEquals("elephantsql", eventServices.get(0).getService());
-		assertEquals("turtle", eventServices.get(0).getPlan());
-	}
+		assertEquals(expectedServiceName, eventServices.get(0).getName());
+		assertEquals(expectedServiceType, eventServices.get(0).getService());
+		assertEquals(expectedServicePlan, eventServices.get(0).getPlan());
 
-	public void testExternalCreatedServiceBehaviour() throws Exception {
-		CloudFoundryOperations client = getTestFixture().createExternalClient();
-		client.login();
-		CFServiceInstance service = getCloudServiceToCreate("testExternalCreatedServiceBehaviour", "elephantsql",
-				"turtle");
-
-		client.createService(CloudServicesUtil.asLegacyV1Service(service));
+		// Finally test the CFT server behaviour services API to ensure that it
+		// fetches
+		// the externally created service
 
 		List<CFServiceInstance> existingServices = serverBehavior.getServices(new NullProgressMonitor());
 		assertTrue("Expected 1 service", existingServices.size() == 1);
-		assertEquals("testExternalCreatedServiceBehaviour", existingServices.get(0).getName());
-		assertEquals("elephantsql", existingServices.get(0).getService());
-		assertEquals("turtle", existingServices.get(0).getPlan());
+		assertEquals(expectedServiceName, existingServices.get(0).getName());
+		assertEquals(expectedServiceType, existingServices.get(0).getService());
+		assertEquals(expectedServicePlan, existingServices.get(0).getPlan());
 	}
 
 	public void testNoService() throws Exception {
-		// There should be no service with this name. make sure there was proper
+
+		// There should be no services by default. make sure there was proper
 		// tear down
-		assertServiceNotExist(SERVICE_NAME);
+		List<CFServiceInstance> existingServices = serverBehavior.getServices(new NullProgressMonitor());
+		assertTrue("Expected 0 services", existingServices.size() == 0);
 	}
 
-	protected CFServiceInstance createDefaultService() throws Exception {
-		return createCloudService(SERVICE_NAME, "elephantsql", "turtle");
+	public void testServiceBindingDuringAppDeployment() throws Exception {
+
+		String prefix = "testApplicationDeploymentInfo";
+
+		String expectedAppName = harness.getWebAppName(prefix);
+
+		CloudFoundryOperations externalClient = getTestFixture().createExternalClient();
+		externalClient.login();
+
+		String expectedServiceName = harness.getProperties().serviceToCreate().serviceName;
+		String expectedServicePlan = harness.getProperties().serviceToCreate().servicePlan;
+		String expectedServiceType = harness.getProperties().serviceToCreate().serviceType;
+
+		CFServiceInstance toCreate = asCFServiceInstance(expectedServiceName, expectedServicePlan, expectedServiceType);
+
+		List<CFServiceInstance> servicesToBind = new ArrayList<CFServiceInstance>();
+		servicesToBind.add(toCreate);
+		externalClient.createService(CloudServicesUtil.asLegacyV1Service(toCreate));
+
+		EnvironmentVariable variable = new EnvironmentVariable();
+		variable.setVariable("JAVA_OPTS");
+		variable.setValue("-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n");
+		List<EnvironmentVariable> vars = new ArrayList<EnvironmentVariable>();
+		vars.add(variable);
+
+		createWebApplicationProject();
+
+		boolean startApp = true;
+		CloudFoundryApplicationModule appModule = deployApplication(prefix,
+				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, vars, servicesToBind,
+				harness.getDefaultBuildpack());
+
+		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
+
+		assertNotNull(appModule.getApplication());
+		assertNotNull(appModule.getDeploymentInfo());
+
+		CloudApplication actualApp = appModule.getApplication();
+
+		assertEquals(appModule.getDeployedApplicationName(), actualApp.getName());
+		assertEquals(expectedAppName, actualApp.getName());
+
+		ApplicationDeploymentInfo info = appModule.getDeploymentInfo();
+		assertEquals(expectedAppName, info.getDeploymentName());
+
+		assertEquals(expectedServiceName, appModule.getDeploymentInfo().getServices().get(0).getName());
+		assertEquals(expectedServiceName, actualApp.getServices().get(0));
+
 	}
+
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,8 @@ import java.util.List;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.CFServiceInstance;
+import org.eclipse.cft.server.core.CFServiceOffering;
+import org.eclipse.cft.server.core.CFServicePlan;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
@@ -32,22 +34,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
 public class AbstractCloudFoundryServicesTest extends AbstractAsynchCloudTest {
-
-	protected void deleteService(CFServiceInstance service) throws CoreException {
-		harness.deleteService(service);
-	}
-
-	protected CFServiceInstance createCloudService(String name, String label, String plan) throws CoreException {
-		CFServiceInstance toCreate = getCloudServiceToCreate(name, label, plan);
-
-		if (toCreate == null) {
-			throw CloudErrorUtil.toCoreException(
-					"Unable to create service : " + label + ". Service does not exist in the Cloud space.");
-		}
-
-		createService(toCreate);
-		return toCreate;
-	}
 
 	protected ICloudFoundryOperation getBindServiceOp(CloudFoundryApplicationModule appModule,
 			CFServiceInstance service) throws Exception {
@@ -104,24 +90,7 @@ public class AbstractCloudFoundryServicesTest extends AbstractAsynchCloudTest {
 		return foundService;
 	}
 
-	protected void createService(CFServiceInstance service) throws CoreException {
-		serverBehavior.operations().createServices(new CFServiceInstance[] { service })
-				.run(new NullProgressMonitor());
-	}
-
-	protected void assertServiceExists(CFServiceInstance expectedService) throws Exception {
-		String expectedServicename = expectedService.getName();
-		CFServiceInstance foundService = getCloudService(expectedServicename);
-		assertNotNull(foundService);
-		assertServiceEquals(expectedService, foundService);
-	}
-
-	protected void assertServiceExists(String serviceName) throws Exception {
-		CFServiceInstance foundService = getCloudService(serviceName);
-		assertNotNull(foundService);
-	}
-
-	protected CFServiceInstance getCloudService(String serviceName) throws CoreException {
+	protected CFServiceInstance getExistingCloudService(String serviceName) throws CoreException {
 
 		List<CFServiceInstance> services = serverBehavior.getServices(new NullProgressMonitor());
 		CFServiceInstance foundService = null;
@@ -136,16 +105,51 @@ public class AbstractCloudFoundryServicesTest extends AbstractAsynchCloudTest {
 		return foundService;
 	}
 
-	protected void assertServiceNotExist(String expectedServicename) throws Exception {
-
-		CFServiceInstance foundService = getCloudService(expectedServicename);
-
-		assertNull(foundService);
-	}
-
 	protected void assertServiceEquals(CFServiceInstance expectedService, CFServiceInstance actualService)
 			throws Exception {
 		assertEquals(actualService.getName(), expectedService.getName());
 		assertEquals(actualService.getService(), expectedService.getService());
+	}
+
+	protected CFServiceOffering getServiceConfiguration(String vendor) throws CoreException {
+		List<CFServiceOffering> serviceConfigurations = serverBehavior.getServiceOfferings(new NullProgressMonitor());
+		if (serviceConfigurations != null) {
+			for (CFServiceOffering serviceConfiguration : serviceConfigurations) {
+				if (vendor.equals(serviceConfiguration.getName())) {
+					return serviceConfiguration;
+				}
+			}
+		}
+		return null;
+	}
+
+	protected CFServiceInstance asCFServiceInstance(String name, String plan, String type) throws CoreException {
+
+		CFServiceOffering serviceConfiguration = getServiceConfiguration(type);
+		if (serviceConfiguration != null) {
+
+			CFServiceInstance service = new CFServiceInstance(name);
+			service.setService(type);
+			service.setVersion(serviceConfiguration.getVersion());
+
+			boolean planExists = false;
+
+			List<CFServicePlan> plans = serviceConfiguration.getServicePlans();
+
+			for (CFServicePlan pln : plans) {
+				if (plan.equals(pln.getName())) {
+					planExists = true;
+					break;
+				}
+			}
+
+			if (!planExists) {
+				throw CloudErrorUtil.toCoreException("No plan: " + plan + " found for service :" + type);
+			}
+			service.setPlan(plan);
+
+			return service;
+		}
+		return null;
 	}
 }
