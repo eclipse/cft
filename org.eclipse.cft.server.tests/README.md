@@ -7,8 +7,7 @@
   to use for the JUnit.
 
 # Two Options to Specify CF Target
-  To run the Cloud Foundry unit tests, there are two options to pass in the Cloud Foundry target information in order for the
-  tests to run against that target as shown below.
+  To run the Cloud Foundry unit tests, there are two options to pass in the Cloud Foundry target information, including account information. Note that the JUnit tests also require at least one service instance definition, as services are created and deleted as part of the tests.
 
 ## 1. Environment Variables
   Set the following variables in the "Environment" tab in the JUnit Plug-in launch configuration:
