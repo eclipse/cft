@@ -21,8 +21,11 @@
 package org.eclipse.cft.server.tests.util;
 
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
+import org.eclipse.core.runtime.CoreException;
 
 public abstract class PropertiesLoader {
+
+	public static final String CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY = "test.credentials";
 
 	private static final PropertiesLoader[] LOADERS = new PropertiesLoader[] { new PropertiesLoaderFromFile(),
 			new PropertiesLoaderFromEnvVar() };
@@ -50,13 +53,19 @@ public abstract class PropertiesLoader {
 				throw error;
 			}
 			else {
-				throw CloudErrorUtil.toCoreException(
-						"No Cloud properties found for the test harness. Ensure Cloud account information is either set in environment variables or defined in a properties file.");
+				throw noPropertiesError();
 			}
 		}
 		else {
 			return properties;
 		}
+	}
+
+	protected static CoreException noPropertiesError() {
+		return CloudErrorUtil.toCoreException(
+				"No Cloud properties found. Cloud information must be set in environment variables, OR defined in a properties file, and file passed by VM arg: -D"
+						+ CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY + "=[file path]");
+
 	}
 
 }
