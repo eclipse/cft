@@ -28,7 +28,6 @@ import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.CFServiceInstance;
-import org.eclipse.cft.server.core.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.CloudServicesUtil;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
@@ -307,18 +306,12 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		servicesToBind.add(toCreate);
 		externalClient.createService(CloudServicesUtil.asLegacyV1Service(toCreate));
 
-		EnvironmentVariable variable = new EnvironmentVariable();
-		variable.setVariable("JAVA_OPTS");
-		variable.setValue("-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n");
-		List<EnvironmentVariable> vars = new ArrayList<EnvironmentVariable>();
-		vars.add(variable);
-
 		createWebApplicationProject();
 
 		boolean startApp = true;
 		CloudFoundryApplicationModule appModule = deployApplication(prefix,
-				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, vars, servicesToBind,
-				harness.getDefaultBuildpack());
+				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp,
+				/* no vars */ null, servicesToBind, harness.getDefaultBuildpack());
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());
 

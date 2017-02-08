@@ -33,8 +33,6 @@ import org.eclipse.core.runtime.Assert;
 
 public class PropertiesLoaderFromFile extends PropertiesLoader {
 
-	public static final String CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY = "test.credentials";
-
 	public static final String PASSWORD_PROPERTY = "password";
 
 	public static final String USEREMAIL_PROPERTY = "username";
@@ -114,35 +112,31 @@ public class PropertiesLoaderFromFile extends PropertiesLoader {
 	public HarnessProperties getProperties() throws Exception {
 		String propertiesLocation = System.getProperty(CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY);
 
-		if (propertiesLocation == null) {
-			throw CloudErrorUtil.toCoreException(
-					"No Cloud Foundry credential properties file found. Ensure that the launch configuration arguments includes a property: "
-							+ CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY
-							+ " that points to a file containing CF credentials. See Readme file in CFT test plugin.");
-		}
+		if (propertiesLocation != null) {
+			Properties properties = readFromFile(propertiesLocation);
+			if (properties != null) {
+				String url = getUrl(properties);
+				String user = getRequiredProperty(USEREMAIL_PROPERTY, properties);
+				String password = getRequiredProperty(PASSWORD_PROPERTY, properties);
+				String org = getRequiredProperty(ORG_PROPERTY, properties);
+				String space = getRequiredProperty(SPACE_PROPERTY, properties);
+				String buildpack = properties.getProperty(BUILDPACK_PROPERTY);
+				String serviceName = getRequiredProperty(SERVICE_NAME_PROP, properties);
+				String serviceType = getRequiredProperty(SERVICE_TYPE_PROP, properties);
+				String servicePlan = getRequiredProperty(SERVICE_PLAN_PROP, properties);
 
-		Properties properties = readFromFile(propertiesLocation);
-		if (properties != null) {
-			String url = getUrl(properties);
-			String user = getRequiredProperty(USEREMAIL_PROPERTY, properties);
-			String password = getRequiredProperty(PASSWORD_PROPERTY, properties);
-			String org = getRequiredProperty(ORG_PROPERTY, properties);
-			String space = getRequiredProperty(SPACE_PROPERTY, properties);
-			String buildpack = properties.getProperty(BUILDPACK_PROPERTY);
-			String serviceName = getRequiredProperty(SERVICE_NAME_PROP, properties);
-			String serviceType = getRequiredProperty(SERVICE_TYPE_PROP, properties);
-			String servicePlan = getRequiredProperty(SERVICE_PLAN_PROP, properties);
+				boolean skipSsl = getSkipSsl(properties);
 
-			boolean skipSsl = getSkipSsl(properties);
+				String successfulLoadedMessage = "Successfully loaded Cloud account information from credentials file : "
+						+ propertiesLocation;
 
-			String successfulLoadedMessage = "Successfully loaded Cloud account information from credentials file : "
-					+ propertiesLocation;
+				HarnessProperties credentialsProps = HarnessPropertiesBuilder.instance()
+						.target(url, org, space, skipSsl).credentials(user, password).buildpack(buildpack)
+						.service(serviceName, serviceType, servicePlan).successfulLoadedMessage(successfulLoadedMessage)
+						.build();
 
-			HarnessProperties credentialsProps = HarnessPropertiesBuilder.instance().target(url, org, space, skipSsl)
-					.credentials(user, password).buildpack(buildpack).service(serviceName, serviceType, servicePlan)
-					.successfulLoadedMessage(successfulLoadedMessage).build();
-
-			return credentialsProps;
+				return credentialsProps;
+			}
 		}
 
 		return null;

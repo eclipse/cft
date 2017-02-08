@@ -20,6 +20,8 @@
  ********************************************************************************/
 package org.eclipse.cft.server.tests.util;
 
+import java.util.Map;
+
 import org.eclipse.cft.server.core.internal.ValueValidationUtil;
 import org.eclipse.core.runtime.Assert;
 
@@ -64,6 +66,9 @@ public class PropertiesLoaderFromEnvVar extends PropertiesLoader {
 
 	@Override
 	public HarnessProperties getProperties() throws Exception {
+		if (!containsAnyCFTEnvs()) {
+			return null;
+		}
 		String url = getRequiredEnv(CFT_TEST_URL);
 		if (!url.startsWith("http")) {
 			url = "http://" + url;
@@ -84,6 +89,19 @@ public class PropertiesLoaderFromEnvVar extends PropertiesLoader {
 				.successfulLoadedMessage(getSuccessLoadedMessage()).build();
 		return properties;
 
+	}
+
+	private boolean containsAnyCFTEnvs() {
+		Map<String, String> envs = System.getenv();
+
+		if (envs != null) {
+			for (String key : envs.keySet()) {
+				if (key.startsWith("CFT_TEST")) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private String getSuccessLoadedMessage() {
