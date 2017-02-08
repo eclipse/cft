@@ -55,6 +55,15 @@
   
   The marketplace page is:
   http://marketplace.eclipse.org/content/cloud-foundry-integration-eclipse
+
+## Running CFT JUnit Tests
+  
+  Instructions on running the CFT JUnit tests can be found here:
+
+  [CFT JUnit Instructions](org.eclipse.cft.server.tests/README.md)
+
+  **WARNING**: Running the CFT JUnit will **DELETE** all applications and services from the target Cloud Foundry space. Use **great care** when setting the CF target
+  to use for the JUnit.
   
 ## Raising Bugs, Feature Requests, Mailing List
 
