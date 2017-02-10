@@ -23,6 +23,7 @@ package org.eclipse.cft.server.tests.core;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
+import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.EnvironmentVariable;
@@ -154,11 +155,9 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 		// only
 		// creates a "pre-deployment" WST IModule for the given project.
 		IProject project = harness.createDefaultProjectAndAddModule();
-		String projectName = harness.getProjectName();
+		String projectName = project.getName();
 
-		assertEquals(project.getName(), projectName);
-
-		IModule module = getModule(projectName);
+		IModule module = getWstModule(projectName);
 
 		IModule[] modules = new IModule[] { module };
 
@@ -176,22 +175,23 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 	/**
 	 * Asserts that the application is deployed although it may not necessarily
 	 * be started.
-	 * @param appPrefix
+	 * @param appName
 	 * @return
 	 * @throws Exception
 	 */
-	protected CloudFoundryApplicationModule assertApplicationIsDeployed(String appPrefix) throws Exception {
+	protected CloudFoundryApplicationModule assertApplicationIsDeployed(String appName, IProject project)
+			throws Exception {
 		// Get the local WST IModule. NOTE that the PROJECT name needs to be
 		// used as opposed to the
 		// app name, as the project name and app name may differ, and the
 		// IModule is mapped to the project.
-		IModule module = getModule(harness.getProjectName());
+		IModule module = getWstModule(project.getName());
 
 		// Once the application is started, verify that the Cloud module is
 		// valid,
 		// and mapped to
 		// an actual CloudApplication representing the deployed application.
-		CloudFoundryApplicationModule appModule = assertCloudFoundryModuleExists(module, appPrefix);
+		CloudFoundryApplicationModule appModule = assertCloudFoundryModuleExists(module, appName);
 
 		assertNotNull("No Cloud Application mapping in Cloud module. Failed to refresh deployed application",
 				appModule.getApplication());
@@ -210,11 +210,11 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 	 * <p/>
 	 * 2. Deployed or started
 	 * @param module
-	 * @param appPrefix
+	 * @param testName
 	 * @return
 	 * @throws Exception
 	 */
-	protected CloudFoundryApplicationModule assertCloudFoundryModuleExists(IModule module, String appPrefix)
+	protected CloudFoundryApplicationModule assertCloudFoundryModuleExists(IModule module, String appName)
 			throws Exception {
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
 
@@ -222,7 +222,7 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 		// The deployed application name in the Cloud module MUST match the
 		// expected application name
-		assertEquals(harness.getWebAppName(appPrefix), appModule.getDeployedApplicationName());
+		assertEquals(appName, appModule.getDeployedApplicationName());
 
 		return appModule;
 	}
@@ -242,34 +242,30 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 	/**
 	 * Deploys an app with the given prefix name and asserts it is deployed
-	 * @param appPrefix
+	 * @param testName app name will be generated based on the test name
 	 * @param deployStopped if the app is to be deployed in stopped mode.
 	 * @return
 	 * @throws Exception
 	 */
-	protected CloudFoundryApplicationModule deployApplication(String appPrefix, boolean startApp, String buildpack)
-			throws Exception {
-		return deployApplication(appPrefix, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, null, null,
+	protected CloudFoundryApplicationModule deployApplication(String appName, IProject project, boolean startApp,
+			String buildpack) throws Exception {
+		return deployApplication(appName, project, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, null, null,
 				buildpack);
 	}
 
-	protected CloudFoundryApplicationModule deployApplication(String appPrefix, int memory, boolean startApp,
-			List<EnvironmentVariable> variables, List<CFServiceInstance> services, String buildpack) throws Exception {
-
-		String projectName = harness.getProjectName();
-
-		String expectedAppName = harness.getWebAppName(appPrefix);
+	protected CloudFoundryApplicationModule deployApplication(String appName, IProject project, int memory,
+			boolean startApp, List<EnvironmentVariable> variables, List<CFServiceInstance> services, String buildpack)
+			throws Exception {
 
 		if (buildpack != null) {
-			debug("Using buildpack: " + buildpack + " for app " + expectedAppName);
+			debug("Using buildpack: " + buildpack + " for app " + appName);
 		}
 
 		// Configure the test fixture for deployment.
 		// This step is a substitute for the Application deployment wizard
-		getTestFixture().configureForApplicationDeployment(expectedAppName, memory, startApp, variables, services,
-				buildpack);
+		getTestFixture().configureForApplicationDeployment(appName, memory, startApp, variables, services, buildpack);
 
-		IModule module = getModule(projectName);
+		IModule module = getWstModule(project.getName());
 
 		assertNotNull("Expected non-null IModule when deploying application", module);
 
@@ -283,22 +279,28 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 			throw new CoreException(status);
 		}
 
-		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(appPrefix);
+		CloudFoundryApplicationModule appModule = assertApplicationIsDeployed(appName, project);
 
 		// Do a separate check to verify that there is in fact a
 		// CloudApplication for the
 		// given app (i.e. verify that is is indeed deployed, even though this
 		// has been checked
 		// above, this is another way to verify all is OK.
-		CloudApplication actualCloudApp = getUpdatedApplication(expectedAppName);
+		CloudApplication actualCloudApp = getUpdatedApplication(appName);
 
 		assertNotNull("Expected non-null CloudApplication when checking if application is deployed", actualCloudApp);
-		assertEquals(actualCloudApp.getName(), expectedAppName);
+		assertEquals(actualCloudApp.getName(), appName);
 
 		return appModule;
 	}
 
-	protected IModule getModule(String projectName) {
+	/**
+	 * Get the underlying WST/WTP IModule. IModules always use project name even
+	 * if the Cloud app name is different.
+	 * @param projectName
+	 * @return
+	 */
+	protected IModule getWstModule(String projectName) {
 
 		IModule[] modules = server.getModules();
 		for (IModule module : modules) {
@@ -320,6 +322,22 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 	protected CloudFoundryTestFixture getTestFixture() {
 		return testFixture;
+	}
+
+	protected CloudApplication getAppFromExternalClient(String expectedAppName) throws Exception {
+
+		CloudFoundryOperations client = getTestFixture().createExternalClient();
+		client.login();
+		List<CloudApplication> deployedApplications = client.getApplications();
+		if (deployedApplications != null) {
+			for (CloudApplication cloudApplication : deployedApplications) {
+				if (cloudApplication.getName().equals(expectedAppName)) {
+					return cloudApplication;
+				}
+			}
+		}
+
+		return null;
 	}
 
 }

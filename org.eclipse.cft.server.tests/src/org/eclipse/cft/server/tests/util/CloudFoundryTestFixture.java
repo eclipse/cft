@@ -44,6 +44,7 @@ import org.eclipse.cft.server.tests.AllCloudFoundryTests;
 import org.eclipse.cft.server.tests.server.TestServlet;
 import org.eclipse.cft.server.tests.server.WebApplicationContainerBean;
 import org.eclipse.cft.server.tests.sts.util.StsTestUtil;
+import org.eclipse.cft.server.tests.util.HarnessPropertiesBuilder.HarnessCFService;
 import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.ServerDescriptor;
 import org.eclipse.cft.server.ui.internal.ServerHandler;
@@ -117,6 +118,10 @@ public class CloudFoundryTestFixture {
 	 */
 	public class Harness {
 
+		// Prefix to identify apps created by the test harness for cleanup
+		// purposes
+		private final String appNamePrefix = "cftjunit";
+
 		private boolean projectCreated;
 
 		private IServer server;
@@ -134,7 +139,7 @@ public class CloudFoundryTestFixture {
 		// Even when clearing routes, host name taken errors are occasionally
 		// thrown
 		// if the tests are run within short intervals of one another.
-		private int randomPrefix = 0;
+		private int randomVal = 0;
 
 		private final String defaultBuildpack;
 
@@ -245,7 +250,7 @@ public class CloudFoundryTestFixture {
 		public void setup() throws Exception {
 
 			Random random = new Random(100);
-			randomPrefix = Math.abs(random.nextInt(1000000));
+			randomVal = Math.abs(random.nextInt(1000000));
 
 			// Clean up all projects from workspace
 			StsTestUtil.cleanUpProjects();
@@ -273,41 +278,68 @@ public class CloudFoundryTestFixture {
 			return services;
 		}
 
-		private void clearRoutes() throws Exception {
+		private void deleteTestRoutes() throws Exception {
 			CloudFoundryOperations client = createExternalClient();
 			client.login();
 			String domain = getDomain();
 			if (domain != null) {
 				List<CloudRoute> routes = client.getRoutes(domain);
 				for (CloudRoute route : routes) {
-					if (!route.inUse()) {
+					// Only delete the routes associated with apps created by
+					// the test harness
+					if (!route.inUse() && route.getHost().startsWith(getCFTAppPrefix())) {
 						client.deleteRoute(route.getHost(), route.getDomain().getName());
 					}
 				}
 			}
 		}
 
+		/**
+		 * Deletes services created by this test harness.
+		 * @throws CoreException
+		 */
 		public void deleteTestServices() throws CoreException {
 			List<CFServiceInstance> services = getCFServices();
-			for (CFServiceInstance service : services) {
-				deleteService(service);
-				CloudFoundryTestUtil.waitIntervals(1000);
-			}
-		}
 
-		public void deleteTestApps() throws CoreException {
-			List<CloudApplication> apps = getBehaviour().getApplications(new NullProgressMonitor());
-			if (apps != null) {
-				for (CloudApplication app : apps) {
-					getBehaviour().deleteApplication(app.getName(), new NullProgressMonitor());
+			HarnessProperties properties = getHarnessProperties();
+			HarnessCFService harnessService = properties.serviceToCreate();
+			for (CFServiceInstance service : services) {
+				if (harnessService.serviceName.equals(service.getName())
+						&& harnessService.servicePlan.equals(service.getPlan())
+						&& harnessService.serviceType.equals(service.getService())) {
+					deleteService(service);
+					return;
 				}
 			}
 		}
 
+		/**
+		 * Deletes all applications that are created by this test harness.
+		 * WARNING: not guaranteed to avoid deleting any other existing
+		 * applications.
+		 *
+		 * @throws CoreException
+		 */
+		public void deleteTestApps() throws CoreException {
+			List<CloudApplication> apps = getBehaviour().getApplications(new NullProgressMonitor());
+			if (apps != null) {
+				for (CloudApplication app : apps) {
+					if (app.getName().startsWith(getCFTAppPrefix())) {
+						getBehaviour().deleteApplication(app.getName(), new NullProgressMonitor());
+					}
+				}
+			}
+		}
+
+		public String getCFTAppPrefix() {
+			return appNamePrefix;
+		}
+
 		protected void clearCloudTarget() {
 			try {
+				// Delete apps first before deleting services as bound ser
 				deleteTestApps();
-				clearRoutes();
+				deleteTestRoutes();
 				deleteTestServices();
 			}
 			catch (Exception e) {
@@ -349,29 +381,12 @@ public class CloudFoundryTestFixture {
 		}
 
 		/**
-		 * Given a prefix for an application name (e.g. "test01" in
-		 * "test01myprojectname") constructs the expected URL based on the
-		 * default web project name ("myprojectname") and the domain. E.g:
-		 *
-		 * <p/>
-		 * Arg = test01
-		 * <p/>
-		 * Default project name = myprojectname
-		 * <p/>
-		 * domain = run.pivotal.io URL = test01myprojectname.run.pivotal.io
-		 * <p/>
-		 * The purpose of the prefix is to reuse the same web project for each
-		 * tests but assign a different name to avoid "URL taken/Host taken"
-		 * errors in case the server does not clear the routing of the app by
-		 * the time the next test runs that will deploy the same project. By
-		 * having different names for each application deployment, the routing
-		 * problem is avoided or minimised.
-		 * @param appPrefix
+		 * @param appName
 		 * @return
 		 * @throws CoreException
 		 */
-		public String getExpectedDefaultURL(String appPrefix) throws CoreException {
-			return getWebAppName(appPrefix) + '.' + getDomain();
+		public String generateAppUrl(String appName) throws CoreException {
+			return appName + '.' + getDomain();
 		}
 
 		/**
@@ -380,12 +395,18 @@ public class CloudFoundryTestFixture {
 		 * the CF application name as users have option to specify a different
 		 * app name when deploying.
 		 */
-		public String getProjectName() {
+		protected String getProjectName() {
 			return DYNAMIC_WEBPROJECT_NAME;
 		}
 
-		public String getWebAppName(String appPrefix) {
-			return appPrefix + '_' + randomPrefix + '_' + getProjectName();
+		/**
+		 *
+		 * @param testName. Should be relatively short as CF targets may have a
+		 * limit to the length of the app name
+		 * @return generate an CF app name given a test name
+		 */
+		public String getWebAppName(String testName) {
+			return getCFTAppPrefix() + '_' + testName + '_' + randomVal;
 		}
 
 		public TestServlet startMockServer() throws Exception {

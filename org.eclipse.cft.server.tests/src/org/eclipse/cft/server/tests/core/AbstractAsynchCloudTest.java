@@ -25,8 +25,8 @@ import java.lang.reflect.InvocationTargetException;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
 import org.eclipse.cft.server.tests.util.ModulesRefreshListener;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -41,38 +41,6 @@ import org.eclipse.jface.operation.IRunnableWithProgress;
  *
  */
 public abstract class AbstractAsynchCloudTest extends AbstractCloudFoundryTest {
-
-	/**
-	 * Runs the given operation asynchronously in a separate Job, and waits in
-	 * the current thread for the refresh triggered by that operation to
-	 * complete. This tests the CF tooling asynch, event-driven refresh module
-	 * behaviour. When checking for the refresh to complete, it will also verify
-	 * that the expected refresh event type is the event type that was actually
-	 * received.
-	 * @param op
-	 * @param testPrefix pass null if using a module listener to detect all.
-	 * Otherwise will only listen and test against single-module refresh for
-	 * module with the corresponding app name using the prefix module refresh
-	 * @param expectedRefreshEventType
-	 * @throws CoreException
-	 */
-	protected void asynchExecuteOperation(final ICloudFoundryOperation op, String testPrefix, int expectedEventType)
-			throws Exception {
-		String expectedAppName = testPrefix != null ? harness.getWebAppName(testPrefix) : null;
-		IRunnableWithProgress runnable = new IRunnableWithProgress() {
-
-			@Override
-			public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
-				try {
-					op.run(monitor);
-				}
-				catch (CoreException e) {
-					e.printStackTrace();
-				}
-			}
-		};
-		asynchExecuteApplicationOperation(runnable, expectedAppName, expectedEventType);
-	}
 
 	/**
 	 * Runs the given operation asynchronously in a separate Job, and waits in
@@ -143,13 +111,13 @@ public abstract class AbstractAsynchCloudTest extends AbstractCloudFoundryTest {
 		refreshHandler.dispose();
 	}
 
-	protected CloudFoundryApplicationModule deployApplicationWithModuleRefresh(String appPrefix, boolean startApp,
+	protected CloudFoundryApplicationModule deployApplicationWithModuleRefresh(String appName, IProject project, boolean startApp,
 			String buildpack) throws Exception {
 
-		String appName = harness.getWebAppName(appPrefix);
 		ModulesRefreshListener listener = ModulesRefreshListener.getListener(appName, cloudServer,
 				CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
-		CloudFoundryApplicationModule appModule = deployApplication(appPrefix, startApp, buildpack);
+		
+		CloudFoundryApplicationModule appModule = deployApplication(appName, project, startApp, buildpack);
 
 		assertModuleRefreshedAndDispose(listener, CloudServerEvent.EVENT_APP_DEPLOYMENT_CHANGED);
 		return appModule;
