@@ -123,6 +123,18 @@ public class AbstractCloudFoundryServicesTest extends AbstractAsynchCloudTest {
 		return null;
 	}
 
+	/**
+	 * Does NOT create a service. Rather, it returns the given information
+	 * (service name, plan and type) as a service instance wrapper type, IFF the
+	 * type and plan are available in the Cloud server service configuration for
+	 * that type
+	 *
+	 * @param name
+	 * @param plan
+	 * @param type
+	 * @return service instance for the given service instance information
+	 * @throws CoreException if the service type or plan are not found
+	 */
 	protected CFServiceInstance asCFServiceInstance(String name, String plan, String type) throws CoreException {
 
 		CFServiceOffering serviceConfiguration = getServiceConfiguration(type);
@@ -150,6 +162,8 @@ public class AbstractCloudFoundryServicesTest extends AbstractAsynchCloudTest {
 
 			return service;
 		}
-		return null;
+		throw CloudErrorUtil.toCoreException(
+				"No service configuration for type: " + type + " found in :" + cloudServer.getServer().getId());
+
 	}
 }

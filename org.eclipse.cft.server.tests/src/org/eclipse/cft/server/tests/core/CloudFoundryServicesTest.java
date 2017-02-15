@@ -34,6 +34,7 @@ import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule
 import org.eclipse.cft.server.core.internal.client.ServicesUpdatedEvent;
 import org.eclipse.cft.server.tests.util.CloudFoundryTestUtil;
 import org.eclipse.cft.server.tests.util.ModulesRefreshListener;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
 public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
@@ -48,11 +49,10 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		serverBehavior.operations().createServices(new CFServiceInstance[] { toCreate }).run(new NullProgressMonitor());
 
 		// Verify it was created
-		List<CFServiceInstance> existingServices = serverBehavior.getServices(new NullProgressMonitor());
-		assertTrue("Expected 1 service", existingServices.size() == 1);
-		assertEquals(expectedServiceName, existingServices.get(0).getName());
-		assertEquals(expectedServiceType, existingServices.get(0).getService());
-		assertEquals(expectedServicePlan, existingServices.get(0).getPlan());
+		CFServiceInstance existingService = getExistingCloudService(expectedServiceName);
+		assertEquals(expectedServiceName, existingService.getName());
+		assertEquals(expectedServiceType, existingService.getService());
+		assertEquals(expectedServicePlan, existingService.getPlan());
 
 		// Delete the service
 		List<String> toDelete = new ArrayList<String>();
@@ -60,8 +60,8 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 
 		serverBehavior.operations().deleteServices(toDelete).run(new NullProgressMonitor());
 
-		List<CFServiceInstance> remainingServices = serverBehavior.getServices(new NullProgressMonitor());
-		assertTrue("Expected empty list of services", remainingServices.isEmpty());
+		existingService = getExistingCloudService(expectedServiceName);
+		assertNull("Expected service to be deleted but it still exists: " + expectedServiceName, existingService);
 	}
 
 	public void testServiceBindingInDeploymentInfo() throws Exception {
@@ -72,11 +72,13 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		CFServiceInstance toCreate = asCFServiceInstance(expectedServiceName, expectedServicePlan, expectedServiceType);
 		serverBehavior.operations().createServices(new CFServiceInstance[] { toCreate }).run(new NullProgressMonitor());
 
-		String prefix = "testServiceBindingInDeploymentInfo";
-		createWebApplicationProject();
+		String testName = "serviceDeploymentInfo";
+		IProject project = createWebApplicationProject();
 
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
+		String expectedAppName = harness.getWebAppName(testName);
+		CloudFoundryApplicationModule appModule = deployApplication(expectedAppName, project, startApp,
+				harness.getDefaultBuildpack());
 
 		CloudApplication app = appModule.getApplication();
 
@@ -100,10 +102,12 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		CFServiceInstance toCreate = asCFServiceInstance(expectedServiceName, expectedServicePlan, expectedServiceType);
 		serverBehavior.operations().createServices(new CFServiceInstance[] { toCreate }).run(new NullProgressMonitor());
 
-		String prefix = "testSBUAppStarted";
-		createWebApplicationProject();
+		String testName = "serviceAppStarted";
+		IProject project = createWebApplicationProject();
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
+		String expectedAppName = harness.getWebAppName(testName);
+		CloudFoundryApplicationModule appModule = deployApplication(expectedAppName, project, startApp,
+				harness.getDefaultBuildpack());
 
 		getBindServiceOp(appModule, toCreate).run(new NullProgressMonitor());
 
@@ -131,11 +135,13 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		CFServiceInstance toCreate = asCFServiceInstance(expectedServiceName, expectedServicePlan, expectedServiceType);
 		serverBehavior.operations().createServices(new CFServiceInstance[] { toCreate }).run(new NullProgressMonitor());
 
-		String prefix = "testSBUAppStopped";
-		createWebApplicationProject();
+		String testName = "serviceAppStopped";
+		IProject project = createWebApplicationProject();
 
 		boolean startApp = false;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
+		String expectedAppName = harness.getWebAppName(testName);
+		CloudFoundryApplicationModule appModule = deployApplication(expectedAppName, project, startApp,
+				harness.getDefaultBuildpack());
 
 		getBindServiceOp(appModule, toCreate).run(new NullProgressMonitor());
 
@@ -167,8 +173,10 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		serverBehavior.operations().createServices(new CFServiceInstance[] { toCreate }).run(new NullProgressMonitor());
 
 		// Verify it was created
-		List<CFServiceInstance> existingServices = serverBehavior.getServices(new NullProgressMonitor());
-		assertEquals(expectedServiceName, existingServices.get(0).getName());
+		CFServiceInstance existingService = getExistingCloudService(expectedServiceName);
+		assertEquals(expectedServiceName, existingService.getName());
+		assertEquals(expectedServiceType, existingService.getService());
+		assertEquals(expectedServicePlan, existingService.getPlan());
 
 		// Verify the event after module refreshed
 		assertTrue(refreshListener.modulesRefreshed(new NullProgressMonitor()));
@@ -179,11 +187,11 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 
 		// Test the event that it contains the correct information
 		ServicesUpdatedEvent cloudEvent = (ServicesUpdatedEvent) refreshListener.getMatchedEvent();
-		List<CFServiceInstance> serviceInEvent = cloudEvent.getServices();
-		assertTrue("Expected 1 created service in cloud refresh event", serviceInEvent.size() == 1);
-		assertEquals(expectedServiceName, serviceInEvent.get(0).getName());
-		assertEquals(expectedServiceType, serviceInEvent.get(0).getService());
-		assertEquals(expectedServicePlan, serviceInEvent.get(0).getPlan());
+		CFServiceInstance serviceFromEvent = getServiceFromEvent(cloudEvent, expectedServiceName);
+
+		assertEquals(expectedServiceName, serviceFromEvent.getName());
+		assertEquals(expectedServiceType, serviceFromEvent.getService());
+		assertEquals(expectedServicePlan, serviceFromEvent.getPlan());
 
 		refreshListener.dispose();
 	}
@@ -199,8 +207,10 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		serverBehavior.operations().createServices(new CFServiceInstance[] { toCreate }).run(new NullProgressMonitor());
 
 		// Verify it was created
-		List<CFServiceInstance> existingServices = serverBehavior.getServices(new NullProgressMonitor());
-		assertEquals(expectedServiceName, existingServices.get(0).getName());
+		CFServiceInstance existingService = getExistingCloudService(expectedServiceName);
+		assertEquals(expectedServiceName, existingService.getName());
+		assertEquals(expectedServiceType, existingService.getService());
+		assertEquals(expectedServicePlan, existingService.getPlan());
 
 		// Add the refresh listener to listen for the deletion event AFTER
 		// services has been created, because service
@@ -216,9 +226,10 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 				refreshListener.getMatchedEvent() instanceof ServicesUpdatedEvent);
 
 		ServicesUpdatedEvent cloudEvent = (ServicesUpdatedEvent) refreshListener.getMatchedEvent();
-		List<CFServiceInstance> eventServices = cloudEvent.getServices();
 
-		assertTrue("Expected 0 service in cloud refresh event", eventServices.size() == 0);
+		CFServiceInstance serviceFromEvent = getServiceFromEvent(cloudEvent, expectedServiceName);
+
+		assertNull("Deleted service not expected in cloud service refresh event", serviceFromEvent);
 
 		refreshListener.dispose();
 	}
@@ -262,36 +273,37 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 				servicesUpdateCompletedListener.getMatchedEvent() instanceof ServicesUpdatedEvent);
 
 		ServicesUpdatedEvent cloudEvent = (ServicesUpdatedEvent) servicesUpdateCompletedListener.getMatchedEvent();
-		List<CFServiceInstance> eventServices = cloudEvent.getServices();
-		assertTrue("Expected 1 service in cloud refresh event", eventServices.size() == 1);
-		assertEquals(expectedServiceName, eventServices.get(0).getName());
-		assertEquals(expectedServiceType, eventServices.get(0).getService());
-		assertEquals(expectedServicePlan, eventServices.get(0).getPlan());
+		CFServiceInstance serviceFromEvent = getServiceFromEvent(cloudEvent, expectedServiceName);
+
+		assertEquals(expectedServiceName, serviceFromEvent.getName());
+		assertEquals(expectedServiceType, serviceFromEvent.getService());
+		assertEquals(expectedServicePlan, serviceFromEvent.getPlan());
 
 		// Finally test the CFT server behaviour services API to ensure that it
 		// fetches
 		// the externally created service
 
-		List<CFServiceInstance> existingServices = serverBehavior.getServices(new NullProgressMonitor());
-		assertTrue("Expected 1 service", existingServices.size() == 1);
-		assertEquals(expectedServiceName, existingServices.get(0).getName());
-		assertEquals(expectedServiceType, existingServices.get(0).getService());
-		assertEquals(expectedServicePlan, existingServices.get(0).getPlan());
+		CFServiceInstance existingService = getExistingCloudService(expectedServiceName);
+		assertEquals(expectedServiceName, existingService.getName());
+		assertEquals(expectedServiceType, existingService.getService());
+		assertEquals(expectedServicePlan, existingService.getPlan());
 	}
 
 	public void testNoService() throws Exception {
 
-		// There should be no services by default. make sure there was proper
+		String expectedServiceName = harness.getProperties().serviceToCreate().serviceName;
+		// There should be no services by default to test that there was proper
 		// tear down
-		List<CFServiceInstance> existingServices = serverBehavior.getServices(new NullProgressMonitor());
-		assertTrue("Expected 0 services", existingServices.size() == 0);
+		CFServiceInstance existingService = getExistingCloudService(expectedServiceName);
+		assertNull("Expected test service not to exist: " + expectedServiceName, existingService);
+
 	}
 
 	public void testServiceBindingDuringAppDeployment() throws Exception {
 
-		String prefix = "testApplicationDeploymentInfo";
+		String testName = "serviceAppDeployment";
 
-		String expectedAppName = harness.getWebAppName(prefix);
+		String expectedAppName = harness.getWebAppName(testName);
 
 		CloudFoundryOperations externalClient = getTestFixture().createExternalClient();
 		externalClient.login();
@@ -306,10 +318,10 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		servicesToBind.add(toCreate);
 		externalClient.createService(CloudServicesUtil.asLegacyV1Service(toCreate));
 
-		createWebApplicationProject();
+		IProject project = createWebApplicationProject();
 
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix,
+		CloudFoundryApplicationModule appModule = deployApplication(expectedAppName, project,
 				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp,
 				/* no vars */ null, servicesToBind, harness.getDefaultBuildpack());
 
@@ -329,6 +341,18 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 		assertEquals(expectedServiceName, appModule.getDeploymentInfo().getServices().get(0).getName());
 		assertEquals(expectedServiceName, actualApp.getServices().get(0));
 
+	}
+
+	protected CFServiceInstance getServiceFromEvent(ServicesUpdatedEvent cloudEvent, String expectedServiceName) {
+		List<CFServiceInstance> services = cloudEvent.getServices();
+		if (services != null) {
+			for (CFServiceInstance cfServiceInstance : services) {
+				if (cfServiceInstance.getName().equals(expectedServiceName)) {
+					return cfServiceInstance;
+				}
+			}
+		}
+		return null;
 	}
 
 }

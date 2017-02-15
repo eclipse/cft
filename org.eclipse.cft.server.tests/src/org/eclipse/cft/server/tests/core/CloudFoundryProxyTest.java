@@ -37,6 +37,7 @@ import org.eclipse.cft.server.tests.sts.util.ProxyHandler;
 import org.eclipse.cft.server.tests.util.ModulesRefreshListener;
 import org.eclipse.core.net.proxy.IProxyData;
 import org.eclipse.core.net.proxy.IProxyService;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
@@ -94,11 +95,14 @@ public class CloudFoundryProxyTest extends AbstractAsynchCloudTest {
 
 		// Verify that connection and operations can be performed without the
 		// proxy change
-		String prefix = "InvalidProxyServerInstance";
-		createWebApplicationProject();
+		String testName = "InvalidProxyServerInstance";
+		IProject project = createWebApplicationProject();
 
 		boolean startApp = true;
-		CloudFoundryApplicationModule appModule = deployApplication(prefix, startApp, harness.getDefaultBuildpack());
+
+		String expectedAppName = harness.getWebAppName(testName);
+		CloudFoundryApplicationModule appModule = deployApplication(expectedAppName, project, startApp,
+				harness.getDefaultBuildpack());
 
 		final String appName = appModule.getDeployedApplicationName();
 
