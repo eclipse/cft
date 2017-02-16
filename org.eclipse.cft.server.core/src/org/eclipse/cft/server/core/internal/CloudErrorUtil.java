@@ -463,4 +463,8 @@ public class CloudErrorUtil {
 		return cfe.getMessage();
 	}
 
+	public static String getMessage(CoreException ce) {
+		return ce.getMessage();
+	}
+
 }

@@ -21,7 +21,6 @@
 package org.eclipse.cft.server.core.internal.client;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
@@ -104,34 +103,37 @@ public class PushApplicationOperation extends StartOperation {
 
 		}
 		else {
-			try {
+			CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
 
-				CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
-
-				// prompt user for missing details
-				return CloudFoundryPlugin.getCallback().prepareForDeployment(cloudServer, appModule, monitor);
-			}
-			catch (OperationCanceledException oce) {
-				// Change in behavior:
-				// If the CF wizard  (callback prepareForDeployment) is canceled by the user, then it should be effectively canceling the monitor
-				// for the original publish operation that was initiated in the first place. That way, any adopter code with access to this monitor can
-				// check this flag (monitor.isCanceled()) so they can react to the cancel.  One impact on this change is that it will prevent
-				// other modules that are in Republish state from being published.  
-				// Set monitor to canceled here and not in AbstractPublishApplicationOperation since this operation invokes the wizard.
-				monitor.setCanceled(true);
-
-				CloudFoundryPlugin.log(new Status(Status.INFO, CloudFoundryPlugin.PLUGIN_ID,
-						"Operation cancelled during prepareForDeployment.", oce)); //$NON-NLS-1$
-
-				// Prepare for deployment prompts the user for missing
-				// information for a non-published app. If a user
-				// cancels
-				// delete the application module
-				getBehaviour().getCloudFoundryServer().doDeleteModules(Arrays.asList(getModules()));
-				throw oce;
-			}
+			// prompt user for missing details
+			return CloudFoundryPlugin.getCallback().prepareForDeployment(cloudServer, appModule, monitor);
 		}
 		return null;
+	}
+	
+	
+
+	@Override
+	protected void onOperationCanceled(OperationCanceledException e, IProgressMonitor monitor) throws CoreException {
+
+		// Bug 501186: When publish operation is canceled, ensure that the
+		// unpublished module is properly handled at the server level. The
+		// server always needs to be synchronized with Cloud Foundry, therefore
+		// an update on the module will remove it from the server if the
+		// associated CF app was never created
+		getBehaviour().updateModuleWithAllCloudInfo(getModule(), monitor);
+
+		// Change in behavior:
+		// NOTE - Set monitor canceled AFTER updating the module above, as to not cancel the update module operation:
+		// If the CF wizard  (callback prepareForDeployment) is canceled by the user, then it should be effectively canceling the monitor
+		// for the original publish operation that was initiated in the first place. That way, any adopter code with access to this monitor can
+		// check this flag (monitor.isCanceled()) so they can react to the cancel.  One impact on this change is that it will prevent
+		// other modules that are in Republish state from being published.  
+		// Set monitor to canceled here and not in AbstractPublishApplicationOperation since this operation invokes the wizard.
+		monitor.setCanceled(true);
+
+		CloudFoundryPlugin.log(new Status(Status.INFO, CloudFoundryPlugin.PLUGIN_ID,
+				"Operation cancelled during prepareForDeployment.", e)); //$NON-NLS-1$
 	}
 
 	@Override

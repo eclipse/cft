@@ -23,7 +23,6 @@ package org.eclipse.cft.server.ui.internal.actions;
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.NotFinishedStagingException;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
-import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
@@ -190,19 +189,6 @@ public abstract class EditorAction extends Action {
 	 */
 	protected IStatus display404Error(IStatus status) {
 		return status;
-	}
-
-	protected void setErrorInPage(IStatus status) {
-		setErrorInPage(status.getMessage());
-	}
-
-	protected void setErrorInPage(String message) {
-		IStatus errorStatus = message != null ? CloudFoundryPlugin.getErrorStatus(message) : null;
-		setMessageInPage(errorStatus);
-	}
-
-	protected void setMessageInPage(IStatus status) {
-		editorPage.setMessage(status);
 	}
 
 	protected CloudFoundryServerBehaviour getBehaviour() {

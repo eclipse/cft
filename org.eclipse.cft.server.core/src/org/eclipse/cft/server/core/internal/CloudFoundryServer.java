@@ -1239,7 +1239,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 						deleteModule(wstModule);
 					}
 
-					// Remove the cloud module from the catch
+					// Remove the cloud module from the cache
 					if (correspondingCloudModule != null) {
 						getData().remove(correspondingCloudModule);
 						correspondingCloudModule = null;
