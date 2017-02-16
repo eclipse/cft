@@ -1038,11 +1038,16 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		debugButton.setData(DebugOperationType.Debug);
 		debugButton.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				if (DebugOperationType.Debug.equals(debugButton.getData())) {
-					debug();
+				try {
+					if (DebugOperationType.Debug.equals(debugButton.getData())) {
+						debug();
+					}
+					else if (DebugOperationType.Terminate.equals(debugButton.getData())) {
+						terminateDebug();
+					}
 				}
-				else if (DebugOperationType.Terminate.equals(debugButton.getData())) {
-					terminateDebug();
+				catch (CoreException ce) {
+					logApplicationModuleFailureError(CloudErrorUtil.getMessage(ce));
 				}
 			}
 		});
@@ -1293,6 +1298,7 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 
 		return appModule;
 	}
+	
 
 	protected void logError(String message) {
 		logError(message, null);
@@ -1313,8 +1319,8 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		}
 	}
 
-	protected void debug() {
-		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
+	protected void debug() throws CoreException {
+		CloudFoundryApplicationModule appModule = getExistingApplication();
 
 		if (appModule != null) {
 			new DebugApplicationEditorAction(editorPage, appModule, cloudServer, getSelectedAppInstance(),
@@ -1322,8 +1328,8 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		}
 	}
 
-	protected void terminateDebug() {
-		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
+	protected void terminateDebug() throws CoreException {
+		CloudFoundryApplicationModule appModule = getExistingApplication();
 
 		if (appModule != null) {
 			new TerminateDebugEditorAction(editorPage, appModule, cloudServer, getSelectedAppInstance(), debugLauncher)
