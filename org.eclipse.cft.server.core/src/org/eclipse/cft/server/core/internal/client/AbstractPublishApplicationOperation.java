@@ -91,7 +91,7 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 			getBehaviour().asyncUpdateModuleAfterPublish(getModule());
 		}
 		catch (OperationCanceledException e) {
-			cancelPublish(monitor, e);
+			cancelPublish(e, monitor);
 		}
 		catch (Throwable e) {
 
@@ -128,7 +128,7 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 
 	}
 
-	protected void cancelPublish(IProgressMonitor monitor, OperationCanceledException e) throws CoreException {
+	protected void cancelPublish(OperationCanceledException e, IProgressMonitor monitor) throws CoreException {
 		// Record the canceled operation 'description' to the log file and console first as the module is still available
 		// at this stage. It may be delete later in the cancellation during an update if the associated CF app does not exist.
 		CloudFoundryPlugin.logWarning(e.getMessage());
@@ -149,7 +149,7 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 		// can be correctly removed
 		getBehaviour().getCloudFoundryServer().moduleAdditionCompleted(getModule());
 		
-		// Allow subclasses to react to the cancelled publish operation
+		// Allow subclasses to react to the canceled publish operation
 		onOperationCanceled(e, monitor);
 
 		// The following steps should be standard to all publish operations in terms of setting the server state
