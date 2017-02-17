@@ -91,36 +91,7 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 			getBehaviour().asyncUpdateModuleAfterPublish(getModule());
 		}
 		catch (OperationCanceledException e) {
-			// [492609] - Modules are not correctly marked as "completed" when
-			// cancellation occurs.
-			// This results in the internal server module cache going out of
-			// synch with Cloud Foundry. By telling the cache that module addition has been completed, the cache
-			// can be correctly removed
-			getBehaviour().getCloudFoundryServer().moduleAdditionCompleted(getModule());
-			
-			// ignore so webtools does not show an exception
-			((Server) getBehaviour().getServer()).setModuleState(getModules(), IServer.STATE_UNKNOWN);
-
-			// If application operations, like Restart, Start, or
-			// PushApplication are canceled, then the publish state is
-			// 'indeterminate'
-			// TODO: Don't reference internal Server class. We need to revisit
-			// this change and revert back to the original state.
-			((Server) getBehaviour().getServer()).setServerPublishState(IServer.PUBLISH_STATE_INCREMENTAL);
-			((Server) getBehaviour().getServer()).setModulePublishState(modules, IServer.PUBLISH_STATE_INCREMENTAL);
-
-			// Record the canceled operation 'description' to the log file.
-			CloudFoundryPlugin.logWarning(e.getMessage());
-
-			CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
-
-			CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(getModule());
-			if (appModule != null && e.getMessage() != null) {
-				CloudFoundryPlugin.getCallback().printToConsole(cloudServer, appModule,
-						NLS.bind(Messages.AbstractPublishApplicationOperation_OPERATION_CANCELED, e.getMessage())
-								+ '\n',
-						false, false);
-			}
+			cancelPublish(e, monitor);
 		}
 		catch (Throwable e) {
 
@@ -155,6 +126,49 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 			throw e;
 		}
 
+	}
+
+	protected void cancelPublish(OperationCanceledException e, IProgressMonitor monitor) throws CoreException {
+		// Record the canceled operation 'description' to the log file and console first as the module is still available
+		// at this stage. It may be delete later in the cancellation during an update if the associated CF app does not exist.
+		CloudFoundryPlugin.logWarning(e.getMessage());
+
+		CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
+		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(getModule());
+		if (appModule != null && e.getMessage() != null) {
+			CloudFoundryPlugin.getCallback().printToConsole(cloudServer, appModule,
+					NLS.bind(Messages.AbstractPublishApplicationOperation_OPERATION_CANCELED, e.getMessage()) + '\n',
+					false, false);
+		}
+		
+		// Bug 492609 - Modules are not correctly marked as "completed" when
+		// cancellation occurs.
+		// This results in the internal server module cache going out of
+		// synch with Cloud Foundry. By telling the cache that module addition
+		// has been completed, the cache
+		// can be correctly removed
+		getBehaviour().getCloudFoundryServer().moduleAdditionCompleted(getModule());
+		
+		// Allow subclasses to react to the canceled publish operation
+		onOperationCanceled(e, monitor);
+
+		// The following steps should be standard to all publish operations in terms of setting the server state
+		// ignore so webtools does not show an exception
+		((Server) getBehaviour().getServer()).setModuleState(getModules(), IServer.STATE_UNKNOWN);
+
+		// If application operations, like Restart, Start, or
+		// PushApplication are canceled, then the publish state is
+		// 'indeterminate'
+		// TODO: Don't reference internal Server class. We need to revisit
+		// this change and revert back to the original state.
+		((Server) getBehaviour().getServer()).setServerPublishState(IServer.PUBLISH_STATE_INCREMENTAL);
+		((Server) getBehaviour().getServer()).setModulePublishState(modules, IServer.PUBLISH_STATE_INCREMENTAL);
+	}
+
+
+	protected void onOperationCanceled(OperationCanceledException e, IProgressMonitor monitor) throws CoreException {
+		// Hook to allow specialised publish operations to react to operation
+		// canceled.
 	}
 
 	protected abstract void doApplicationOperation(IProgressMonitor monitor) throws CoreException;
