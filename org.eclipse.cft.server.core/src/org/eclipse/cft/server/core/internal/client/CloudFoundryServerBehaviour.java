@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc., IBM Corporation, and others
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc., IBM Corporation, and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -1734,27 +1734,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		}
 	}
 
-	public static void register(String location, String userName, String password, boolean selfSigned,
-			IProgressMonitor monitor) throws CoreException {
-		SubMonitor progress = SubMonitor.convert(monitor);
-		progress.beginTask(Messages.CONNECTING, IProgressMonitor.UNKNOWN);
-		try {
-			CloudFoundryOperations client = createClientForRegister(location, userName, password, selfSigned);
-			client.register(userName, password);
-		}
-		catch (RestClientException e) {
-			throw CloudErrorUtil.toCoreException(e);
-		}
-		catch (RuntimeException e) {
-			// try to guard against IOException in parsing response
-			throw CloudErrorUtil.checkServerCommunicationError(e);
-
-		}
-		finally {
-			progress.done();
-		}
-	}
-
 	/**
 	 * Resets publish state of the given modules to
 	 * {@link IServer#PUBLISH_STATE_NONE}
@@ -1762,27 +1741,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 */
 	void resetPublishState(IModule[] modules) {
 		setModulePublishState(modules, IServer.PUBLISH_STATE_NONE);
-	}
-
-	/**
-	 * Creates a standalone client with no association with a server behaviour.
-	 * This is used only for connecting to a Cloud Foundry server for credential
-	 * verification. The session client for the server behaviour is created when
-	 * the latter is created
-	 * @param location
-	 * @param userName
-	 * @param password
-	 * @param selfSigned true if connecting to self-signing server. False
-	 * otherwise
-	 * @return
-	 * @throws CoreException
-	 */
-	private static CloudFoundryOperations createClientForRegister(String location, String userName, String password, boolean selfSigned)
-			throws CoreException {
-		
-		if(password == null) { password = ""; } 
-		
-		return createClientWithCredentials(location, new CloudCredentials(userName, password), null, selfSigned);
 	}
 
 	/**

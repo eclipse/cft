@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -422,10 +422,6 @@ public class CloudFoundryBrandingExtensionPoint {
 			}
 		}
 		read = true;
-	}
-
-	public static boolean supportsRegistration(String serverTypeId, String url) {
-		return url != null && (url.endsWith("cloudfoundry.me") || url.endsWith("vcap.me")); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	public static boolean isSupportUpperCaseURL(String serverTypeId) {

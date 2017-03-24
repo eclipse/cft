@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -28,14 +28,11 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.ValidationEvents;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryClientFactory;
 import org.eclipse.cft.server.ui.internal.editor.CloudUrlWidget;
-import org.eclipse.cft.server.ui.internal.wizards.RegisterAccountWizard;
 import org.eclipse.cft.server.ui.internal.wizards.WizardHandleContext;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.operation.IRunnableContext;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.window.Window;
-import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -87,8 +84,6 @@ public class CloudFoundryCredentialsPart extends UIPart implements IPartChangeLi
 	private CloudUrlWidget urlWidget;
 
 	private Button validateButton;
-
-	private Button registerAccountButton;
 
 	private Button cfSignupButton;
 
@@ -238,24 +233,6 @@ public class CloudFoundryCredentialsPart extends UIPart implements IPartChangeLi
 
 				updateUI(true);
 
-			}
-		});
-
-		registerAccountButton = new Button(validateComposite, SWT.PUSH);
-		registerAccountButton.setText(Messages.CloudFoundryCredentialsPart_TEXT_REGISTER_BUTTON);
-		registerAccountButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent event) {
-				RegisterAccountWizard wizard = new RegisterAccountWizard(cfServer);
-				WizardDialog dialog = new WizardDialog(validateComposite.getShell(), wizard);
-				if (dialog.open() == Window.OK) {
-					if (wizard.getEmail() != null) {
-						emailText.setText(wizard.getEmail());
-					}
-					if (wizard.getPassword() != null) {
-						passwordText.setText(wizard.getPassword());
-					}
-				}
 			}
 		});
 
@@ -419,9 +396,6 @@ public class CloudFoundryCredentialsPart extends UIPart implements IPartChangeLi
 	protected void updateButtons() {
 		String url = cfServer.getUrl();
 		cfSignupButton.setEnabled(!sso.getSelection() && CloudFoundryURLNavigation.canEnableCloudFoundryNavigation(serverTypeId, url));
-
-		registerAccountButton.setEnabled(!sso.getSelection() && CloudFoundryBrandingExtensionPoint.supportsRegistration(serverTypeId, url));
-
 	}
 
 	public void handleChange(PartChangeEvent event) {

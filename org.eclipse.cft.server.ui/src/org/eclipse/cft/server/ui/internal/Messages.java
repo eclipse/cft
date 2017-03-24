@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and IBM Corporation. 
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and IBM Corporation. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -955,28 +955,6 @@ public class Messages extends NLS {
 	public static String RefreshApplicationEditorAction_TEXT_JOB;
 
 	public static String RefreshApplicationEditorAction_WARNING_CANNOT_REFRESH;
-
-	public static String RegisterAccountWizard_ERROR_REGISTER_ACC;
-
-	public static String RegisterAccountWizard_ERROR_UNEXPECTED;
-
-	public static String RegisterAccountWizard_TITLE_REGISTER_ACC;
-
-	public static String RegisterAccountWizardPage_ERROR_PW_NO_MATCH;
-
-	public static String RegisterAccountWizardPage_LABEL_VERIFY;
-
-	public static String RegisterAccountWizardPage_TEXT_ENTER_EMAIL;
-
-	public static String RegisterAccountWizardPage_TEXT_ENTER_PW;
-
-	public static String RegisterAccountWizardPage_TEXT_ENTER_PW_VERIFICATION;
-
-	public static String RegisterAccountWizardPage_TEXT_REGISTER_ACC;
-
-	public static String RegisterAccountWizardPage_TEXT_SIGNUP;
-
-	public static String RegisterAccountWizardPage_TITLE_REGISTER_ACC;
 
 	public static String RemapToProjectEditorAction_ACTION_LABEL;
 
