@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
@@ -39,6 +40,7 @@ import org.eclipse.wst.server.core.internal.Server;
  * {@link ICloudFoundryApplicationModule} for the given app if it doesn't
  * already exist.
  */
+@SuppressWarnings({ "deprecation", "restriction" })
 public abstract class AbstractPublishApplicationOperation extends BehaviourOperation {
 
 	public static String INTERNAL_ERROR_NO_MAPPED_CLOUD_MODULE = "Internal Error: No cloud application module found for: {0} - Unable to deploy or start application"; //$NON-NLS-1$
@@ -85,8 +87,26 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 
 	@Override
 	public void run(IProgressMonitor monitor) throws CoreException {
+		// The above single argument run(...) method is used by operations whose monitor did not originate from a ServerDelegate publish job.
+		run(monitor, -1);
+	}
+
+	/**
+	 * Execute the specified operation on the current thread.
+	 * @param monitor
+	 * @param monitorParentWorkedSize If the monitor has already had beginTask
+	 * called, as is the case when this is called from publishModule(...), then
+	 * we need to convert it to something our SubMonitor can use.
+	 * @throws CoreException
+	 */
+	public void run(IProgressMonitor monitor, int monitorParentWorkedSize) throws CoreException {
 
 		try {
+			// monitorParentWorkedSize will be > 0 if the 'monitor' argument originated from ServerDelegate.
+			if(monitorParentWorkedSize > -1) {
+				monitor = convertAndConsumeParentSubProgressMonitor(monitor, monitorParentWorkedSize);
+			}
+			
 			doApplicationOperation(monitor);
 			getBehaviour().asyncUpdateModuleAfterPublish(getModule());
 		}
@@ -172,4 +192,16 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 	}
 
 	protected abstract void doApplicationOperation(IProgressMonitor monitor) throws CoreException;
+	
+	private static IProgressMonitor convertAndConsumeParentSubProgressMonitor(IProgressMonitor monitor, int parentWorkedSize) {
+		// The parentWorked argument matches the value in ServerBehaviourDelegate.publishModule(...). 
+		// ServerBehaviourDelegate.publishModule() passes us a monitor upon which beginTask(1000) has 
+		// already been called. 
+		
+		// Since this operation (ApplicationOperation and child classes) fully contains all the required work, 
+		// we consume all of it as a new monitor, to be used by SubMonitor in child code.
+		return new SubProgressMonitor(monitor, parentWorkedSize);
+	}
+	
+
 }
