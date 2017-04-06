@@ -1513,7 +1513,12 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 				// asynch events to notify other components while the main
 				// publish operation is being run (e.g refresh UI, etc..).
 				if (op != null) {
-					op.run(monitor);
+					ApplicationOperation ao = (ApplicationOperation)op;
+
+					// The value 1000 matches the value in ServerBehaviourDelegate.publishModule(...). 
+					// ServerBehaviourDelegate.publishModule() passes us a monitor upon which beginTask(1000) has 
+					// already been called.
+					ao.run(monitor, 1000);
 				}
 			}
 		}
