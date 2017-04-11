@@ -301,19 +301,12 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	 * @return Cloud module, if it exists, or null.
 	 */
 	public CloudFoundryApplicationModule getExistingCloudModule(IModule module) {
+		IModule moduleToGet = module;
 		if (module instanceof CloudFoundryApplicationModule) {
-			return (CloudFoundryApplicationModule) module;
+			moduleToGet = ((CloudFoundryApplicationModule) module).getLocalModule();
 		}
 
-		return getData() != null ? getData().getExistingCloudModule(module) : null;
-	}
-
-	private CloudFoundryApplicationModule getOrCreateCloudModule(IModule module) {
-		if (module instanceof CloudFoundryApplicationModule) {
-			return (CloudFoundryApplicationModule) module;
-		}
-
-		return getData() != null ? getData().getOrCreateCloudModule(module) : null;
+		return getData() != null ? getData().getExistingCloudModule(moduleToGet) : null;
 	}
 
 	/**
@@ -339,11 +332,16 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	 * @return existing cloud module, or if not yet created, creates and returns
 	 * it.
 	 */
-	public CloudFoundryApplicationModule getCloudModule(IModule module) {
+	public CloudFoundryApplicationModule getOrCreateCloudModule(IModule module) {
 		if (module == null) {
 			return null;
 		}
-		return getOrCreateCloudModule(module);
+		IModule moduleToGet = module;
+		if (module instanceof CloudFoundryApplicationModule) {
+			moduleToGet = ((CloudFoundryApplicationModule) module).getLocalModule();
+		}
+
+		return getData() != null ? getData().getOrCreateCloudModule(moduleToGet) : null;
 	}
 
 	/**
@@ -367,7 +365,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 			StringWriter writer = new StringWriter();
 
 			for (IModule module : modules) {
-				ICloudFoundryApplicationModule appModule = getCloudModule(module);
+				ICloudFoundryApplicationModule appModule = getOrCreateCloudModule(module);
 				if (appModule == null) {
 					writer.append(Messages.CloudFoundryServer_ERROR_FAIL_ON_CFAPP_CREATION);
 					writer.append(module.getId());
@@ -717,7 +715,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		// Now create module for the target that will replace the existing
 		// moduel
 		if (target != null && target.length > 0) {
-			CloudFoundryApplicationModule remappedMod = getCloudModule(target[0]);
+			CloudFoundryApplicationModule remappedMod = getOrCreateCloudModule(target[0]);
 			remappedMod.setCloudApplication(updatedCloudApplication);
 			if (remappedMod.isExternal()) {
 				externalModules.add(remappedMod);
@@ -971,7 +969,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 			for (IModule module : server.getModules()) {
 				// Find the corresponding Cloud Foundry application module for
 				// the given WST server IModule
-				CloudFoundryApplicationModule cloudModule = getCloudModule(module);
+				CloudFoundryApplicationModule cloudModule = getOrCreateCloudModule(module);
 
 				if (cloudModule == null) {
 					CloudFoundryPlugin.logError("Unable to find local Cloud Foundry application module for : " //$NON-NLS-1$
@@ -1459,7 +1457,7 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 
 	public URL getModuleRootURL(final IModule curModule) {
 		// Only publish if the server publish state is not synchronized.
-		CloudFoundryApplicationModule cloudModule = getCloudModule(curModule);
+		CloudFoundryApplicationModule cloudModule = getOrCreateCloudModule(curModule);
 		if (cloudModule == null) {
 			return null;
 		}

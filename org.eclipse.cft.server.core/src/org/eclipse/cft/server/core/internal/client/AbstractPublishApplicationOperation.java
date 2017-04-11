@@ -76,7 +76,7 @@ public abstract class AbstractPublishApplicationOperation extends BehaviourOpera
 
 		CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
 
-		CloudFoundryApplicationModule appModule = cloudServer.getCloudModule(module);
+		CloudFoundryApplicationModule appModule = cloudServer.getOrCreateCloudModule(module);
 
 		if (appModule == null) {
 			throw CloudErrorUtil.toCoreException(NLS.bind(INTERNAL_ERROR_NO_MAPPED_CLOUD_MODULE, modules[0].getId()));

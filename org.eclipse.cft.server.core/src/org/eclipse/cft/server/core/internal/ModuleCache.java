@@ -316,7 +316,6 @@ public class ModuleCache {
 				if (appModule != null) {
 					return appModule;
 				}
-				// If not available, it means it needs to be created below.
 			}
 			return null;
 		}
