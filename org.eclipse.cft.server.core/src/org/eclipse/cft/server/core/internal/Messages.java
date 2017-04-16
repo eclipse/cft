@@ -303,6 +303,8 @@ public class Messages extends NLS {
 	public static String ManifestParser_NO_APP_NAME;
 
 	public static String ManifestParser_WRITING;
+	
+	public static String ModulesOperation_NO_MODULE;
 
 	public static String REFRESHING_MODULES;
 

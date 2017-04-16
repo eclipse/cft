@@ -20,9 +20,12 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
+import org.eclipse.cft.server.core.internal.CloudErrorUtil;
+import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
 
 /**
@@ -73,24 +76,32 @@ public abstract class ModulesOperation extends CFOperation {
 			monitor = convertAndConsumeParentSubProgressMonitor(monitor, monitorParentWorkedSize);
 		}
 
+		if (getFirstModule() == null) {
+			throw CloudErrorUtil.toCoreException(NLS.bind(Messages.ModulesOperation_NO_MODULE, getOperationName()));
+		}
+
 		if (clearFirstModuleStatus()) {
+			// CFAM may not yet exist prior to running the actual operation, so it should not be treated as an error condition
 			CloudFoundryApplicationModule appModule = getCloudModule(getFirstModule());
 			if (appModule != null) {
 				// Clear the module status to remove any obsolete errors
 				appModule.setStatus(null);
 			}
 		}
-	
+
 		try {
 			runOnVerifiedModule(monitor);
 		}
 		catch (CoreException e) {
 			CloudFoundryApplicationModule appModule = getCloudModule(getFirstModule());
-			// always check that the CFAM is present before setting any new status. E.g
-			// if an operation deletes a module, then the CFAM will not be present
+			// always check that the CFAM is present before setting any new
+			// status. E.g
+			// if an operation deletes a module, then the CFAM will not be
+			// present
 			if (appModule != null) {
 				appModule.setAndLogErrorStatus(e, getOperationName());
-			} else {
+			}
+			else {
 				logNonModuleError(e);
 			}
 			throw e;
@@ -99,12 +110,13 @@ public abstract class ModulesOperation extends CFOperation {
 
 	/**
 	 * 
-	 * @return true if module status should be cleared before running the operation. False otherwise
+	 * @return true if module status should be cleared before running the
+	 * operation. False otherwise
 	 */
 	protected boolean clearFirstModuleStatus() {
 		return true;
 	}
-	
+
 	protected IModule[] getModules() {
 		return modules;
 	}
