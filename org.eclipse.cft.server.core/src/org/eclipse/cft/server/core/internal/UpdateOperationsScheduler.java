@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,8 +20,10 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal;
 
-import org.eclipse.cft.server.core.internal.client.BehaviourOperation;
+import org.eclipse.cft.server.core.internal.client.ModulesOperation;
+import org.eclipse.cft.server.core.internal.client.CFOperation;
 import org.eclipse.cft.server.core.internal.client.CloudBehaviourOperations;
+import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -45,7 +47,7 @@ public class UpdateOperationsScheduler implements OperationScheduler {
 
 	private final CloudFoundryServer cloudServer;
 
-	private BehaviourOperation opToRun;
+	private CFOperation opToRun;
 
 	/**
 	 * 
@@ -67,7 +69,7 @@ public class UpdateOperationsScheduler implements OperationScheduler {
 	 * getCurrentOperation()
 	 */
 	@Override
-	public synchronized BehaviourOperation getCurrentOperation() {
+	public synchronized CFOperation getCurrentOperation() {
 		return this.opToRun;
 	}
 
@@ -75,7 +77,14 @@ public class UpdateOperationsScheduler implements OperationScheduler {
 	 * Updates all modules in the server, as well as services
 	 */
 	public synchronized void updateAll() {
-		scheduleRefresh(cloudServer.getBehaviour().operations().updateAll());
+		ICloudFoundryOperation op = cloudServer.getBehaviour().operations().updateAll();
+		if (op instanceof CFOperation) {
+			scheduleRefresh((CFOperation) op);
+		}
+		else {
+			CloudFoundryPlugin.logError("Internal Error: refresh operation is not a " //$NON-NLS-1$
+					+ CFOperation.class.getSimpleName() + ". Unable to run."); //$NON-NLS-1$
+		}
 	}
 
 	/**
@@ -106,7 +115,7 @@ public class UpdateOperationsScheduler implements OperationScheduler {
 		scheduleRefresh(cloudServer.getBehaviour().operations().updateOnPublish(module));
 	}
 
-	private synchronized void scheduleRefresh(BehaviourOperation opToRun) {
+	private synchronized void scheduleRefresh(CFOperation opToRun) {
 		if (this.opToRun == null) {
 			this.opToRun = opToRun;
 			schedule();
@@ -132,7 +141,7 @@ public class UpdateOperationsScheduler implements OperationScheduler {
 			IModule module = null;
 			try {
 				CloudFoundryServer cloudServer = null;
-				module = opToRun.getModule();
+				module = opToRun instanceof ModulesOperation ? ((ModulesOperation) opToRun).getFirstModule() : null;
 
 				try {
 					cloudServer = opToRun.getBehaviour() != null ? opToRun.getBehaviour().getCloudFoundryServer()
@@ -170,24 +179,16 @@ public class UpdateOperationsScheduler implements OperationScheduler {
 		 * @param cloudServer must NOT be null
 		 */
 		protected void runOperation(IModule module, CloudFoundryServer cloudServer, IProgressMonitor monitor) {
-			IStatus errorStatus = null;
 			try {
 				ServerEventHandler.getDefault().fireUpdateStarting(cloudServer);
 				opToRun.run(monitor);
 			}
 			catch (Throwable t) {
 				cloudServer.setAndSaveToken(null);
-				errorStatus = CloudFoundryPlugin.getErrorStatus(Messages.RefreshModulesHandler_REFRESH_FAILURE, t);
 			}
 			finally {
-				if (errorStatus != null) {
-					ServerEventHandler.getDefault().fireError(cloudServer, module, errorStatus);
-				}
-				else {
-					ServerEventHandler.getDefault().fireUpdateCompleted(cloudServer);
-				}
+				ServerEventHandler.getDefault().fireUpdateCompleted(cloudServer);
 			}
 		}
 	}
-
 }

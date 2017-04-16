@@ -44,7 +44,7 @@ public class WarApplicationArchiver implements ICloudFoundryArchiver {
 	@Override
 	public CFApplicationArchive getApplicationArchive(IModule module, IServer server, IModuleResource[] resources,
 			IProgressMonitor monitor) throws CoreException {
-		CloudFoundryApplicationModule appModule = CloudServerUtil.getCloudFoundryApplicationModule(module, server);
+		CloudFoundryApplicationModule appModule = CloudServerUtil.getExistingCloudModule(module, server);
 
 		try {
 			if (server instanceof Server) {

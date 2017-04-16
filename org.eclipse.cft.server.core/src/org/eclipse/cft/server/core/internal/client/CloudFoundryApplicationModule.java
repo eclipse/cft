@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -36,6 +36,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.Messages;
+import org.eclipse.cft.server.core.internal.StringUtils;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.application.ApplicationRunState;
 import org.eclipse.core.resources.IProject;
@@ -326,26 +327,42 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 
 	
 	/**
-	 * 
+	 * Validates the module and updates the status in the Cloud module.
 	 * @see AbstractApplicationDelegate#validateDeploymentInfo(ApplicationDeploymentInfo)
-	 * @return OK status if deployment information is complete and valid. Returns an error status
-	 * if invalid (i.e. it is missing some information).
+	 * @throws CoreException if validation failed. The error status is still updated in the module
 	 * 
 	 */
-	public synchronized IStatus validateDeploymentInfo() {
-		// Bug: 507637 . CloudFoundryApplicationModule may be out of sync with the underlying server. 
-		// Note that missing deployment information at the time of validation means the server is out of sync. All CFAM that
-		// are successfully created should have a valid deployment information, regardless of whether the actual application
+	public synchronized void validateAndUpdateStatus() throws CoreException {
+		IStatus status = validate();
+		setStatus(status);
+		if (status.getSeverity() == IStatus.ERROR) {
+			throw new CoreException(status);
+		}
+	}
+	
+	/**
+	 * Validates the module but does not update the status in the module. This
+	 * is a utility method that simply computes the validation but does not
+	 * affect the state of the module.
+	 * @return non-null validation status. If validation passes, returns
+	 * {@link Status#OK_STATUS}
+	 */
+	public synchronized IStatus validate() {
+		// Bug: 507637 . CloudFoundryApplicationModule may be out of sync with
+		// the underlying server.
+		// Note that missing deployment information at the time of validation
+		// means the server is out of sync. All CFAM that
+		// are successfully created should have a valid deployment information,
+		// regardless of whether the actual application
 		// is published or not.
+		IStatus status = Status.OK_STATUS;
 		if (deploymentInfo == null) {
 			String message = NLS.bind(Messages.CloudFoundryApplicationModule_SERVER_OUT_OF_SYNC, server.getId());
-			IStatus status = CloudFoundryPlugin.getErrorStatus(message);
-			setStatus(status);
-			return status;
+			status = CloudFoundryPlugin.getErrorStatus(message);
 		}
 		else {
 			AbstractApplicationDelegate delegate = ApplicationRegistry.getApplicationDelegate(getLocalModule());
-			IStatus status = delegate != null ? delegate.validateDeploymentInfo(deploymentInfo)
+			status = delegate != null ? delegate.validateDeploymentInfo(deploymentInfo)
 					: CloudUtil.basicValidateDeploymentInfo(deploymentInfo);
 
 			if (status == null) {
@@ -355,9 +372,8 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 				status = CloudFoundryPlugin.getErrorStatus(NLS.bind(Messages.ERROR_APP_DEPLOYMENT_VALIDATION_ERROR,
 						getDeployedApplicationName(), status.getMessage()));
 			}
-			setStatus(status);
-			return status;
 		}
+		return status;
 	}
 
 	/**
@@ -491,16 +507,46 @@ public class CloudFoundryApplicationModule extends ExternalModule implements ICl
 		return localModuleId == CFAM_MODULE_ID;
 	}
 
-	public synchronized void setError(CoreException error) {
-		this.validationStatus = error != null ? error.getStatus() : null;
-	}
-
 	public synchronized void setStatus(IStatus status) {
 		if (status == null || status.isOK()) {
 			this.validationStatus = null;
 		}
 		else {
 			this.validationStatus = status;
+		}
+	}
+
+	/**
+	 * Sets an error status in the module given an error. Also logs the status
+	 * as an error in the logger. Logging the error in the module does not
+	 * require logging the error again in any component that references the
+	 * module, as logging is managed by the module.
+	 * 
+	 * @param e error
+	 * @param label optional label that should be included in the status in
+	 * addition to the message of {@link Throwable}
+	 */
+	public synchronized void setAndLogErrorStatus(Throwable e, String label) {
+		IStatus status = null;
+		if (e instanceof CoreException) {
+			status = ((CoreException) e).getStatus();
+		}
+		if (status == null && e != null) {
+			String message = e.getMessage();
+			if (StringUtils.isEmpty(message)) {
+				message = NLS.bind(Messages.CloudFoundryApplicationModule_MODULE_ERROR, label,
+						e.getClass().getSimpleName());
+			}
+			status = CloudFoundryPlugin.getErrorStatus(message);
+		}
+		setStatus(status);
+		if (status != null) {
+			if (status.getSeverity() == IStatus.ERROR) {
+				CloudFoundryPlugin.logError(status.getMessage());
+			}
+			else {
+				CloudFoundryPlugin.logInfo(status.getMessage());
+			}
 		}
 	}
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -295,8 +295,8 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	 * that is specific to Cloud Foundry. It will not create the module if it
 	 * does not exist. For most cases where an cloud application module is
 	 * expected to already exist, this method is preferable than
-	 * {@link #getCloudModule(IModule)}, and avoids possible bugs when an
-	 * application is being deleted. See {@link #getCloudModule(IModule)}.
+	 * {@link #getExistingCloudModule(IModule)}, and avoids possible bugs when an
+	 * application is being deleted. See {@link #getExistingCloudModule(IModule)}.
 	 * @param module WST local module
 	 * @return Cloud module, if it exists, or null.
 	 */

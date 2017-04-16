@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,7 @@ import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
-import org.eclipse.cft.server.core.internal.client.AbstractPublishApplicationOperation;
+import org.eclipse.cft.server.core.internal.client.CFOperation;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -72,8 +72,8 @@ public class PushModuleCommand extends BaseCommandHandler {
 				try {
 					ICloudFoundryOperation operation = cloudServer.getBehaviour().operations()
 							.applicationDeployment(new IModule[] { selectedModule }, ApplicationAction.START);
-					if (operation instanceof AbstractPublishApplicationOperation) {
-						setName(((AbstractPublishApplicationOperation) operation).getOperationName());
+					if (operation instanceof CFOperation) {
+						setName(((CFOperation) operation).getOperationName());
 					}
 
 					operation.run(monitor);

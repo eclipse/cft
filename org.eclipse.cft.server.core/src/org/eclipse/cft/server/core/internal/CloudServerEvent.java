@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -62,8 +62,6 @@ public class CloudServerEvent extends EventObject {
 	public static final int EVENT_APP_URL_CHANGED = 430;
 
 	public static final int EVENT_APP_DEBUG = 500;
-
-	public static final int EVENT_CLOUD_OP_ERROR = 600;
 
 	public static final int EVENT_JREBEL_REMOTING_UPDATE = 700;
 

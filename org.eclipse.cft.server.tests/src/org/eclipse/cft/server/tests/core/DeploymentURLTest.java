@@ -1,38 +1,38 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
- * 
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Apache License v2.0 which accompanies this distribution. 
- * 
- * The Eclipse Public License is available at 
- * 
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ * The Eclipse Public License is available at
+ *
  * http://www.eclipse.org/legal/epl-v10.html
- * 
- * and the Apache License v2.0 is available at 
- * 
+ *
+ * and the Apache License v2.0 is available at
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * You may elect to redistribute this code under either of these licenses.
- *  
+ *
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
 package org.eclipse.cft.server.tests.core;
 
-import junit.framework.TestCase;
-
 import org.eclipse.cft.server.core.internal.ApplicationUrlValidator;
+import org.eclipse.cft.server.core.internal.StringUtils;
 import org.eclipse.cft.server.core.internal.URLNameValidation;
-import org.eclipse.cft.server.core.internal.ValueValidationUtil;
 import org.eclipse.core.runtime.IStatus;
+
+import junit.framework.TestCase;
 
 /**
  * Tests various types of URL domain names for validity. The validation is used
  * by the UI to determine whether deployment can be completed given a URL. Also
  * tests whether URLs are needed for standalone applications, and whether
  * standalone have valid start commands.
- * 
+ *
  */
 public class DeploymentURLTest extends TestCase {
 
@@ -147,14 +147,14 @@ public class DeploymentURLTest extends TestCase {
 	// public void testDeploymentInfoStandaloneNOurlNOcommandEmptySpaces()
 	// throws Exception {
 	// ApplicationUrlValidator validator = getDeploymentInfoValidator(true,
-	// "   ", null);
+	// " ", null);
 	// assertValidator(INVALID_START_COMMAND, true, validator);
 	// }
 	//
 	// public void testDeploymentInfoStandaloneNOurlEMPTYNOcommandEmptySpaces()
 	// throws Exception {
 	// ApplicationUrlValidator validator = getDeploymentInfoValidator(true,
-	// "   ", " ");
+	// " ", " ");
 	// assertValidator(INVALID_START_COMMAND, true, validator);
 	// }
 	//
@@ -187,13 +187,13 @@ public class DeploymentURLTest extends TestCase {
 	//
 	// public void testDeploymentInfoWebAppNOurlSpaces() throws Exception {
 	// ApplicationUrlValidator validator = getDeploymentInfoValidator(false,
-	// null, "  	");
+	// null, " ");
 	// assertValidator(EMPTY_URL_ERROR, true, validator);
 	// }
 	//
 	// public void testDeploymentInfoWebAppInvalidurlname() throws Exception {
 	// ApplicationUrlValidator validator = getDeploymentInfoValidator(false,
-	// null, " h ttp:>vin valid  	");
+	// null, " h ttp:>vin valid ");
 	// assertValidator(INVALID_CHARACTERS_ERROR, true, validator);
 	// }
 	//
@@ -264,14 +264,15 @@ public class DeploymentURLTest extends TestCase {
 	// }
 
 	protected boolean isEmpty(String value) {
-		return ValueValidationUtil.isEmpty(value);
+		return StringUtils.isEmpty(value);
 	}
 
 	protected boolean isInvalidWithValidator(String value) {
 		return new URLNameValidation(value).hasInvalidCharacters();
 	}
 
-	protected ApplicationUrlValidator getDeploymentInfoValidator(boolean isStandalone, String startCommand, String url) {
+	protected ApplicationUrlValidator getDeploymentInfoValidator(boolean isStandalone, String startCommand,
+			String url) {
 		return new ApplicationUrlValidator();
 	}
 

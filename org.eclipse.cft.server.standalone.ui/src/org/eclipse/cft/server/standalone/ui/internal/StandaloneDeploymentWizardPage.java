@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,7 @@ import java.util.List;
 
 import org.eclipse.cft.server.core.internal.ApplicationUrlLookupService;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.ValueValidationUtil;
+import org.eclipse.cft.server.core.internal.StringUtils;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.ui.internal.wizards.ApplicationWizardDelegate;
 import org.eclipse.cft.server.ui.internal.wizards.ApplicationWizardDescriptor;
@@ -45,7 +45,7 @@ public class StandaloneDeploymentWizardPage extends
 	@Override
 	protected void setUrlInDescriptor(String url) {
 
-		if (ValueValidationUtil.isEmpty(url)) {
+		if (StringUtils.isEmpty(url)) {
 			// Set an empty list if URL is empty as it can cause problems when
 			// deploying a standalone application
 			List<String> urls = new ArrayList<String>();

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -54,7 +54,7 @@ public class ManifestApplicationArchiver implements ICloudFoundryArchiver {
 	public CFApplicationArchive getApplicationArchive(IModule module, IServer server, IModuleResource[] resources,
 			IProgressMonitor monitor) throws CoreException {
 		CloudFoundryServer cloudServer = CloudServerUtil.getCloudServer(server);
-		CloudFoundryApplicationModule appModule = CloudServerUtil.getCloudFoundryApplicationModule(module, server);
+		CloudFoundryApplicationModule appModule = CloudServerUtil.getExistingCloudModule(module, server);
 		return getArchiveFromManifest(appModule, cloudServer);
 	}
 

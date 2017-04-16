@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -62,7 +62,7 @@ class StopApplicationOperation extends AbstractPublishApplicationOperation {
 
 			CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
 
-			final CloudFoundryApplicationModule cloudModule = cloudServer.getExistingCloudModule(getModule());
+			final CloudFoundryApplicationModule cloudModule = cloudServer.getExistingCloudModule(getFirstModule());
 
 			if (cloudModule == null) {
 				throw CloudErrorUtil.toCoreException("Unable to stop application as no cloud module found for: " //$NON-NLS-1$

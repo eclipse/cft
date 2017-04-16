@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -54,7 +54,7 @@ public abstract class ApplicationDelegate extends AbstractApplicationDelegate {
 
 	protected CloudFoundryApplicationModule getCloudFoundryApplicationModule(IModule module, IServer server)
 			throws CoreException {
-		return CloudServerUtil.getCloudFoundryApplicationModule(module, server);
+		return CloudServerUtil.getExistingCloudModule(module, server);
 	}
 
 	@Override

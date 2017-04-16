@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -421,7 +421,7 @@ public class CloudUtil {
 		if (deploymentInfo == null) {
 			errorMessage = Messages.AbstractApplicationDelegate_ERROR_MISSING_DEPLOY_INFO;
 		}
-		else if (ValueValidationUtil.isEmpty(deploymentInfo.getDeploymentName())) {
+		else if (StringUtils.isEmpty(deploymentInfo.getDeploymentName())) {
 			errorMessage = Messages.AbstractApplicationDelegate_ERROR_MISSING_APPNAME;
 		}
 		else if (deploymentInfo.getMemory() <= 0) {

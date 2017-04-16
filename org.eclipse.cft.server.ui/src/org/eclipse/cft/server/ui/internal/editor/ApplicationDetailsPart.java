@@ -1,6 +1,6 @@
 /*******************************************************************************
  * 
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -479,8 +479,17 @@ public class ApplicationDetailsPart extends AbstractFormPart implements IDetails
 		instancesViewer.refresh(true);
 
 		canUpdate = true;
+		
+		setStatus(appModule.getStatus());
+	}
 
-		editorPage.setMessage(appModule.getStatus());
+	private void setStatus(IStatus status) {
+		if (status == null || status.isOK()) {
+			editorPage.setMessage(null);
+		}
+		else {
+			editorPage.setMessage(status);
+		}
 	}
 
 	private void refreshServices(final CloudFoundryApplicationModule appModule) {

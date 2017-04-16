@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -115,10 +115,6 @@ public class StartOperation extends RestartOperation {
 		final Server server = (Server) getBehaviour().getServer();
 		final CloudFoundryServer cloudServer = getBehaviour().getCloudFoundryServer();
 
-		// Update the local cloud module representing the application
-		// first.
-		appModule.setStatus(null);
-
 		final String deploymentName = appModule.getDeploymentInfo().getDeploymentName();
 
 		// This request does three things:
@@ -197,7 +193,7 @@ public class StartOperation extends RestartOperation {
 					CloudFoundryPlugin.trace("Application " + deploymentName //$NON-NLS-1$
 							+ " pushed to Cloud Foundry server."); //$NON-NLS-1$
 
-					cloudServer.moduleAdditionCompleted(getModule());
+					cloudServer.moduleAdditionCompleted(getFirstModule());
 
 					return null;
 				}

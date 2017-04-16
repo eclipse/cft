@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2014, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -42,7 +42,7 @@ import org.eclipse.wst.server.core.IModule;
  * Deletes a given set of application modules. The modules need not have
  * associated deployed applications.
  */
-public class DeleteModulesOperation extends BehaviourOperation {
+public class DeleteModulesOperation extends ModulesOperation {
 
 	/**
 	 * 
@@ -60,9 +60,9 @@ public class DeleteModulesOperation extends BehaviourOperation {
 	}
 
 	@Override
-	public void run(IProgressMonitor monitor) throws CoreException {
+	public void runOnVerifiedModule(IProgressMonitor monitor) throws CoreException {
 		doDelete(monitor);
-		getBehaviour().asyncUpdateModuleAfterPublish(getModule());
+		getBehaviour().asyncUpdateModuleAfterPublish(getFirstModule());
 	}
 
 	protected void doDelete(IProgressMonitor monitor) throws CoreException {
@@ -158,4 +158,8 @@ public class DeleteModulesOperation extends BehaviourOperation {
 		}
 	}
 
+	@Override
+	public String getOperationName() {
+		return Messages.DeleteModulesOperation_OPERATION_MESSAGE;
+	}
 }

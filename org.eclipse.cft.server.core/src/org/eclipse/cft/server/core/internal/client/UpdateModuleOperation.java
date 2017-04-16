@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
@@ -36,45 +35,35 @@ import org.eclipse.wst.server.core.internal.Server;
  * notifies when the operation is completed.
  *
  */
-public class UpdateModuleOperation extends BehaviourOperation {
+@SuppressWarnings({"restriction"})
+public class UpdateModuleOperation extends ModulesOperation {
 
 	public UpdateModuleOperation(CloudFoundryServerBehaviour behaviour, IModule module) {
 		super(behaviour, module);
 	}
-	
+
 	@Override
-	public String getMessage() {
-		CloudFoundryApplicationModule appModule = getCloudModule();
-		String name = appModule != null ? appModule.getDeployedApplicationName() : getModule().getName();
+	public String getOperationName() {
+		CloudFoundryApplicationModule appModule = getCloudModule(getFirstModule());
+		String name = appModule != null ? appModule.getDeployedApplicationName() : getFirstModule().getName();
 		return NLS.bind(Messages.UpdateModuleOperation_OPERATION_MESSAGE, name);
 	}
 
 	@Override
-	public void run(IProgressMonitor monitor) throws CoreException {
-		if (getModule() == null) {
-			throw CloudErrorUtil.toCoreException("Internal Error: No module to update in - " + //$NON-NLS-1$
-					getBehaviour().getCloudFoundryServer().getServerId());
-		}
-
-		CloudFoundryApplicationModule appModule = null;
+	public void runOnVerifiedModule(IProgressMonitor monitor) throws CoreException {
 
 		if (shouldUpdateInServer()) {
-			appModule = updateModule(monitor);
-			// Clear the publish errors for now
-			if (appModule != null) {
-				appModule.setStatus(null);
-				appModule.validateDeploymentInfo();
-			}
+			updateModule(monitor);
 		}
 
 		// Fire the event even if updates do not occur in server, as to
 		// notify interested parties (e.g UI) that an update
 		// module operation was run anyway
-		ServerEventHandler.getDefault().fireModuleUpdated(getBehaviour().getCloudFoundryServer(), getModule());
+		ServerEventHandler.getDefault().fireModuleUpdated(getBehaviour().getCloudFoundryServer(), getFirstModule());
 	}
 
 	protected CloudFoundryApplicationModule updateModule(IProgressMonitor monitor) throws CoreException {
-		return getBehaviour().updateModuleWithAllCloudInfo(getModule(), monitor);
+		return getBehaviour().updateModuleWithAllCloudInfo(getFirstModule(), monitor);
 
 	}
 
@@ -82,7 +71,7 @@ public class UpdateModuleOperation extends BehaviourOperation {
 		try {
 			if (getBehaviour().getCloudFoundryServer().getServer() instanceof Server) {
 				Server server = (Server) getBehaviour().getCloudFoundryServer().getServer();
-				return IServer.STATE_STARTING != server.getModuleState(new IModule[] { getModule() });
+				return IServer.STATE_STARTING != server.getModuleState(new IModule[] { getFirstModule() });
 			}
 		}
 		catch (CoreException e) {

@@ -24,7 +24,7 @@ import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
-import org.eclipse.cft.server.core.internal.client.AbstractPublishApplicationOperation;
+import org.eclipse.cft.server.core.internal.client.CFOperation;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -73,8 +73,8 @@ public class UpdateRestartModuleCommand extends BaseCommandHandler {
 
 					ICloudFoundryOperation operation = cloudServer.getBehaviour().operations()
 							.applicationDeployment(new IModule[] { selectedModule }, ApplicationAction.UPDATE_RESTART);
-					if (operation instanceof AbstractPublishApplicationOperation) {
-						setName(((AbstractPublishApplicationOperation) operation).getOperationName());
+					if (operation instanceof CFOperation) {
+						setName(((CFOperation) operation).getOperationName());
 					}
 
 					operation.run(monitor);

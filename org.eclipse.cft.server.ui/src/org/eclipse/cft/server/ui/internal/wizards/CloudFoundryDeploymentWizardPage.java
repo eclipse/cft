@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -34,7 +34,7 @@ import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudUtil;
 import org.eclipse.cft.server.core.internal.ModuleCache;
 import org.eclipse.cft.server.core.internal.ModuleCache.ServerData;
-import org.eclipse.cft.server.core.internal.ValueValidationUtil;
+import org.eclipse.cft.server.core.internal.StringUtils;
 import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.application.ManifestParser;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
@@ -373,7 +373,7 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 			IStatus status = event.getStatus();
 			// Don't show the error if the application does not require a URL
 			// and the URL is empty
-			if (ValueValidationUtil.isEmpty(urlVal) && !requiresUrl()) {
+			if (StringUtils.isEmpty(urlVal) && !requiresUrl()) {
 				status = Status.OK_STATUS;
 			}
 			event = new WizardPartChangeEvent(eventData, status, event.getSource(), true);
@@ -392,7 +392,7 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 	protected void updateApplicationNameInDescriptor(String appName) {
 
 		// Do not set empty Strings
-		if (ValueValidationUtil.isEmpty(appName)) {
+		if (StringUtils.isEmpty(appName)) {
 			appName = null;
 		}
 

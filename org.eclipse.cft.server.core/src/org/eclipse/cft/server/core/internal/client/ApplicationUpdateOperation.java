@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,7 @@ import org.eclipse.wst.server.core.IModule;
  * URL changed, etc.)
  *
  */
-public class ApplicationUpdateOperation extends BehaviourOperation {
+public class ApplicationUpdateOperation extends ModulesOperation {
 
 	private final BaseClientRequest<?> request;
 
@@ -41,8 +41,13 @@ public class ApplicationUpdateOperation extends BehaviourOperation {
 	}
 
 	@Override
-	public void run(IProgressMonitor monitor) throws CoreException {
+	public void runOnVerifiedModule(IProgressMonitor monitor) throws CoreException {
 		request.run(monitor);
-		getBehaviour().asyncUpdateDeployedModule(getModule());
+		getBehaviour().asyncUpdateDeployedModule(getFirstModule());
+	}
+
+	@Override
+	public String getOperationName() {
+		return this.request.getRequestLabel();
 	}
 }
