@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,7 @@ package org.eclipse.cft.server.standalone.ui.internal.startcommand;
 
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
-import org.eclipse.cft.server.core.internal.ValueValidationUtil;
+import org.eclipse.cft.server.core.internal.StringUtils;
 import org.eclipse.cft.server.standalone.core.internal.startcommand.StartCommand;
 import org.eclipse.cft.server.standalone.core.internal.startcommand.StartCommandType;
 import org.eclipse.core.resources.IProject;
@@ -102,7 +102,7 @@ public class StartCommandPartFactory {
 
 			public void updateStartCommand() {
 				String value = standaloneStartText.getText();
-				boolean isInvalid = ValueValidationUtil.isEmpty(value);
+				boolean isInvalid = StringUtils.isEmpty(value);
 				notifyStatusChange(
 						startCommand.toString(),
 						isInvalid ? CloudFoundryPlugin

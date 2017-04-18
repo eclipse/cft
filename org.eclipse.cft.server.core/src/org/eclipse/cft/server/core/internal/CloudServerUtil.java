@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -118,15 +118,44 @@ public class CloudServerUtil {
 		return false;
 	}
 
-	public static CloudFoundryApplicationModule getCloudFoundryApplicationModule(IModule module, IServer server)
-			throws CoreException {
-		CloudFoundryServer cloudServer = CloudServerUtil.getCloudServer(server);
-		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
-		if (appModule == null) {
-			throw CloudErrorUtil.toCoreException(NLS.bind(Messages.ApplicationDelegate_NO_CLOUD_MODULE_FOUND,
-					module.getName(), cloudServer.getServer().getId()));
+	/**
+	 * 
+	 * @param module
+	 * @param server
+	 * @return cloud module for the given IModule in the IServer, or null if not
+	 * found
+	 */
+	public static CloudFoundryApplicationModule getCloudModule(IModule module, IServer server) {
+
+		if (module == null) {
+			return null;
 		}
-		return appModule;
+		try {
+			CloudFoundryServer cloudServer = CloudServerUtil.getCloudServer(server);
+			CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
+			return appModule;
+		}
+		catch (CoreException e) {
+			CloudFoundryPlugin.logError(e);
+		}
+		return null;
+	}
+
+	/**
+	 * Returns non-null, existing cloud module for the given IModule. 
+	 * @param module
+	 * @param server
+	 * @return existing non-null Cloud module
+	 * @throws CoreException if module does not exist or failed to resolve
+	 */
+	public static CloudFoundryApplicationModule getExistingCloudModule(IModule module, IServer server)
+			throws CoreException {
+		CloudFoundryApplicationModule appMod = getCloudModule(module, server);
+		if (appMod == null) {
+		    throw CloudErrorUtil.toCoreException(NLS.bind(Messages.CloudServerUtil_NO_CLOUD_MODULE_FOUND,
+					module.getName(), server.getId()));
+		}
+		return appMod;
 	}
 
 	/**
@@ -141,7 +170,7 @@ public class CloudServerUtil {
 		}
 		return false;
 	}
-	
+
 	public static CFCloudCredentials getCredentials(CloudFoundryServer cloudServer) throws CoreException {
 		CloudCredentials v1Credentials = null;
 		if (cloudServer.isSso()) {

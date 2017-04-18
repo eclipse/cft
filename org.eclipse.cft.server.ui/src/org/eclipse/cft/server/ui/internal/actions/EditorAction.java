@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,16 +20,12 @@
  ********************************************************************************/
 package org.eclipse.cft.server.ui.internal.actions;
 
-import org.cloudfoundry.client.lib.CloudFoundryException;
-import org.cloudfoundry.client.lib.NotFinishedStagingException;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerEvent;
-import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.cft.server.core.internal.client.AbstractPublishApplicationOperation;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.ICloudFoundryOperation;
-import org.eclipse.cft.server.ui.internal.CloudFoundryServerUiPlugin;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.editor.CloudFoundryApplicationsEditorPage;
 import org.eclipse.cft.server.ui.internal.wizards.CloudFoundryCredentialsWizard;
@@ -104,8 +100,8 @@ public abstract class EditorAction extends Action {
 	}
 
 	protected void runJob(Job job) {
-		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) editorPage.getEditorSite().getService(
-				IWorkbenchSiteProgressService.class);
+		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) editorPage.getEditorSite()
+				.getService(IWorkbenchSiteProgressService.class);
 		if (service != null) {
 			service.schedule(job, 0L, true);
 		}
@@ -133,48 +129,20 @@ public abstract class EditorAction extends Action {
 				}
 				catch (CoreException ce) {
 					if (CloudErrorUtil.isWrongCredentialsException(ce)) {
-						Display.getDefault().syncExec(new Runnable() {
-
-							@Override
-							public void run() {
-								CloudFoundryCredentialsWizard wizard = new CloudFoundryCredentialsWizard(editorPage
-										.getCloudServer());
-								WizardDialog dialog = new WizardDialog(Display.getDefault().getActiveShell(), wizard);
-								if (dialog.open() == Dialog.OK) {
-									schedule();
-								}
+						Display.getDefault().syncExec(() -> {
+							CloudFoundryCredentialsWizard wizard = new CloudFoundryCredentialsWizard(
+									editorPage.getCloudServer());
+							WizardDialog dialog = new WizardDialog(Display.getDefault().getActiveShell(), wizard);
+							if (dialog.open() == Dialog.OK) {
+								schedule();
 							}
 						});
 					}
 					else {
-						// Process the error and fire error event
-						IStatus status = Status.OK_STATUS;
-						CloudFoundryException cfe = ce.getCause() instanceof CloudFoundryException ? (CloudFoundryException) ce
-								.getCause() : null;
-						if (cfe instanceof NotFinishedStagingException) {
-							status = new Status(IStatus.WARNING, CloudFoundryServerUiPlugin.PLUGIN_ID,
-									Messages.CloudFoundryEditorAction_WARNING_RESTART_APP);
-
-						}
-						else if (CloudErrorUtil.isNotFoundException(ce)) {
-							status = display404Error(status);
-						}
-						else if (shouldLogException(ce)) {
-							status = new Status(Status.ERROR, CloudFoundryServerUiPlugin.PLUGIN_ID, ce.getMessage(), ce);
-						}
-						else {
-							status = new Status(Status.CANCEL, CloudFoundryServerUiPlugin.PLUGIN_ID, ce.getMessage(),
-									ce);
-						}
-						// fire Event only on error, as ICloudFoundryOperation
-						// usually fires their own events when completed.
-						// FIXNS: eventually this should be moved into the
-						// ICloudFoundryOperation itself, such that errors can
-						// be propagated
-						// by non-editor operations
-						ServerEventHandler.getDefault().fireServerEvent(
-								new EditorCloudEvent(getEditorPage().getCloudServer(),
-										CloudServerEvent.EVENT_CLOUD_OP_ERROR, status, area));
+						final IStatus statusForEditor = ce.getStatus();
+						Display.getDefault().syncExec(() -> 
+								editorPage.setMessage(statusForEditor)
+						);
 					}
 				}
 				return Status.OK_STATUS;
@@ -182,13 +150,6 @@ public abstract class EditorAction extends Action {
 		};
 
 		return job;
-	}
-
-	/**
-	 * Get Status for the 404 error. By default returns the same status
-	 */
-	protected IStatus display404Error(IStatus status) {
-		return status;
 	}
 
 	protected CloudFoundryServerBehaviour getBehaviour() {

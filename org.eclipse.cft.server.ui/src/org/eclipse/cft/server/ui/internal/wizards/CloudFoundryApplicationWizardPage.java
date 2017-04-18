@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -35,12 +35,12 @@ import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.ModuleCache;
 import org.eclipse.cft.server.core.internal.ModuleCache.ServerData;
-import org.eclipse.cft.server.core.internal.ValueValidationUtil;
+import org.eclipse.cft.server.core.internal.StringUtils;
 import org.eclipse.cft.server.core.internal.application.ManifestParser;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
-import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.CFUiUtil;
 import org.eclipse.cft.server.ui.internal.CFUiUtil.UniqueSubdomain;
+import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.ICoreRunnable;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.PartChangeEvent;
@@ -254,7 +254,7 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 		descriptor.setBuildpack(null);
 
 		// buildpack URL is optional, so an empty URL is acceptable
-		if (!ValueValidationUtil.isEmpty(buildpack)) {
+		if (!StringUtils.isEmpty(buildpack)) {
 			try {
 				// Allow for names and URLs
 				URI uriObject = URI.create(buildpack);
@@ -280,7 +280,7 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 
 	protected IStatus getUpdateNameStatus() {
 		IStatus status = Status.OK_STATUS;
-		if (ValueValidationUtil.isEmpty(appName)) {
+		if (StringUtils.isEmpty(appName)) {
 			status = CloudFoundryPlugin.getStatus(Messages.CloudFoundryApplicationWizardPage_ERROR_MISSING_APPNAME,
 					IStatus.ERROR);
 		}

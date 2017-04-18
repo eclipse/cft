@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2013, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -90,7 +90,7 @@ public class ApplicationDeploymentUIHandler {
 		// a deployment info set), even if we have to populate that deployment
 		// info with default values or values from the manifest file. The latter
 		// should only occur AFTER the handler decides to open the wizard.
-		if (!appModule.validateDeploymentInfo().isOK()) {
+		if (!appModule.validate().isOK()) {
 
 			// Any application that can be pushed to a CF server
 			// MUST have a delegate
@@ -213,12 +213,9 @@ public class ApplicationDeploymentUIHandler {
 				}
 
 				if (status[0].isOK()) {
-					status[0] = appModule.validateDeploymentInfo();
+					appModule.validateAndUpdateStatus();
 				}
-				if (!status[0].isOK()) {
-					throw new CoreException(status[0]);
-				}
-				else if (writeToManifest[0]) {
+				if (writeToManifest[0]) {
 
 					try {
 						new ManifestParser(appModule, server).write(monitor, oldInfo);

@@ -28,7 +28,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
-import org.eclipse.cft.server.core.internal.ValueValidationUtil;
+import org.eclipse.cft.server.core.internal.StringUtils;
 import org.eclipse.core.runtime.Assert;
 
 public class PropertiesLoaderFromFile extends PropertiesLoader {
@@ -101,7 +101,7 @@ public class PropertiesLoaderFromFile extends PropertiesLoader {
 
 	protected String getRequiredProperty(String property, Properties properties) {
 		String value = properties.getProperty(property);
-		Assert.isLegal(!ValueValidationUtil.isEmpty(value),
+		Assert.isLegal(!StringUtils.isEmpty(value),
 				"The property '" + property
 						+ "' must be set in a credentials text file and the file must passed as a VM arg:  \"-D"
 						+ CLOUDFOUNDRY_TEST_CREDENTIALS_PROPERTY);

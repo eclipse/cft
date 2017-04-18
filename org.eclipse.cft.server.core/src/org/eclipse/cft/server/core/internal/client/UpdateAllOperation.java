@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -41,17 +41,17 @@ import org.eclipse.wst.server.core.IServer;
  * Updates all modules and services in the server
  *
  */
-public class UpdateAllOperation extends BehaviourOperation {
+public class UpdateAllOperation extends CFOperation {
 
 	public UpdateAllOperation(CloudFoundryServerBehaviour behaviour) {
-		super(behaviour, null);
+		super(behaviour);
 	}
-	
+
 	@Override
-	public String getMessage() {
+	public String getOperationName() {
 		return Messages.UpdateAllOperation_OPERATION_MESSAGE;
 	}
-	
+
 	protected boolean isCanceled(IProgressMonitor monitor) {
 		return monitor != null && monitor.isCanceled();
 	}
@@ -63,37 +63,39 @@ public class UpdateAllOperation extends BehaviourOperation {
 		SubMonitor subMonitor = SubMonitor.convert(monitor);
 		subMonitor.beginTask(NLS.bind(Messages.CloudBehaviourOperations_REFRESHING_APPS_AND_SERVICES,
 				cloudServer.getServer().getId()), 100);
-		
+
 		if (isCanceled(subMonitor)) {
 			return;
 		}
-		
+
 		// Get updated list of services
 		List<CFServiceInstance> services = getBehaviour().getServices(subMonitor.newChild(20));
 		ServerEventHandler.getDefault().fireServicesUpdated(cloudServer, services);
-		
+
 		if (isCanceled(subMonitor)) {
 			return;
 		}
-		
+
 		// Split refresh of apps into two parts:
-		
-		// 1. Faster update of apps with basic info to refresh Servers view quicker
+
+		// 1. Faster update of apps with basic info to refresh Servers view
+		// quicker
 		List<CloudApplication> applications = updateBasicListOfApps(cloudServer, subMonitor.newChild(30));
 		ServerEventHandler.getDefault().fireModulesUpdated(cloudServer, cloudServer.getServer().getModules());
-		
+
 		if (isCanceled(subMonitor)) {
 			return;
 		}
-		
+
 		// 2. Slower update of apps with stats, service bindings, etc..
 		updateCompleteApps(applications, cloudServer, subMonitor.newChild(70));
-		// Fire again to notify that modules with complete information has been updated
+		// Fire again to notify that modules with complete information has been
+		// updated
 		ServerEventHandler.getDefault().fireModulesUpdated(cloudServer, cloudServer.getServer().getModules());
 
 		subMonitor.worked(20);
 	}
-	
+
 	protected List<CloudApplication> updateBasicListOfApps(CloudFoundryServer cloudServer, SubMonitor subMonitor)
 			throws CoreException {
 		// Get updated list of cloud applications from the server
@@ -141,8 +143,7 @@ public class UpdateAllOperation extends BehaviourOperation {
 		for (IModule module : cloudServer.getServer().getModules()) {
 			CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
 			if (appModule != null) {
-				appModule.setStatus(null);
-				appModule.validateDeploymentInfo();
+				appModule.validateAndUpdateStatus();
 			}
 		}
 	}

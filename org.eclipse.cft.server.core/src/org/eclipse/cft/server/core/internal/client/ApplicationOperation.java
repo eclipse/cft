@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,13 +20,11 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.osgi.util.NLS;
@@ -43,7 +41,6 @@ import org.eclipse.wst.server.core.IModule;
  * afterward.
  * 
  */
-@SuppressWarnings("restriction")
 public abstract class ApplicationOperation extends AbstractPublishApplicationOperation {
 
 	/**
@@ -99,11 +96,7 @@ public abstract class ApplicationOperation extends AbstractPublishApplicationOpe
 
 			configuration = prepareForDeployment(appModule, subMonitor.newChild(20));
 
-			IStatus validationStatus = appModule.validateDeploymentInfo();
-			
-			if (!validationStatus.isOK()) {
-				throw CloudErrorUtil.toCoreException(validationStatus.getMessage());
-			}
+			appModule.validateAndUpdateStatus();
 
 			// NOTE: Only print to a console AFTER an application has been
 			// prepared for deployment, as the application

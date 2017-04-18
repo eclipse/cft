@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import org.eclipse.cft.server.core.EnvironmentVariable;
 import org.eclipse.cft.server.core.internal.ApplicationAction;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -82,10 +83,10 @@ public class CloudBehaviourOperations {
 	public ICloudFoundryOperation instancesUpdate(final CloudFoundryApplicationModule appModule,
 			final int instanceCount) throws CoreException {
 
-		return new BehaviourOperation(behaviour, appModule.getLocalModule()) {
+		return new ModulesOperation(behaviour, appModule.getLocalModule()) {
 
 			@Override
-			public void run(IProgressMonitor monitor) throws CoreException {
+			public void runOnVerifiedModule(IProgressMonitor monitor) throws CoreException {
 				String appName = appModule.getDeployedApplicationName();
 
 				// Update the instances in the Cloud space
@@ -98,15 +99,19 @@ public class CloudBehaviourOperations {
 				// are specifically listening
 				// to instance changes that do not require a full application
 				// refresh event.
-				ServerEventHandler.getDefault().fireAppInstancesChanged(behaviour.getCloudFoundryServer(), getModule());
+				ServerEventHandler.getDefault().fireAppInstancesChanged(behaviour.getCloudFoundryServer(), getFirstModule());
 
 				// Schedule another refresh application operation as instances
 				// may take
 				// time to be updated (the new instances may have to be
 				// restarted in the Cloud Space)
-				getBehaviour().asyncUpdateDeployedModule(getModule());
+				getBehaviour().asyncUpdateDeployedModule(getFirstModule());
 			}
 
+			@Override
+			public String getOperationName() {
+				return Messages.CloudBehaviourOperations_UPDATING_INSTANCES;
+			}
 		};
 	}
 
@@ -272,7 +277,7 @@ public class CloudBehaviourOperations {
 	 * This may be a long running operation
 	 * @return Non-null operation
 	 */
-	public BehaviourOperation updateAll() {
+	public ICloudFoundryOperation updateAll() {
 		return new UpdateAllOperation(behaviour);
 	}
 
@@ -284,19 +289,18 @@ public class CloudBehaviourOperations {
 	 * @param module
 	 * @return
 	 */
-	public BehaviourOperation updateOnPublish(final IModule module) {
-		return new BehaviourOperation(behaviour, module) {
+	public ModulesOperation updateOnPublish(final IModule module) {
+		return new ModulesOperation(behaviour, module) {
 
 			@Override
-			public void run(IProgressMonitor monitor) throws CoreException {
-
-				if (module == null) {
-					throw CloudErrorUtil.toCoreException("Internal Error: No module to update in - " + //$NON-NLS-1$
-							getBehaviour().getCloudFoundryServer().getServerId());
-				}
-
+			public void runOnVerifiedModule(IProgressMonitor monitor) throws CoreException {
 				getBehaviour().updateDeployedModule(module, monitor);
 				ServerEventHandler.getDefault().fireAppDeploymentChanged(behaviour.getCloudFoundryServer(), module);
+			}
+
+			@Override
+			public String getOperationName() {
+				return Messages.CloudBehaviourOperations_UPDATE_MODULE_AFTER_PUBLISH;
 			}
 		};
 	}
@@ -312,7 +316,7 @@ public class CloudBehaviourOperations {
 	 * @param module
 	 * @return Non-null operation.
 	 */
-	public BehaviourOperation updateDeployedModule(final IModule module) {
+	public ModulesOperation updateDeployedModule(final IModule module) {
 		return new UpdateDeployedOnlyOperation(behaviour, module);
 	}
 
@@ -325,7 +329,7 @@ public class CloudBehaviourOperations {
 	 * @param module
 	 * @return Non-null operation.
 	 */
-	public BehaviourOperation updateModule(final IModule module) {
+	public ModulesOperation updateModule(final IModule module) {
 		return new UpdateModuleOperation(behaviour, module);
 	}
 

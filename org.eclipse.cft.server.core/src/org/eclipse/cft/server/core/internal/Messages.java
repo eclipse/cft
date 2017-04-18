@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2014, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,9 +32,7 @@ public class Messages extends NLS {
 	public static String AbstractApplicationDelegate_ERROR_MISSING_MEM;
 	
 	public static String AbstractPublishApplicationOperation_OPERATION_CANCELED;
-	
-	public static String ApplicationDelegate_NO_CLOUD_MODULE_FOUND;
-	
+		
 	public static String ApplicationInstanceStartingTracker_STARTING_TRACKING;
 	
 	public static String ApplicationInstanceStartingTracker_APPLICATION_CHECK_CANCELED;
@@ -50,6 +48,8 @@ public class Messages extends NLS {
 	public static String ApplicationUrlLookupService_ERROR_GET_CLOUD_URL;
 
 	public static String ApplicationUrlLookupService_ERROR_GETDEFAULT_APP_URL;
+	
+	public static String CloudFoundryApplicationModule_MODULE_ERROR;
 
 	public static String ERROR_PERFORMING_CLOUD_FOUNDRY_OPERATION;
 
@@ -128,6 +128,8 @@ public class Messages extends NLS {
 	public static String TunnelServiceCommandStore_ERROR_SERIALIZE_JAVAMAP;
 
 	public static String TunnelServiceCommandStore_ERROR_VALUE_CANNOT_SERILIZE;
+	
+	public static String CFOperation_WARNING_RESTART_APP;
 
 	public static String ClientRequest_RETRY_REQUEST;
 
@@ -140,6 +142,10 @@ public class Messages extends NLS {
 	public static String ClientRequestFactory_BUILDPACKS;
 
 	public static String CloudBehaviourOperations_REFRESHING_APPS_AND_SERVICES;
+	
+	public static String CloudBehaviourOperations_UPDATING_INSTANCES;
+
+	public static String CloudBehaviourOperations_UPDATE_MODULE_AFTER_PUBLISH;
 
 	public static String CloudFoundryApplicationModule_STATE_DEPLOYABLE;
 
@@ -253,6 +259,8 @@ public class Messages extends NLS {
 	public static String CFRebelServerIntegration_NO_URL_UPDATES_PERFORMED;
 
 	public static String CloudServerUtil_NOT_CLOUD_SERVER_ERROR;
+	
+	public static String CloudServerUtil_NO_CLOUD_MODULE_FOUND;
 
 	public static String CommandOptions_DESCRIPTION_VARIABLES_FOR_TUNNEL;
 
@@ -285,6 +293,8 @@ public class Messages extends NLS {
 	public static String CONSOLE_STOPPING_APPLICATION;
 
 	public static String DeleteModulesOperation_ERROR_DELETE_APP_MESSAGE;
+	
+	public static String DeleteModulesOperation_OPERATION_MESSAGE;
 
 	public static String LocalServerRequest_SERVER_LABEL;
 
@@ -293,6 +303,8 @@ public class Messages extends NLS {
 	public static String ManifestParser_NO_APP_NAME;
 
 	public static String ManifestParser_WRITING;
+	
+	public static String ModulesOperation_NO_MODULE;
 
 	public static String REFRESHING_MODULES;
 

@@ -134,13 +134,6 @@ public class CloudFoundryTestFixture {
 
 		private final HarnessProperties properties;
 
-		// Added to the application name in order to avoid host name taken
-		// errors
-		// Even when clearing routes, host name taken errors are occasionally
-		// thrown
-		// if the tests are run within short intervals of one another.
-		private int randomVal = 0;
-
 		private final String defaultBuildpack;
 
 		public Harness(HarnessProperties properties) {
@@ -248,9 +241,6 @@ public class CloudFoundryTestFixture {
 		}
 
 		public void setup() throws Exception {
-
-			Random random = new Random(100);
-			randomVal = Math.abs(random.nextInt(1000000));
 
 			// Clean up all projects from workspace
 			StsTestUtil.cleanUpProjects();
@@ -406,6 +396,8 @@ public class CloudFoundryTestFixture {
 		 * @return generate an CF app name given a test name
 		 */
 		public String getWebAppName(String testName) {
+			Random random = new Random(100);
+			int randomVal = Math.abs(random.nextInt(1000000));
 			return getCFTAppPrefix() + '_' + testName + '_' + randomVal;
 		}
 

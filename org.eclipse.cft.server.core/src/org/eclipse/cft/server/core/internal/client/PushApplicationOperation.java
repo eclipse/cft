@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -121,7 +121,7 @@ public class PushApplicationOperation extends StartOperation {
 		// server always needs to be synchronized with Cloud Foundry, therefore
 		// an update on the module will remove it from the server if the
 		// associated CF app was never created
-		getBehaviour().updateModuleWithAllCloudInfo(getModule(), monitor);
+		getBehaviour().updateModuleWithAllCloudInfo(getFirstModule(), monitor);
 
 		// Change in behavior:
 		// NOTE - Set monitor canceled AFTER updating the module above, as to not cancel the update module operation:

@@ -108,7 +108,6 @@ import org.eclipse.wst.server.core.model.IModuleResource;
 import org.eclipse.wst.server.core.model.IModuleResourceDelta;
 import org.eclipse.wst.server.core.model.ServerBehaviourDelegate;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.client.RestClientException;
 
 /**
  * 
@@ -637,7 +636,11 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 
 		CloudFoundryApplicationModule appModule = updateModuleWithBasicCloudInfo(appName, subMonitor.newChild(50));
 
-		updateInstancesInfo(appModule, subMonitor.newChild(50));
+		// App may no longer exist after update. Therefore guard against a null Cloud module
+		if (appModule != null) {
+			updateInstancesInfo(appModule, subMonitor.newChild(50));
+			appModule.validateAndUpdateStatus();
+		}
 		return appModule;
 	}
 

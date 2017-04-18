@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,7 @@
 package org.eclipse.cft.server.standalone.ui.internal.startcommand;
 
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
-import org.eclipse.cft.server.core.internal.ValueValidationUtil;
+import org.eclipse.cft.server.core.internal.StringUtils;
 import org.eclipse.cft.server.standalone.core.internal.startcommand.StartCommand;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IJavaProject;
@@ -139,7 +139,7 @@ public class JavaStartCommandPart extends StartCommandPart {
 
 		String mainType = mainTypeText.getText();
 		// Start command must have a main method type, or its not valid
-		boolean isInvalid = ValueValidationUtil.isEmpty(mainType);
+		boolean isInvalid = StringUtils.isEmpty(mainType);
 
 		String options = javaOptions.getText();
 

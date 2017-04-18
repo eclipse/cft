@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,7 @@ public class UpdateDeployedOnlyOperation extends UpdateModuleOperation {
 	}
 
 	protected CloudFoundryApplicationModule updateModule(IProgressMonitor monitor) throws CoreException {
-		return getBehaviour().updateDeployedModule(getModule(), monitor);
+		return getBehaviour().updateDeployedModule(getFirstModule(), monitor);
 	}
 
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,10 +20,10 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal;
 
-import org.eclipse.cft.server.core.internal.client.BehaviourOperation;
+import org.eclipse.cft.server.core.internal.client.CFOperation;
 
 public interface OperationScheduler {
 
-	public BehaviourOperation getCurrentOperation();
+	public CFOperation getCurrentOperation();
 
 }

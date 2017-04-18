@@ -662,8 +662,6 @@ public class Messages extends NLS {
 
 	public static String CloudFoundryEditorAction_TEXT_NO_OP_EXECUTE;
 
-	public static String CloudFoundryEditorAction_WARNING_RESTART_APP;
-
 	public static String CloudFoundryPreferencePage_TEXT_SELECT_CF_FEATURE;
 
 	public static String CloudFoundryServerStatusSection_ERROR_SERV_EDITOR;

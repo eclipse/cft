@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,11 +23,10 @@ package org.eclipse.cft.server.ui.internal.editor;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.OperationScheduler;
-import org.eclipse.cft.server.core.internal.client.BehaviourOperation;
+import org.eclipse.cft.server.core.internal.client.CFOperation;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
 
 public class FormMessageHandler {
@@ -46,10 +45,10 @@ public class FormMessageHandler {
 	protected IStatus getStatusFromRunningOperation() {
 		if (cloudServer != null) {
 			OperationScheduler scheduler = cloudServer.getBehaviour().getOperationScheduler();
-			BehaviourOperation op = scheduler != null ? scheduler.getCurrentOperation() : null;
+			CFOperation op = scheduler != null ? scheduler.getCurrentOperation() : null;
 
-			if (op != null && op.getMessage() != null) {
-				return CloudFoundryPlugin.getStatus(op.getMessage(), IStatus.INFO);
+			if (op != null && op.getOperationName() != null) {
+				return CloudFoundryPlugin.getStatus(op.getOperationName(), IStatus.INFO);
 			}
 		}
 
@@ -98,23 +97,11 @@ public class FormMessageHandler {
 			String fullMessage = buffer.toString();
 			if (buffer.length() > MAX_MESSAGE_DISPLAY_SIZE) {
 				String endingSegment = Messages.CloudFoundryApplicationsEditorPage_TEXT_SEE_ERRORLOG;
-
 				message = buffer.substring(0, MAX_MESSAGE_DISPLAY_SIZE).trim() + endingSegment;
-
-				// Only log to Eclipse log if the message is too long to be
-				// shown in editor
-				if (messageProviderType == IMessageProvider.ERROR) {
-					// Log the full error
-					CloudFoundryPlugin.logError(fullMessage);
-				} else {
-					// Log the full message as an Info
-					CloudFoundryPlugin.logInfo(fullMessage);
-				}
 			}
 			else {
 				message = fullMessage;
 			}
-
 			
 			setMessageInForm(message, messageProviderType);
 		}

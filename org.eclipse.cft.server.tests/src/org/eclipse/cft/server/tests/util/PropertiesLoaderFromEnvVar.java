@@ -22,7 +22,7 @@ package org.eclipse.cft.server.tests.util;
 
 import java.util.Map;
 
-import org.eclipse.cft.server.core.internal.ValueValidationUtil;
+import org.eclipse.cft.server.core.internal.StringUtils;
 import org.eclipse.core.runtime.Assert;
 
 public class PropertiesLoaderFromEnvVar extends PropertiesLoader {
@@ -48,7 +48,7 @@ public class PropertiesLoaderFromEnvVar extends PropertiesLoader {
 
 	public String getRequiredEnv(String name) throws Exception {
 		String value = System.getenv(name);
-		Assert.isLegal(!ValueValidationUtil.isEmpty(value), "The environment variable '" + name + "' must be set");
+		Assert.isLegal(!StringUtils.isEmpty(value), "The environment variable '" + name + "' must be set");
 		return value;
 	}
 

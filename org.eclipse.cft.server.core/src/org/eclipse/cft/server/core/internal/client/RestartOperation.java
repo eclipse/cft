@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -62,7 +62,6 @@ public class RestartOperation extends ApplicationOperation {
 	protected void performDeployment(CloudFoundryApplicationModule appModule, IProgressMonitor monitor)
 			throws CoreException {
 		final Server server = (Server) getBehaviour().getServer();
-		appModule.setStatus(null);
 
 		final String deploymentName = appModule.getDeploymentInfo().getDeploymentName();
 
@@ -125,7 +124,7 @@ public class RestartOperation extends ApplicationOperation {
 			server.setModuleState(getModules(), IServer.STATE_STARTING);
 			
 			// IMPORTANT: Notify that module state has been changed
-			getBehaviour().operations().updateModule(getModule()).run(monitor);
+			getBehaviour().operations().updateModule(getFirstModule()).run(monitor);
 
 			// Perform the actual restarting in the client
 			StartingInfo info = getBehaviour().getRequestFactory().restartApplication(deploymentName, startLabel)
