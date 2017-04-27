@@ -469,6 +469,8 @@ public class CloudUtil {
 			if (cloudApplication.getUris() != null) {
 				deploymentInfo.setUris(new ArrayList<String>(cloudApplication.getUris()));
 			}
+			
+			deploymentInfo.setDiskQuota(cloudApplication.getDiskQuota());
 
 			Map<String, String> envMap = cloudApplication.getEnvAsMap();
 

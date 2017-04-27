@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,6 +43,7 @@ import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.application.ManifestConstants;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
@@ -58,34 +60,6 @@ import org.yaml.snakeyaml.DumperOptions.FlowStyle;
 import org.yaml.snakeyaml.Yaml;
 
 public class ManifestParser {
-
-	public static final String APPLICATIONS_PROP = "applications"; //$NON-NLS-1$
-
-	public static final String NAME_PROP = "name"; //$NON-NLS-1$
-
-	public static final String MEMORY_PROP = "memory"; //$NON-NLS-1$
-
-	public static final String INSTANCES_PROP = "instances"; //$NON-NLS-1$
-
-	public static final String SUB_DOMAIN_PROP = "host"; //$NON-NLS-1$
-
-	public static final String DOMAIN_PROP = "domain"; //$NON-NLS-1$
-
-	public static final String SERVICES_PROP = "services"; //$NON-NLS-1$
-
-	public static final String LABEL_PROP = "label"; //$NON-NLS-1$
-
-	public static final String PROVIDER_PROP = "provider"; //$NON-NLS-1$
-
-	public static final String VERSION_PROP = "version"; //$NON-NLS-1$
-
-	public static final String PLAN_PROP = "plan"; //$NON-NLS-1$
-
-	public static final String PATH_PROP = "path"; //$NON-NLS-1$
-
-	public static final String BUILDPACK_PROP = "buildpack"; //$NON-NLS-1$
-
-	public static final String ENV_PROP = "env"; //$NON-NLS-1$
 
 	private final String relativePath;
 
@@ -221,7 +195,7 @@ public class ManifestParser {
 			return null;
 		}
 
-		Object applicationsObj = results.get(APPLICATIONS_PROP);
+		Object applicationsObj = results.get(ManifestConstants.APPLICATIONS_PROP);
 		if (!(applicationsObj instanceof List<?>)) {
 			throw CloudErrorUtil.toCoreException("Expected a top-level list of applications in: " //$NON-NLS-1$
 					+ relativePath
@@ -252,7 +226,7 @@ public class ManifestParser {
 			for (Object mapObj : applicationsList) {
 				if (mapObj instanceof Map<?, ?>) {
 					application = (Map<?, ?>) mapObj;
-					String appName = getStringValue(application, NAME_PROP);
+					String appName = getStringValue(application, ManifestConstants.NAME_PROP);
 					if (applicationName.equals(appName)) {
 						break;
 					}
@@ -299,7 +273,7 @@ public class ManifestParser {
 			// the
 			// property is actually set before set value
 			// in the info
-			String appName = getStringValue(application, NAME_PROP);
+			String appName = getStringValue(application, ManifestConstants.NAME_PROP);
 
 			subMonitor.worked(1);
 			if (appName != null) {
@@ -315,7 +289,7 @@ public class ManifestParser {
 			readApplicationURL(application, workingCopy, appName, monitor);
 			subMonitor.worked(1);
 
-			String buildpackurl = getStringValue(application, BUILDPACK_PROP);
+			String buildpackurl = getStringValue(application, ManifestConstants.BUILDPACK_PROP);
 			if (buildpackurl != null) {
 				workingCopy.setBuildpack(buildpackurl);
 			}
@@ -326,12 +300,12 @@ public class ManifestParser {
 			readServices(workingCopy, application);
 			subMonitor.worked(1);
 
-			String archiveURL = getStringValue(application, PATH_PROP);
+			String archiveURL = getStringValue(application, ManifestConstants.PATH_PROP);
 			if (archiveURL != null) {
 				workingCopy.setArchive(archiveURL);
 			}
 
-			Integer instances = getIntegerValue(application, INSTANCES_PROP);
+			Integer instances = getIntegerValue(application, ManifestConstants.INSTANCES_PROP);
 			if (instances != null) {
 				workingCopy.setInstances(instances);
 			}
@@ -345,7 +319,7 @@ public class ManifestParser {
 	}
 
 	protected void readEnvars(DeploymentInfoWorkingCopy workingCopy, Map<?, ?> applications) {
-		Map<?, ?> propertiesMap = getContainingPropertiesMap(applications, ENV_PROP);
+		Map<?, ?> propertiesMap = getContainingPropertiesMap(applications, ManifestConstants.ENV_PROP);
 
 		if (propertiesMap == null) {
 			return;
@@ -368,7 +342,7 @@ public class ManifestParser {
 	}
 
 	protected void readServices(DeploymentInfoWorkingCopy workingCopy, Map<?, ?> applications) {
-		Map<?, ?> services = getContainingPropertiesMap(applications, SERVICES_PROP);
+		Map<?, ?> services = getContainingPropertiesMap(applications, ManifestConstants.SERVICES_PROP);
 		// Backward compatibility with old manifest pre-1.8.2 where services
 		// were maps
 		if (services != null) {
@@ -385,15 +359,15 @@ public class ManifestParser {
 						Object servicePropertiesObj = entry.getValue();
 						if (servicePropertiesObj instanceof Map<?, ?>) {
 							Map<?, ?> serviceProperties = (Map<?, ?>) servicePropertiesObj;
-							String label = getStringValue(serviceProperties, LABEL_PROP);
+							String label = getStringValue(serviceProperties, ManifestConstants.LABEL_PROP);
 							if (label != null) {
 								service.setService(label);
 							}
-							String version = getStringValue(serviceProperties, VERSION_PROP);
+							String version = getStringValue(serviceProperties, ManifestConstants.VERSION_PROP);
 							if (version != null) {
 								service.setVersion(version);
 							}
-							String plan = getStringValue(serviceProperties, PLAN_PROP);
+							String plan = getStringValue(serviceProperties, ManifestConstants.PLAN_PROP);
 							if (plan != null) {
 								service.setPlan(plan);
 							}
@@ -405,7 +379,7 @@ public class ManifestParser {
 			workingCopy.setServices(new ArrayList<CFServiceInstance>(servicesToBind.values()));
 		}
 		else {
-			Object yamlElementObj = applications.get(SERVICES_PROP);
+			Object yamlElementObj = applications.get(ManifestConstants.SERVICES_PROP);
 			if (yamlElementObj instanceof List<?>) {
 				List<?> servListFromYaml = (List<?>) yamlElementObj;
 				Set<String> addedService = new HashSet<String>();
@@ -425,8 +399,8 @@ public class ManifestParser {
 
 	protected void readApplicationURL(Map<?, ?> application, DeploymentInfoWorkingCopy workingCopy, String appName,
 			IProgressMonitor monitor) {
-		String subdomain = getStringValue(application, SUB_DOMAIN_PROP);
-		String domain = getStringValue(application, DOMAIN_PROP);
+		String subdomain = getStringValue(application, ManifestConstants.SUB_DOMAIN_PROP);
+		String domain = getStringValue(application, ManifestConstants.DOMAIN_PROP);
 
 		// A URL can only be constructed from the manifest if either a domain or
 		// a subdomain is specified. If neither is specified, but the app name
@@ -468,12 +442,12 @@ public class ManifestParser {
 	}
 
 	protected void readMemory(Map<?, ?> application, DeploymentInfoWorkingCopy workingCopy) {
-		Integer memoryVal = getIntegerValue(application, MEMORY_PROP);
+		Integer memoryVal = getIntegerValue(application, ManifestConstants.MEMORY_PROP);
 
 		// If not in Integer form, try String as the memory may end in with a
 		// 'G' or 'M'
 		if (memoryVal == null) {
-			String memoryStringVal = getStringValue(application, MEMORY_PROP);
+			String memoryStringVal = getStringValue(application, ManifestConstants.MEMORY_PROP);
 			if (memoryStringVal != null && memoryStringVal.length() > 0) {
 
 				char memoryIndicator[] = { 'M', 'G', 'm', 'g' };
@@ -637,11 +611,11 @@ public class ManifestParser {
 				deploymentInfoYaml = new LinkedHashMap<Object, Object>();
 			}
 
-			Object applicationsObj = deploymentInfoYaml.get(APPLICATIONS_PROP);
+			Object applicationsObj = deploymentInfoYaml.get(ManifestConstants.APPLICATIONS_PROP);
 			List<Map<Object, Object>> applicationsList = null;
 			if (applicationsObj == null) {
 				applicationsList = new ArrayList<Map<Object, Object>>();
-				deploymentInfoYaml.put(APPLICATIONS_PROP, applicationsList);
+				deploymentInfoYaml.put(ManifestConstants.APPLICATIONS_PROP, applicationsList);
 			}
 			else if (applicationsObj instanceof List<?>) {
 				applicationsList = (List<Map<Object, Object>>) applicationsObj;
@@ -664,7 +638,7 @@ public class ManifestParser {
 			for (Object appMap : applicationsList) {
 				if (appMap instanceof Map<?, ?>) {
 					Map<Object, Object> properties = (Map<Object, Object>) appMap;
-					String name = getStringValue(properties, NAME_PROP);
+					String name = getStringValue(properties, ManifestConstants.NAME_PROP);
 					if (appName.equals(name)) {
 						applicationWithSameName = properties;
 					}
@@ -687,16 +661,16 @@ public class ManifestParser {
 				applicationsList.add(application);
 			}
 
-			application.put(NAME_PROP, appName);
+			application.put(ManifestConstants.NAME_PROP, appName);
 
 			String memory = getMemoryAsString(deploymentInfo.getMemory());
 			if (memory != null) {
-				application.put(MEMORY_PROP, memory);
+				application.put(ManifestConstants.MEMORY_PROP, memory);
 			}
 
 			int instances = deploymentInfo.getInstances();
 			if (instances > 0) {
-				application.put(INSTANCES_PROP, instances);
+				application.put(ManifestConstants.INSTANCES_PROP, instances);
 			}
 
 			List<String> urls = deploymentInfo.getUris();
@@ -710,17 +684,17 @@ public class ManifestParser {
 				String domain = cloudUrl.getDomain();
 
 				if (subdomain != null) {
-					application.put(SUB_DOMAIN_PROP, subdomain);
+					application.put(ManifestConstants.SUB_DOMAIN_PROP, subdomain);
 				}
 
 				if (domain != null) {
-					application.put(DOMAIN_PROP, domain);
+					application.put(ManifestConstants.DOMAIN_PROP, domain);
 				}
 			}
 			else {
 				// If URL is not present, remove any exiting ones
-				application.remove(SUB_DOMAIN_PROP);
-				application.remove(DOMAIN_PROP);
+				application.remove(ManifestConstants.SUB_DOMAIN_PROP);
+				application.remove(ManifestConstants.DOMAIN_PROP);
 			}
 
 			List<EnvironmentVariable> envvars = deploymentInfo.getEnvVariables();
@@ -729,7 +703,7 @@ public class ManifestParser {
 				Map<Object, Object> varMap = new LinkedHashMap<Object, Object>();
 
 				// Clear the list of environment variables first.
-				application.put(ENV_PROP, varMap);
+				application.put(ManifestConstants.ENV_PROP, varMap);
 				for (EnvironmentVariable var : envvars) {
 					varMap.put(var.getVariable(), var.getValue());
 				}
@@ -738,7 +712,7 @@ public class ManifestParser {
 				// Avoid writing empty list or keeping obsolete env vars
 				// therefore always remove the property if no en vars are
 				// present
-				application.remove(ENV_PROP);
+				application.remove(ManifestConstants.ENV_PROP);
 			}
 
 			String buildpack = deploymentInfo.getBuildpack();
@@ -746,7 +720,7 @@ public class ManifestParser {
 			// Only overwrite the buildpack URL if it can be resolved
 			// Otherwise retain any old value from before
 			if (buildpack != null) {
-				application.put(BUILDPACK_PROP, buildpack);
+				application.put(ManifestConstants.BUILDPACK_PROP, buildpack);
 			}
 
 			// Only overwrite the archive path if present, but do not
@@ -755,7 +729,7 @@ public class ManifestParser {
 			// refresh from the server
 			String archiveURL = deploymentInfo.getArchive();
 			if (archiveURL != null) {
-				application.put(PATH_PROP, archiveURL);
+				application.put(ManifestConstants.PATH_PROP, archiveURL);
 			}
 
 			// Regardless if there are services or not, always clear list of
@@ -767,7 +741,7 @@ public class ManifestParser {
 			if (servicesToBind != null && !servicesToBind.isEmpty()) {
 
 				List<String> services = new ArrayList<String>();
-				application.put(SERVICES_PROP, services);
+				application.put(ManifestConstants.SERVICES_PROP, services);
 
 				for (CFServiceInstance service : servicesToBind) {
 					String serviceName = service.getName();
@@ -777,8 +751,12 @@ public class ManifestParser {
 				}
 			}
 			else {
-				application.remove(SERVICES_PROP);
+				application.remove(ManifestConstants.SERVICES_PROP);
 			}
+			
+			// Copy the rest of the non-special handled ones.
+			HashMap<Object, Object> curUnknownInfo = deploymentInfo.getUnknownInfo();
+			application.putAll(curUnknownInfo);
 
 			subProgress.worked(1);
 
