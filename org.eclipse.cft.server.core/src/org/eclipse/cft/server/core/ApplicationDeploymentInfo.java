@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2013, 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,12 +17,16 @@
  *  
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
+ *     IBM - change to use map to store info
  ********************************************************************************/
 package org.eclipse.cft.server.core;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Observable;
+
+import org.eclipse.cft.server.core.internal.application.ManifestConstants;
 
 /**
  * Describes the application that is to be pushed to a CF server, or already
@@ -40,62 +44,58 @@ import java.util.Observable;
  */
 public class ApplicationDeploymentInfo extends Observable {
 
-	private List<EnvironmentVariable> envVars = new ArrayList<EnvironmentVariable>();
-
-	private int instances;
-
-	private String name;
-
 	private List<String> uris;
 
-	private List<CFServiceInstance> services;
-
-	private int memory;
-
-	private String archive;
-
-	private String buildpack;
+	private HashMap<Object, Object> deploymentInfoMap = new HashMap<Object, Object>();
 
 	public ApplicationDeploymentInfo(String appName) {
 		setDeploymentName(appName);
 	}
 
 	public void setEnvVariables(List<EnvironmentVariable> envVars) {
-		this.envVars.clear();
+		List<EnvironmentVariable> curEnvVars = getEnvVariables() ;
+		curEnvVars.clear();
 		if (envVars != null) {
-			this.envVars.addAll(envVars);
+			curEnvVars.addAll(envVars);
 			// Notify Observers
 			setChanged();
 			notifyObservers(envVars);
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public List<EnvironmentVariable> getEnvVariables() {
-		return new ArrayList<EnvironmentVariable>(envVars);
+		Object curEnvVars = deploymentInfoMap.get(ManifestConstants.ENV_PROP);
+		if (curEnvVars == null) {
+			// Initialize the variables.
+			curEnvVars = new ArrayList<EnvironmentVariable>();
+			deploymentInfoMap.put(ManifestConstants.ENV_PROP, curEnvVars);
+		}
+		return (List<EnvironmentVariable>)curEnvVars;
 	}
 
 	public int getInstances() {
-		return instances;
+		return getIntValue(ManifestConstants.INSTANCES_PROP);
 	}
 
 	public void setInstances(int instances) {
-		this.instances = instances;
+		deploymentInfoMap.put(ManifestConstants.INSTANCES_PROP, Integer.valueOf(instances));
 	}
 
 	public String getBuildpack() {
-		return buildpack;
+		return (String)deploymentInfoMap.get(ManifestConstants.BUILDPACK_PROP);
 	}
 
 	public void setBuildpack(String buildpack) {
-		this.buildpack = buildpack;
+		setStringValue(ManifestConstants.BUILDPACK_PROP, buildpack);
 	}
-
+	
 	public String getDeploymentName() {
-		return name;
+		return (String)deploymentInfoMap.get(ManifestConstants.NAME_PROP);
 	}
 
 	public void setDeploymentName(String name) {
-		this.name = name;
+		setStringValue(ManifestConstants.NAME_PROP, name);
 		// Notify Observers
 		setChanged();
 		notifyObservers(name);
@@ -109,8 +109,9 @@ public class ApplicationDeploymentInfo extends Observable {
 		return uris;
 	}
 
+	@SuppressWarnings("unchecked")
 	public List<CFServiceInstance> getServices() {
-		return services;
+		return (List<CFServiceInstance>)deploymentInfoMap.get(ManifestConstants.SERVICES_PROP);
 	}
 
 	/**
@@ -119,6 +120,7 @@ public class ApplicationDeploymentInfo extends Observable {
 	 */
 	public List<String> asServiceBindingList() {
 		List<String> bindingList = new ArrayList<String>();
+		List<CFServiceInstance> services = getServices();
 
 		if (services != null && !services.isEmpty()) {
 			for (CFServiceInstance service : services) {
@@ -129,23 +131,40 @@ public class ApplicationDeploymentInfo extends Observable {
 	}
 
 	public void setServices(List<CFServiceInstance> services) {
-		this.services = services;
+		if (services == null) {
+			deploymentInfoMap.remove(ManifestConstants.SERVICES_PROP);
+		} else {
+			deploymentInfoMap.put(ManifestConstants.SERVICES_PROP, services);
+		}
 	}
 
 	public int getMemory() {
-		return memory;
+		return getIntValue(ManifestConstants.MEMORY_PROP);
 	}
 
 	public void setMemory(int memory) {
-		this.memory = memory;
+		deploymentInfoMap.put(ManifestConstants.MEMORY_PROP, Integer.valueOf(memory));
 	}
 
 	public String getArchive() {
-		return this.archive;
+		return (String)deploymentInfoMap.get(ManifestConstants.PATH_PROP);
 	}
 
 	public void setArchive(String archive) {
-		this.archive = archive;
+		setStringValue(ManifestConstants.PATH_PROP, archive);
+	}
+	
+	public int getDiskQuota() {
+		return getIntValue(ManifestConstants.DISK_QUOTA_PROP);
+	}
+
+	public void setDiskQuota(int diskQuota) {
+		deploymentInfoMap.put(ManifestConstants.DISK_QUOTA_PROP, Integer.valueOf(diskQuota));
+	}
+	
+	private int getIntValue(String key) {
+		Integer curInt = (Integer)deploymentInfoMap.get(key);
+		return curInt != null ? curInt.intValue() : 0;		
 	}
 
 	/**
@@ -153,15 +172,14 @@ public class ApplicationDeploymentInfo extends Observable {
 	 * Sets the values of the parameter info, if non-null, into this info. Any
 	 * know mutable values (e.g. containers and arrays) are set as copies.
 	 */
+	@SuppressWarnings("unchecked")
 	public void setInfo(ApplicationDeploymentInfo info) {
 		if (info == null) {
 			return;
 		}
-		setDeploymentName(info.getDeploymentName());
-		setMemory(info.getMemory());
-		setBuildpack(info.getBuildpack());
-		setInstances(info.getInstances());
-		setArchive(info.getArchive());
+
+		// Preserve all entries in deployment info map even for ones not explicitly tracking by this class.
+		this.deploymentInfoMap = (HashMap<Object, Object>)info.deploymentInfoMap.clone();
 
 		if (info.getServices() != null) {
 			setServices(new ArrayList<CFServiceInstance>(info.getServices()));
@@ -184,6 +202,14 @@ public class ApplicationDeploymentInfo extends Observable {
 			setEnvVariables(null);
 		}
 	}
+	
+	private void setStringValue(String keyStr, String valueStr) {
+		if (valueStr == null) {
+			deploymentInfoMap.remove(keyStr);
+		} else {
+			deploymentInfoMap.put(keyStr, valueStr);
+		}		
+	}
 
 	/**
 	 * Copy the deployment info, with any known mutable values set as copies as
@@ -192,13 +218,12 @@ public class ApplicationDeploymentInfo extends Observable {
 	 * of values in the original version.
 	 * @return non-null copy of this info.
 	 */
+	@SuppressWarnings("unchecked")
 	public ApplicationDeploymentInfo copy() {
 		ApplicationDeploymentInfo info = new ApplicationDeploymentInfo(getDeploymentName());
-
-		info.setMemory(getMemory());
-		info.setBuildpack(getBuildpack());
-		info.setInstances(getInstances());
-		info.setArchive(getArchive());
+		
+		// Preserve all entries in deployment info map even for ones not explicitly tracking by this class.
+		info.deploymentInfoMap = (HashMap<Object, Object>)this.deploymentInfoMap.clone();
 
 		if (getServices() != null) {
 			info.setServices(new ArrayList<CFServiceInstance>(getServices()));
@@ -213,5 +238,31 @@ public class ApplicationDeploymentInfo extends Observable {
 		}
 
 		return info;
+	}
+	
+	/**
+	 * Get the list of info that are not explicitly handled or know by the tools.
+	 * @return
+	 */
+	public HashMap<Object, Object> getUnknownInfo() {
+		@SuppressWarnings("unchecked")
+		HashMap<Object, Object> curDeploymentInfoMap = (HashMap<Object, Object>)this.deploymentInfoMap.clone();
+		curDeploymentInfoMap.remove(ManifestConstants.APPLICATIONS_PROP);
+		curDeploymentInfoMap.remove(ManifestConstants.BUILDPACK_PROP);
+//		curDeploymentInfoMap.remove(ManifestConstants.DISK_QUOTA_PROP);
+		curDeploymentInfoMap.remove(ManifestConstants.DOMAIN_PROP);
+		curDeploymentInfoMap.remove(ManifestConstants.ENV_PROP);
+		curDeploymentInfoMap.remove(ManifestConstants.INSTANCES_PROP);
+//		curDeploymentInfoMap.remove(ManifestConstants.LABEL_PROP);
+		curDeploymentInfoMap.remove(ManifestConstants.MEMORY_PROP);
+		curDeploymentInfoMap.remove(ManifestConstants.NAME_PROP);
+		curDeploymentInfoMap.remove(ManifestConstants.PATH_PROP);
+//		curDeploymentInfoMap.remove(ManifestConstants.PLAN_PROP);
+//		curDeploymentInfoMap.remove(ManifestConstants.PROVIDER_PROP);
+		curDeploymentInfoMap.remove(ManifestConstants.SERVICES_PROP);
+		curDeploymentInfoMap.remove(ManifestConstants.SUB_DOMAIN_PROP);
+//		curDeploymentInfoMap.remove(ManifestConstants.VERSION_PROP);
+
+		return curDeploymentInfoMap;
 	}
 }

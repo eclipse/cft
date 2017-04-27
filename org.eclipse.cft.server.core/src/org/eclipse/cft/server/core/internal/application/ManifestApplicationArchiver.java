@@ -67,7 +67,7 @@ public class ManifestApplicationArchiver implements ICloudFoundryArchiver {
 		// attempting to push it again without the
 		// deployment wizard
 		if (parser.hasManifest()) {
-			archivePath = parser.getApplicationProperty(null, ManifestParser.PATH_PROP);
+			archivePath = parser.getApplicationProperty(null, ManifestConstants.PATH_PROP);
 		}
 
 		File packagedFile = null;
