@@ -54,12 +54,19 @@ public class ApplicationDeploymentInfo extends Observable {
 
 	public void setEnvVariables(List<EnvironmentVariable> envVars) {
 		List<EnvironmentVariable> curEnvVars = getEnvVariables() ;
-		curEnvVars.clear();
-		if (envVars != null) {
-			curEnvVars.addAll(envVars);
-			// Notify Observers
+		if (curEnvVars == envVars) {
+			// Notify Observers only and no need to update the actual value since both objects are the same.
 			setChanged();
 			notifyObservers(envVars);
+		} else {
+			// Only clear and add the entries if it is not the same envVars object as the original.
+			curEnvVars.clear();
+			if (envVars != null) {
+				curEnvVars.addAll(envVars);
+				// Notify Observers
+				setChanged();
+				notifyObservers(envVars);
+			}
 		}
 	}
 
@@ -234,7 +241,9 @@ public class ApplicationDeploymentInfo extends Observable {
 		}
 
 		if (getEnvVariables() != null) {
-			info.setEnvVariables(new ArrayList<EnvironmentVariable>(getEnvVariables()));
+			ArrayList<EnvironmentVariable> curEnvVaris = new ArrayList<EnvironmentVariable>();
+			curEnvVaris.addAll(getEnvVariables());
+			info.setEnvVariables(curEnvVaris);
 		}
 
 		return info;
