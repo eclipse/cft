@@ -579,6 +579,10 @@ public class Messages extends NLS {
 	public static String CloudFoundryAccountSection_LABEL_PW_CHANGED;
 
 	public static String CloudFoundryAccountSection_LABEL_SPACE;
+	
+	public static String CloudFoundryAccountSection_TOOLTIP_EMAIL;
+	
+	public static String CloudFoundryAccountSection_TOOLTIP_PASSWORD;
 
 	public static String CloudFoundryActionProvider_ERROR_REFLECTION_CF_APP_PAGE;
 

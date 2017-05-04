@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -40,6 +40,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardDialog;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -143,49 +144,59 @@ public class CloudFoundryAccountSection extends ServerEditorSection implements C
 		topComposite.setLayout(new GridLayout(2, false));
 		topComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 
+		// For the next section, we display Texts with no border so that they do not look editable,
+		// but we want to restore the border style afterward.
+		int oldBorderStyle = toolkit.getBorderStyle();
+		toolkit.setBorderStyle(SWT.NONE);
+		
 		if(!cfServer.isSso()) {
-			
 			Label emailLabel = toolkit.createLabel(topComposite, Messages.CloudFoundryAccountSection_LABEL_EMAIL, SWT.NONE);
 			emailLabel.setForeground(toolkit.getColors().getColor(IFormColors.TITLE));
 			emailLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
+			emailLabel.setToolTipText(Messages.CloudFoundryAccountSection_TOOLTIP_EMAIL);
 	
-			emailText = toolkit.createText(topComposite, ""); //$NON-NLS-1$
-	
+			// Changing email is not currently supported through the editor.
+			emailText = toolkit.createText(topComposite, "", SWT.READ_ONLY); //$NON-NLS-1$
 			emailText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-			emailText.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TEXT_BORDER);
+			
+			// To hide the border on all platforms, we must also set this property to false
+			// This inconsistency is documented here: https://bugs.eclipse.org/bugs/show_bug.cgi?id=410763
+			emailText.setData(FormToolkit.KEY_DRAW_BORDER, Boolean.FALSE);
+			emailText.setToolTipText(Messages.CloudFoundryAccountSection_TOOLTIP_EMAIL);
+			
 			if (cfServer.getUsername() != null) {
 				emailText.setText(cfServer.getUsername());
 			}
 	
-			// Changing username is not currently supported through the editor.
-			emailText.setEditable(false);
 			// emailText.addModifyListener(new DataChangeListener(DataType.EMAIL));
 	
 			Label passwordLabel = toolkit.createLabel(topComposite, Messages.CloudFoundryAccountSection_LABEL_PASSWORD, SWT.NONE);
 			passwordLabel.setForeground(toolkit.getColors().getColor(IFormColors.TITLE));
 			passwordLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
+			passwordLabel.setToolTipText(NLS.bind(Messages.CloudFoundryAccountSection_TOOLTIP_PASSWORD, 
+					Messages.CloudFoundryAccountSection_BUTTON_CHANGE_PW));
 	
-			passwordText = toolkit.createText(topComposite, "", SWT.PASSWORD); //$NON-NLS-1$
+			// Setting password through text control is disabled. Passwords are
+			// instead set through a separate update password dialogue
+			passwordText = toolkit.createText(topComposite, "", SWT.PASSWORD | SWT.READ_ONLY); //$NON-NLS-1$
 			passwordText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-			passwordText.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TEXT_BORDER);
+			passwordText.setData(FormToolkit.KEY_DRAW_BORDER, Boolean.FALSE);
+			
+			passwordText.setToolTipText(NLS.bind(Messages.CloudFoundryAccountSection_TOOLTIP_PASSWORD, 
+					Messages.CloudFoundryAccountSection_BUTTON_CHANGE_PW));
+			
 			if (cfServer.getPassword() != null) {
 				passwordText.setText(cfServer.getPassword());
 			}
 	
-			// Setting password through text control is disabled. Passwords are
-			// instead set through a separate update password dialogue
-			passwordText.setEditable(false);
-			// passwordText.addModifyListener(new
-			// DataChangeListener(DataType.PASSWORD));
-	
+			// passwordText.addModifyListener(new DataChangeListener(DataType.PASSWORD));
 		}
 		
 		Label label = toolkit.createLabel(topComposite, Messages.CloudFoundryAccountSection_LABEL_URL);
 		label.setForeground(toolkit.getColors().getColor(IFormColors.TITLE));
 		label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
 
-		urlText = toolkit.createText(topComposite, "", SWT.NONE); //$NON-NLS-1$
-		urlText.setEditable(false);
+		urlText = toolkit.createText(topComposite, "", SWT.READ_ONLY); //$NON-NLS-1$
 		urlText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 		urlText.setData(FormToolkit.KEY_DRAW_BORDER, Boolean.FALSE);
 		if (cfServer.getUrl() != null) {
@@ -197,8 +208,7 @@ public class CloudFoundryAccountSection extends ServerEditorSection implements C
 		orgLabel.setForeground(toolkit.getColors().getColor(IFormColors.TITLE));
 		orgLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
 
-		orgText = toolkit.createText(topComposite, "", SWT.NONE); //$NON-NLS-1$
-		orgText.setEditable(false);
+		orgText = toolkit.createText(topComposite, "", SWT.READ_ONLY); //$NON-NLS-1$
 		orgText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 		orgText.setData(FormToolkit.KEY_DRAW_BORDER, Boolean.FALSE);
 		if (cfServer.getCloudFoundrySpace() != null && cfServer.getCloudFoundrySpace().getOrgName() != null) {
@@ -209,13 +219,15 @@ public class CloudFoundryAccountSection extends ServerEditorSection implements C
 		spaceLabel.setForeground(toolkit.getColors().getColor(IFormColors.TITLE));
 		spaceLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
 
-		spaceText = toolkit.createText(topComposite, "", SWT.NONE); //$NON-NLS-1$
-		spaceText.setEditable(false);
+		spaceText = toolkit.createText(topComposite, "", SWT.READ_ONLY); //$NON-NLS-1$
 		spaceText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 		spaceText.setData(FormToolkit.KEY_DRAW_BORDER, Boolean.FALSE);
 		if (cfServer.getCloudFoundrySpace() != null && cfServer.getCloudFoundrySpace().getSpaceName() != null) {
 			spaceText.setText(cfServer.getCloudFoundrySpace().getSpaceName());
 		}
+		
+		// Restore the toolkit's original border style
+		toolkit.setBorderStyle(oldBorderStyle);
 
 		final Composite buttonComposite = toolkit.createComposite(composite);
 
