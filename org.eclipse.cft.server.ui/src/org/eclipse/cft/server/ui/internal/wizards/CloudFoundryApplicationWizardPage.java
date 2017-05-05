@@ -23,18 +23,13 @@ package org.eclipse.cft.server.ui.internal.wizards;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.ModuleCache;
-import org.eclipse.cft.server.core.internal.ModuleCache.ServerData;
 import org.eclipse.cft.server.core.internal.StringUtils;
 import org.eclipse.cft.server.core.internal.application.ManifestParser;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
@@ -72,8 +67,6 @@ import org.eclipse.swt.widgets.Text;
  * 
  */
 public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
-
-	private Pattern VALID_CHARS = Pattern.compile("[A-Za-z\\$_0-9\\-]+"); //$NON-NLS-1$
 
 	protected static final String DEFAULT_DESCRIPTION = Messages.CloudFoundryApplicationWizardPage_TEXT_SET_APP_DETAIL;
 
@@ -277,41 +270,9 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 		handleChange(new PartChangeEvent(buildpack, status, CloudUIEvent.BUILD_PACK_URL));
 
 	}
-
+	
 	protected IStatus getUpdateNameStatus() {
-		IStatus status = Status.OK_STATUS;
-		if (StringUtils.isEmpty(appName)) {
-			status = CloudFoundryPlugin.getStatus(Messages.CloudFoundryApplicationWizardPage_ERROR_MISSING_APPNAME,
-					IStatus.ERROR);
-		}
-		else {
-			Matcher matcher = VALID_CHARS.matcher(appName);
-			if (!matcher.matches()) {
-				status = CloudFoundryPlugin
-						.getErrorStatus(Messages.CloudFoundryApplicationWizardPage_ERROR_INVALID_CHAR);
-			}
-			else {
-				ModuleCache moduleCache = CloudFoundryPlugin.getModuleCache();
-				ServerData data = moduleCache.getData(server.getServerOriginal());
-				Collection<CloudFoundryApplicationModule> applications = data.getExistingCloudModules();
-				boolean duplicate = false;
-
-				for (CloudFoundryApplicationModule application : applications) {
-					if (application != module && application.getDeployedApplicationName().equals(appName)) {
-						duplicate = true;
-						break;
-					}
-				}
-
-				if (duplicate) {
-					status = CloudFoundryPlugin
-							.getErrorStatus(Messages.CloudFoundryApplicationWizardPage_ERROR_NAME_CONFLICT);
-				}
-			}
-		}
-
-		return status;
-
+		return CFUiUtil.validateAppName(appName, module, server);
 	}
 
 	protected class AppNamePart extends UIPart {
@@ -414,8 +375,13 @@ public class CloudFoundryApplicationWizardPage extends PartsWizardPage {
 						// Set the new deployment name and update the URIs only
 						// if it needs to be changed
 						if (!cloudUrl.getSubdomain().equals(workingCopy.getDeploymentName())) {
-							workingCopy.setDeploymentName(cloudUrl.getSubdomain());
-							appName = cloudUrl.getSubdomain();
+
+							// The new deployment name will be the old deployment name, but appended with the suffix (that came from the
+							// unique subdomain generation algorithm). 
+							String newDeploymentName = workingCopy.getDeploymentName()+(uniqueSubdomain.getUrlSuffix() != null ? uniqueSubdomain.getUrlSuffix() : "");
+							
+							workingCopy.setDeploymentName(newDeploymentName);
+							appName = newDeploymentName;
 
 							// Update the app name Text widget w/ the new name.
 							Display.getDefault().syncExec(new Runnable() {
