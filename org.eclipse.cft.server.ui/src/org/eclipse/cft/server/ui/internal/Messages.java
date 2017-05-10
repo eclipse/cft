@@ -60,6 +60,8 @@ public class Messages extends NLS {
 
 	public static String COMMONTXT_DOMAIN;
 
+	public static String COMMONTXT_STACK;
+	
 	public static String COMMONTXT_ADD;
 
 	public static String COMMONTXT_ENTER_VALID_URL;
@@ -663,6 +665,10 @@ public class Messages extends NLS {
 	public static String CloudFoundryDeploymentWizardPage_TEXT_DEPLOYMENT;
 
 	public static String CloudFoundryDeploymentWizardPage_TITLE_LAUNCH_DEPLOY;
+	
+	public static String CloudFoundryDeploymentWizardPage_STACK_DEFAULT;
+	
+	public static String CloudFoundryDeploymentWizardPage_UPDATING_STACKS;
 
 	public static String CloudFoundryEditorAction_TEXT_NO_OP_EXECUTE;
 

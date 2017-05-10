@@ -322,7 +322,7 @@ public class CloudFoundryServicesTest extends AbstractCloudFoundryServicesTest {
 
 		boolean startApp = true;
 		CloudFoundryApplicationModule appModule = deployApplication(expectedAppName, project,
-				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp,
+				CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, CloudFoundryTestUtil.DEFAULT_TEST_DISK_QUOTA, startApp,
 				/* no vars */ null, servicesToBind, harness.getDefaultBuildpack());
 
 		appModule = cloudServer.getExistingCloudModule(appModule.getDeployedApplicationName());

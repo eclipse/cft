@@ -43,6 +43,7 @@ import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.Logger;
 import org.eclipse.cft.server.core.internal.application.ManifestConstants;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
@@ -236,6 +237,11 @@ public class ManifestParser {
 				}
 			}
 		}
+		
+		if (getStringValue(application, ManifestConstants.INHERIT_PROP) != null) {
+			Logger.println(Logger.WARNING_LEVEL, this, "load", //$NON-NLS-1$
+					"Manifest file entry inherit is not support. The inherit entry will be ignored during deployment: " + relativePath); //$NON-NLS-1$
+		}
 
 		if (errorMessage != null) {
 			throw CloudErrorUtil.toCoreException(errorMessage);
@@ -266,6 +272,19 @@ public class ManifestParser {
 			if (application == null) {
 				return null;
 			}
+			
+			HashMap<Object,Object> applicationClone = new HashMap<Object,Object>();
+			applicationClone.putAll(application);
+			// Remove the parameters that will be explicitly read and interpreted below.
+			applicationClone.remove(ManifestConstants.MEMORY_PROP);
+			applicationClone.remove(ManifestConstants.DISK_QUOTA_PROP);
+			applicationClone.remove(ManifestConstants.SUB_DOMAIN_PROP);
+			applicationClone.remove(ManifestConstants.DOMAIN_PROP);
+			applicationClone.remove(ManifestConstants.ENV_PROP);
+			applicationClone.remove(ManifestConstants.SERVICES_PROP);
+			
+			// Put all parameters to map
+			workingCopy.addAllToDeploymentMap(applicationClone);
 
 			// NOTE: When reading from manifest, the manifest may be INCOMPLETE,
 			// therefore do not automatically
@@ -276,40 +295,23 @@ public class ManifestParser {
 			String appName = getStringValue(application, ManifestConstants.NAME_PROP);
 
 			subMonitor.worked(1);
-			if (appName != null) {
-				workingCopy.setDeploymentName(appName);
-			}
-			else {
+			if (appName == null) {
 				CloudFoundryPlugin.logError(Messages.ManifestParser_NO_APP_NAME);
 			}
-
 			readMemory(application, workingCopy);
+			subMonitor.worked(1);
+
+			readDiskQuota(application, workingCopy);
 			subMonitor.worked(1);
 
 			readApplicationURL(application, workingCopy, appName, monitor);
 			subMonitor.worked(1);
-
-			String buildpackurl = getStringValue(application, ManifestConstants.BUILDPACK_PROP);
-			if (buildpackurl != null) {
-				workingCopy.setBuildpack(buildpackurl);
-			}
 
 			readEnvars(workingCopy, application);
 			subMonitor.worked(1);
 
 			readServices(workingCopy, application);
 			subMonitor.worked(1);
-
-			String archiveURL = getStringValue(application, ManifestConstants.PATH_PROP);
-			if (archiveURL != null) {
-				workingCopy.setArchive(archiveURL);
-			}
-
-			Integer instances = getIntegerValue(application, ManifestConstants.INSTANCES_PROP);
-			if (instances != null) {
-				workingCopy.setInstances(instances);
-			}
-
 		}
 		finally {
 			subMonitor.done();
@@ -502,6 +504,67 @@ public class ManifestParser {
 		}
 	}
 
+	protected void readDiskQuota(Map<?, ?> application, DeploymentInfoWorkingCopy workingCopy) {
+		Integer diskQuotaVal = getIntegerValue(application, ManifestConstants.DISK_QUOTA_PROP);
+
+		// If not in Integer form, try String as the memory may end in with a
+		// 'G' or 'M'
+		if (diskQuotaVal == null) {
+			String diskQuotaStringVal = getStringValue(application, ManifestConstants.DISK_QUOTA_PROP);
+			if (diskQuotaStringVal != null && diskQuotaStringVal.length() > 0) {
+
+				char diskQuotaIndicator[] = { 'M', 'G', 'm', 'g' };
+				int gIndex = -1;
+
+				for (char indicator : diskQuotaIndicator) {
+					gIndex = diskQuotaStringVal.indexOf(indicator);
+					if (gIndex >= 0) {
+						break;
+					}
+				}
+
+				// There has to be a number before the 'G' or 'M', if 'G' or 'M'
+				// is used, or its not a valid
+				// memory
+				if (gIndex > 0) {
+					diskQuotaStringVal = diskQuotaStringVal.substring(0, gIndex);
+				}
+				else if (gIndex == 0) {
+					CloudFoundryPlugin.logError("Failed to disk quota value in manifest file: " + relativePath //$NON-NLS-1$
+							+ " for: " + appModule.getDeployedApplicationName() + ". Invalid disk quota: " //$NON-NLS-1$ //$NON-NLS-2$
+							+ diskQuotaStringVal);
+				}
+
+				try {
+					diskQuotaVal = Integer.valueOf(diskQuotaStringVal);
+				}
+				catch (NumberFormatException e) {
+					// Log an error but do not stop the parsing
+					CloudFoundryPlugin.logError("Failed to disk quota memory from manifest file: " + relativePath + " for: " //$NON-NLS-1$ //$NON-NLS-2$
+							+ appModule.getDeployedApplicationName() + " due to: " + e.getMessage()); //$NON-NLS-1$
+				}
+			}
+		}
+
+		if (diskQuotaVal != null) {
+			int actualDiskQuota = -1;
+			switch (diskQuotaVal.intValue()) {
+			case 1:
+				actualDiskQuota = 1024;
+				break;
+			case 2:
+				actualDiskQuota = 2048;
+				break;
+			default:
+				actualDiskQuota = diskQuotaVal.intValue();
+				break;
+			}
+			if (actualDiskQuota > 0) {
+				workingCopy.setDiskQuota(actualDiskQuota);
+			}
+		}
+	}
+
 	/**
 	 * 
 	 * @return map of parsed manifest file, if the file exists. If the file does
@@ -668,6 +731,14 @@ public class ManifestParser {
 				application.put(ManifestConstants.MEMORY_PROP, memory);
 			}
 
+			Integer diskQuotaInt = deploymentInfo.getDiskQuota();
+			if (diskQuotaInt != null) {
+				String diskQuota = getMemoryAsString(diskQuotaInt);
+				if (diskQuota != null) {
+					application.put(ManifestConstants.DISK_QUOTA_PROP, diskQuota);
+				}
+			}
+
 			int instances = deploymentInfo.getInstances();
 			if (instances > 0) {
 				application.put(ManifestConstants.INSTANCES_PROP, instances);
@@ -757,6 +828,11 @@ public class ManifestParser {
 			// Copy the rest of the non-special handled ones.
 			HashMap<Object, Object> curUnknownInfo = deploymentInfo.getUnknownInfo();
 			application.putAll(curUnknownInfo);
+			
+			// Remove the stack value if it does not exist to handle the default stack settings.
+			if (!curUnknownInfo.containsKey(ManifestConstants.STACK_PROP)) {
+				application.remove(ManifestConstants.STACK_PROP);
+			}
 
 			subProgress.worked(1);
 

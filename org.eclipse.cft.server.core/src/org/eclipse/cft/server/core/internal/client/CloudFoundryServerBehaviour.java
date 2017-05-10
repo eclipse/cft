@@ -756,6 +756,10 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	public List<CFServiceInstance> getServices(IProgressMonitor monitor) throws CoreException {
 		return getRequestFactory().getServices().run(monitor);
 	}
+	
+	public synchronized List<String> getStacks(IProgressMonitor monitor) throws CoreException {
+		return getRequestFactory().getStacks().run(monitor);
+	}
 
 	/**
 	 * Refresh the application modules and reschedules the app module refresh

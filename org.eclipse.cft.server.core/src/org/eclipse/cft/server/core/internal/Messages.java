@@ -216,6 +216,8 @@ public class Messages extends NLS {
 	public static String CloudFoundryServerBehaviour_GET_ALL_APPS;
 
 	public static String CloudFoundryServerBehaviour_GET_ALL_SERVICES;
+	
+	public static String CloudFoundryServerBehaviour_GET_ALL_STACKS;
 
 	public static String CloudFoundryServerBehaviour_GET_APPLICATION;
 

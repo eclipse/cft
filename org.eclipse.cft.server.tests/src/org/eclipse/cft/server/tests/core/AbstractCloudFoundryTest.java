@@ -249,13 +249,13 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 	 */
 	protected CloudFoundryApplicationModule deployApplication(String appName, IProject project, boolean startApp,
 			String buildpack) throws Exception {
-		return deployApplication(appName, project, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, null, null,
-				buildpack);
+		return deployApplication(appName, project, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY,
+				CloudFoundryTestUtil.DEFAULT_TEST_DISK_QUOTA, startApp, null, null, buildpack);
 	}
 
 	protected CloudFoundryApplicationModule deployApplication(String appName, IProject project, int memory,
-			boolean startApp, List<EnvironmentVariable> variables, List<CFServiceInstance> services, String buildpack)
-			throws Exception {
+			int diskQuota, boolean startApp, List<EnvironmentVariable> variables, List<CFServiceInstance> services,
+			String buildpack) throws Exception {
 
 		if (buildpack != null) {
 			debug("Using buildpack: " + buildpack + " for app " + appName);
@@ -263,7 +263,8 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 
 		// Configure the test fixture for deployment.
 		// This step is a substitute for the Application deployment wizard
-		getTestFixture().configureForApplicationDeployment(appName, memory, startApp, variables, services, buildpack);
+		getTestFixture().configureForApplicationDeployment(appName, memory, diskQuota, startApp, variables, services,
+				buildpack);
 
 		IModule module = getWstModule(project.getName());
 

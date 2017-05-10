@@ -40,12 +40,15 @@ import org.eclipse.cft.server.core.internal.application.ManifestParser;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.ui.internal.CloudApplicationUrlPart;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
+import org.eclipse.cft.server.ui.internal.ICoreRunnable;
 import org.eclipse.cft.server.ui.internal.IEventSource;
 import org.eclipse.cft.server.ui.internal.Logger;
 import org.eclipse.cft.server.ui.internal.Messages;
 import org.eclipse.cft.server.ui.internal.PartChangeEvent;
 import org.eclipse.cft.server.ui.internal.UIPart;
 import org.eclipse.cft.server.ui.internal.WizardPartChangeEvent;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -59,8 +62,10 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
@@ -90,6 +95,8 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 	protected CloudApplicationUrlPart urlPart;
 
 	private MemoryPart memoryPart;
+	
+	private Combo stackCombo;
 
 	private static final String DEFAULT_MEMORY = CloudUtil.DEFAULT_MEMORY + ""; //$NON-NLS-1$
 
@@ -120,6 +127,8 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 	protected void performWhenPageVisible() {
 
 		refreshMemoryOptions();
+		
+		refreshStack();
 
 		// Check that the current subdomain is in conflict with an existing app.
 		ModuleCache moduleCache = CloudFoundryPlugin.getModuleCache();
@@ -152,6 +161,76 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 
 	protected void refreshMemoryOptions() {
 		memoryPart.refreshMemoryOptions();
+	}
+
+	/**
+	 * Refresh the stack list from the model. Select the default value that is set from the
+	 * descriptor model.
+	 */
+	protected void refreshStack() {
+		if (stackCombo == null || stackCombo.isDisposed()) {
+			return;
+		}
+		
+		// Get the list of stack and set the existing stack
+		runAsynchWithWizardProgress(new ICoreRunnable() {
+
+			@Override
+			public void run(IProgressMonitor monitor) throws CoreException {
+
+				try {
+					List<String> stackStrLst = server.getBehaviour().getStacks(monitor);
+					
+					Display.getDefault().syncExec(new Runnable() {
+
+						public void run() {
+							String[] stackLst = new String[stackStrLst.size()];
+							stackLst = stackStrLst.toArray(stackLst);
+
+							String curStack = stackCombo.getText();
+							int curSelectedStackIndex = stackCombo.getSelectionIndex();
+
+							stackCombo.setItems(stackLst);
+							
+							// Add the default item to the beginning.
+							stackCombo.add(Messages.CloudFoundryDeploymentWizardPage_STACK_DEFAULT, 0);
+							stackLst = stackCombo.getItems();
+							
+							if (curSelectedStackIndex < 0) {
+								// Initialize with the value from the model if valid.
+								String stackValue = descriptor.getDeploymentInfo().getStack();
+								if (stackValue != null) {
+									curStack = stackValue;
+								}
+							}
+					
+							if (stackLst != null && stackLst.length > 0) {
+								boolean matched = false;
+								if (curStack != null) {
+									for (int i=0; i<stackLst.length; i++) {
+										if (curStack.equals(stackLst[i])) {
+											stackCombo.select(i);
+											matched = true;
+											break;
+										}
+									}
+								}
+								if (!matched || stackCombo.getSelectionIndex() < 0) {
+									// Default valid from model is not a valid selection so just choose the default one.
+									stackCombo.select(0);
+									descriptor.getDeploymentInfo().setStack(null);
+								}
+							}
+						}
+
+					});
+				} catch (CoreException e) {
+					if (Logger.WARNING) {
+						Logger.println(Logger.WARNING_LEVEL, this, "refreshStack", "Failed to retreive the list of stacks.", e);
+					}
+				}
+			}
+		}, Messages.CloudFoundryDeploymentWizardPage_UPDATING_STACKS);
 	}
 
 	protected Point getRunDebugControlIndentation() {
@@ -208,6 +287,8 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 		createURLArea(topComposite);
 
 		createMemoryArea(topComposite);
+		
+		createStackArea(topComposite);
 
 		createStartOrDebugOptions(parent);
 	}
@@ -226,6 +307,27 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 		memoryPart = new MemoryPart();
 		memoryPart.addPartChangeListener(this);
 		memoryPart.createPart(parent);
+	}
+	
+	protected void createStackArea(Composite parent) {
+		Label label = new Label(parent, SWT.NONE);
+		label.setText(Messages.COMMONTXT_STACK);
+		GridDataFactory.fillDefaults().grab(false, false).align(SWT.FILL, SWT.CENTER).applyTo(label);
+
+		stackCombo = new Combo(parent, SWT.BORDER | SWT.READ_ONLY);
+		GridDataFactory.fillDefaults().grab(true, false).span(2, 1).applyTo(stackCombo);
+		stackCombo.setEnabled(true);
+		stackCombo.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				String curStack = stackCombo.getText();
+				if (stackCombo.getSelectionIndex() == 0) {
+					// Default is selected so clear the stack settings.
+					curStack = null;
+				}
+				descriptor.getDeploymentInfo().setStack(curStack);
+			}
+		});
 	}
 
 	protected void createStartOrDebugOptions(Composite parent) {

@@ -24,6 +24,7 @@ package org.eclipse.cft.server.core;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Observable;
 
 import org.eclipse.cft.server.core.internal.application.ManifestConstants;
@@ -100,6 +101,10 @@ public class ApplicationDeploymentInfo extends Observable {
 	public String getDeploymentName() {
 		return (String)deploymentInfoMap.get(ManifestConstants.NAME_PROP);
 	}
+	
+	public String getCommand() {
+		return (String)deploymentInfoMap.get(ManifestConstants.COMMAND_PROP);
+	}
 
 	public void setDeploymentName(String name) {
 		setStringValue(ManifestConstants.NAME_PROP, name);
@@ -161,8 +166,8 @@ public class ApplicationDeploymentInfo extends Observable {
 		setStringValue(ManifestConstants.PATH_PROP, archive);
 	}
 	
-	public int getDiskQuota() {
-		return getIntValue(ManifestConstants.DISK_QUOTA_PROP);
+	public Integer getDiskQuota() {
+		return (Integer)deploymentInfoMap.get(ManifestConstants.DISK_QUOTA_PROP);
 	}
 
 	public void setDiskQuota(int diskQuota) {
@@ -173,7 +178,23 @@ public class ApplicationDeploymentInfo extends Observable {
 		Integer curInt = (Integer)deploymentInfoMap.get(key);
 		return curInt != null ? curInt.intValue() : 0;		
 	}
+	
+	public String getStack() {
+		return (String)deploymentInfoMap.get(ManifestConstants.STACK_PROP);
+	}
+	
+	public void setStack(String curStack) {
+		if (curStack == null) {
+			deploymentInfoMap.remove(ManifestConstants.STACK_PROP);
+		} else {
+			deploymentInfoMap.put(ManifestConstants.STACK_PROP, curStack);
+		}
+	}
 
+	public Integer getTimeout() {
+		return (Integer)deploymentInfoMap.get(ManifestConstants.TIMEOUT_PROP);
+	}
+	
 	/**
 	 * 
 	 * Sets the values of the parameter info, if non-null, into this info. Any
@@ -258,7 +279,7 @@ public class ApplicationDeploymentInfo extends Observable {
 		HashMap<Object, Object> curDeploymentInfoMap = (HashMap<Object, Object>)this.deploymentInfoMap.clone();
 		curDeploymentInfoMap.remove(ManifestConstants.APPLICATIONS_PROP);
 		curDeploymentInfoMap.remove(ManifestConstants.BUILDPACK_PROP);
-//		curDeploymentInfoMap.remove(ManifestConstants.DISK_QUOTA_PROP);
+		curDeploymentInfoMap.remove(ManifestConstants.DISK_QUOTA_PROP);
 		curDeploymentInfoMap.remove(ManifestConstants.DOMAIN_PROP);
 		curDeploymentInfoMap.remove(ManifestConstants.ENV_PROP);
 		curDeploymentInfoMap.remove(ManifestConstants.INSTANCES_PROP);
@@ -273,5 +294,13 @@ public class ApplicationDeploymentInfo extends Observable {
 //		curDeploymentInfoMap.remove(ManifestConstants.VERSION_PROP);
 
 		return curDeploymentInfoMap;
+	}
+	
+	/**
+	 * Get the list of info that are not explicitly handled or know by the tools.
+	 * @return
+	 */
+	public void addAllToDeploymentMap(Map<?, ?> curDeploymentInfoMap) {
+		this.deploymentInfoMap.putAll(curDeploymentInfoMap);
 	}
 }
