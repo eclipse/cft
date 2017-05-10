@@ -55,4 +55,12 @@ public class ManifestConstants {
 	public static final String ENV_PROP = "env"; //$NON-NLS-1$
 
 	public static final String DISK_QUOTA_PROP = "disk_quota"; //$NON-NLS-1$
+
+	public static final String STACK_PROP = "stack"; //$NON-NLS-1$
+	
+	public static final String TIMEOUT_PROP = "timeout"; //$NON-NLS-1$
+
+	public static final String COMMAND_PROP = "command"; //$NON-NLS-1$
+	
+	public static final String INHERIT_PROP = "inherit"; //$NON-NLS-1$
 }

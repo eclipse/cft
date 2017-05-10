@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc.
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -49,6 +49,8 @@ public class TestCallback extends CloudFoundryCallback {
 
 	private final int memory;
 
+	private final int diskQuota;
+
 	private final boolean startApp;
 
 	private final List<EnvironmentVariable> variables;
@@ -57,12 +59,13 @@ public class TestCallback extends CloudFoundryCallback {
 
 	private final String buildpack;
 
-	public TestCallback(String appName, int memory, boolean startApp, List<EnvironmentVariable> variables,
-			List<CFServiceInstance> services, String buildpack) {
+	public TestCallback(String appName, int memory, int diskQuota, boolean startApp,
+			List<EnvironmentVariable> variables, List<CFServiceInstance> services, String buildpack) {
 		this.appName = appName;
 		this.url = null;
 		this.startApp = startApp;
 		this.memory = memory;
+		this.diskQuota = diskQuota;
 		this.variables = variables;
 		this.services = services;
 		this.buildpack = buildpack;
@@ -106,6 +109,7 @@ public class TestCallback extends CloudFoundryCallback {
 		DeploymentInfoWorkingCopy copy = module.resolveDeploymentInfoWorkingCopy(monitor);
 		copy.setDeploymentName(appName);
 		copy.setMemory(memory);
+		copy.setDiskQuota(diskQuota);
 		if (variables != null) {
 			copy.setEnvVariables(variables);
 		}

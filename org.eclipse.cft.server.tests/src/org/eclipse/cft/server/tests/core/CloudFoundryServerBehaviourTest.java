@@ -84,7 +84,8 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 		IProject project = createWebApplicationProject();
 
 		boolean startApp = true;
-		deployApplication(expectedAppName, project, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp, vars,
+		deployApplication(expectedAppName, project, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY,
+				CloudFoundryTestUtil.DEFAULT_TEST_DISK_QUOTA, startApp, vars,
 				/* no services to bind */ null, harness.getDefaultBuildpack());
 
 		CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(expectedAppName);
@@ -112,6 +113,9 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 
 		assertEquals(actualApp.getMemory(), info.getMemory());
 		assertEquals(CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, info.getMemory());
+
+		assertEquals(actualApp.getDiskQuota(), info.getDiskQuota().intValue());
+		assertEquals(CloudFoundryTestUtil.DEFAULT_TEST_DISK_QUOTA, info.getDiskQuota().intValue());
 
 		assertEquals("JAVA_OPTS", appModule.getDeploymentInfo().getEnvVariables().get(0).getVariable());
 		assertEquals("-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n",
@@ -617,6 +621,11 @@ public class CloudFoundryServerBehaviourTest extends AbstractCloudFoundryTest {
 	public void testBuildpacks() throws Exception {
 		List<String> buildpacks = serverBehavior.getBuildpacks(new NullProgressMonitor());
 		assertTrue("Expected at least one buildpack in the server", buildpacks.size() > 0);
+	}
+
+	public void testStacks() throws Exception {
+		List<String> stacks = serverBehavior.getStacks(new NullProgressMonitor());
+		assertTrue("Expected at least one stack in the server", stacks.size() > 0);
 	}
 
 }

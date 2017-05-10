@@ -30,6 +30,8 @@ public class CloudFoundryTestUtil {
 
 	public static final int DEFAULT_TEST_APP_MEMORY = 1024;
 
+	public static final int DEFAULT_TEST_DISK_QUOTA = 1022;
+
 	/**
 	 * @param host
 	 * @param proxyType

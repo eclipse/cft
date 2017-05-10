@@ -169,9 +169,12 @@ public class PushApplicationOperation extends StartOperation {
 					? appModule.getDeploymentInfo().getUris() : new ArrayList<String>(0);
 			List<String> services = appModule.getDeploymentInfo().asServiceBindingList();
 			List<EnvironmentVariable> variables = appModule.getDeploymentInfo().getEnvVariables();
-			int instances = appModule.getDeploymentInfo().getInstances();
+			int instances = appModule.getDeploymentInfo().getInstances();		
+			String stack = appModule.getDeploymentInfo().getStack();
+			Integer timeout = appModule.getDeploymentInfo().getTimeout();
+			String command = appModule.getDeploymentInfo().getCommand();
 
-			Staging staging = new Staging(null /* no command */, buildpack);
+			Staging staging = new Staging(command, buildpack, stack, timeout);
 			
 			CoreException cloudAppCreationClientError = null;
 
@@ -182,7 +185,7 @@ public class PushApplicationOperation extends StartOperation {
 			SubMonitor subMonitor = SubMonitor.convert(monitor, 50);
 			subMonitor.subTask(creatingAppLabel);
 			try {
-				client.createApplication(appName, staging, appModule.getDeploymentInfo().getMemory(), uris, services);
+				client.createApplication(appName, staging, appModule.getDeploymentInfo().getDiskQuota(), appModule.getDeploymentInfo().getMemory(), uris, services);
 			}
 			catch (Exception e) {
 				String hostTaken = CloudErrorUtil.getHostTakenError(e);

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc.
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -590,6 +590,27 @@ public class ClientRequestFactory {
 					throws CoreException {
 				return CloudServicesUtil.asServiceInstances(client.getServices());
 			}
+		};
+	}
+	
+	/**
+	 * Get the list of available stacks in the space
+	 * <p/>
+	 * @return request
+	 * @throws CoreException
+	 */
+	public BaseClientRequest<List<String>> getStacks() throws CoreException {
+		final String serverId = behaviour.getCloudFoundryServer().getServer().getId();
+		return new BehaviourRequest<List<String>>(
+				NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_APPS, serverId), behaviour) {
+
+			@Override
+			protected List<String> doRun(CloudFoundryOperations client, SubMonitor progress)
+					throws CoreException {
+				AdditionalV1Operations externalClient = behaviour.getAdditionalV1ClientOperations(progress);
+				return externalClient.getStacks();
+			}
+
 		};
 	}
 

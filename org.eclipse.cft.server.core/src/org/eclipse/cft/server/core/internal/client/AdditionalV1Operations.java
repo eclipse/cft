@@ -206,6 +206,26 @@ public class AdditionalV1Operations extends CFClientV1Support {
 		fillApplicationUris(app);
 		return app;
 	}
+	
+	protected List<String> getStacks() {
+		List<String> stacks = new ArrayList<String>();
+		String json = restTemplate.getForObject(getUrl("/v2/stacks"), String.class); //$NON-NLS-1$
+		if (json != null) {
+			Map<String, Object> resource = JsonUtil.convertJsonToMap(json);
+			if (resource != null) {
+				List<Map<String, Object>> newResources = (List<Map<String, Object>>) resource.get("resources"); //$NON-NLS-1$
+				if (newResources != null) {
+					for (Map<String, Object> res : newResources) {
+						String name = CloudEntityResourceMapper.getEntityAttribute(res, "name", String.class); //$NON-NLS-1$
+						if (name != null) {
+							stacks.add(name);
+						}
+					}
+				}
+			}
+		}
+		return stacks;
+	}
 
 	/*
 	 * Fill in additional information for the application

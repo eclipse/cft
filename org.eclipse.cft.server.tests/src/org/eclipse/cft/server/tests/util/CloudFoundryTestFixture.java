@@ -479,17 +479,19 @@ public class CloudFoundryTestFixture {
 		List<EnvironmentVariable> vars = null;
 		List<CFServiceInstance> services = null;
 		String buildpack = null;
-		configureForApplicationDeployment(fullApplicationName, memory, startApp, vars, services, buildpack);
+		configureForApplicationDeployment(fullApplicationName, memory, CloudFoundryTestUtil.DEFAULT_TEST_DISK_QUOTA,
+				startApp, vars, services, buildpack);
 	}
 
 	public void configureForApplicationDeployment(String fullApplicationName, boolean startApp) throws Exception {
 		configureForApplicationDeployment(fullApplicationName, CloudFoundryTestUtil.DEFAULT_TEST_APP_MEMORY, startApp);
 	}
 
-	public void configureForApplicationDeployment(String fullApplicationName, int memory, boolean startApp,
-			List<EnvironmentVariable> variables, List<CFServiceInstance> services, String buildpack) throws Exception {
-		CloudFoundryPlugin
-				.setCallback(new TestCallback(fullApplicationName, memory, startApp, variables, services, buildpack));
+	public void configureForApplicationDeployment(String fullApplicationName, int memory, int diskQuota,
+			boolean startApp, List<EnvironmentVariable> variables, List<CFServiceInstance> services, String buildpack)
+			throws Exception {
+		CloudFoundryPlugin.setCallback(
+				new TestCallback(fullApplicationName, memory, diskQuota, startApp, variables, services, buildpack));
 	}
 
 	private final ServerHandler handler;
