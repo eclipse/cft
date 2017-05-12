@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -28,8 +28,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
@@ -39,9 +42,13 @@ import org.eclipse.cft.server.core.internal.CloudApplicationURL;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint;
 import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint.CloudServerURL;
+import org.eclipse.cft.server.core.internal.ModuleCache.ServerData;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudUtil;
+import org.eclipse.cft.server.core.internal.ModuleCache;
+import org.eclipse.cft.server.core.internal.StringUtils;
+import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryClientFactory;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
@@ -612,30 +619,37 @@ public class CFUiUtil {
 	 * @return the unused subdomain String
 	 * @throws CoreException
 	 */
-	public static UniqueSubdomain getUniqueSubdomain(String url, CloudFoundryServer server, boolean isSupportUpperCaseURL, IProgressMonitor monitor)
+	public static UniqueSubdomain getUniqueSubdomain(String initialUrl, CloudFoundryServer server, boolean isSupportUpperCaseURL, IProgressMonitor monitor)
 			throws CoreException {
-		if (url == null) {
+
+		if (initialUrl == null) {
 			return null; // Incorrect usage. Provide a non-null string
+		}
+		
+		// Is the initial app name valid? If the initial app name contains invalid characters, we catch it here first 
+		// rather than trying to find a uniqueSubdomain that will never be valid.
+		IStatus isValidInitialAppName = validateAppName(initialUrl, null, null);
+		if(!isValidInitialAppName.isOK()) {
+			throw new CoreException(isValidInitialAppName);
 		}
 		
 		if (!isSupportUpperCaseURL) {
 			// Convert to lower case only URL as the base.
-			url = url.toLowerCase();
+			initialUrl = initialUrl.toLowerCase();
 		}
 
 		ApplicationUrlLookupService lookup = ApplicationUrlLookupService.getCurrentLookup(server);
-		CloudApplicationURL cloudUrl = null;
+		CloudApplicationURL cloudApplUrl = null;
 		boolean isUniqueURL = true;
 		int intSuffix = -1;
 
-		UniqueSubdomain result = null;
 
 		if (monitor == null) {
 			// Monitor is optional, so use a NullProgressMonitor.
 			monitor = new NullProgressMonitor();
 		}
 
-		List<CloudRoute> routes = null;
+		List<CloudRoute> existingRoutes = null;
 		String userName = server.getUsername();
 		String orgName = server.getCloudFoundrySpace().getOrgName();
 		String spaceName = server.getCloudFoundrySpace().getSpaceName();
@@ -646,11 +660,23 @@ public class CFUiUtil {
 		   suffixHash = (orgName + spaceName).hashCode();
 		}
 		String hashString = String.valueOf(suffixHash).substring(0, 6);
+		
+		String url = initialUrl;
+		String urlSuffix = null;
+
+		UniqueSubdomain result = null;
+
+		String domainUrlComponent = null; // If set, will not begin with a . (eg cfapps.io)
+		
 		do {
 
 			try {
 				// It does NOT check if the URL is taken already, even if valid.
-				cloudUrl = lookup.getCloudApplicationURL(url);
+				cloudApplUrl = lookup.getCloudApplicationURL(url);
+				
+				if(domainUrlComponent == null) {
+					domainUrlComponent = cloudApplUrl.getDomain();
+				}
 			}
 			catch (CoreException e) {
 				// if error occurred, eg. url is null, then don't check for host
@@ -658,33 +684,30 @@ public class CFUiUtil {
 				break;
 			}
 
-			if (cloudUrl == null) {
+			if (cloudApplUrl == null) {
 				// if error occurred, eg. url is null, then don't check for host
 				// taken and simply return
 				break;
 			}
 
-			if (routes == null) {
-				routes = server.getBehaviour().getRoutes(cloudUrl.getDomain(), monitor);
+			if (existingRoutes == null) {
+				existingRoutes = server.getBehaviour().getRoutes(cloudApplUrl.getDomain(), monitor);
 			}
 
 			boolean isFound = false; // is in route list?
-			boolean isRouteReservedAndUnused = false; // is route reserve and
-														// unused?
-			boolean isRouteCreated = false; // did we create the route in
-											// reserveRoute?
+			boolean isRouteReservedAndUnused = false; // is route reservde and unused?
+			boolean isRouteCreated = false; // did we create the route in reserveRoute?
 
 			// First check the existing cloud routes
-			for (CloudRoute cr : routes) {
+			for (CloudRoute cr : existingRoutes) {
 				// If we own the route...
-				if (cr.getHost().equalsIgnoreCase(cloudUrl.getSubdomain())) {
+				if (cr.getHost().equalsIgnoreCase(cloudApplUrl.getSubdomain())) {
 					isFound = true;
 					isRouteCreated = false;
 
 					if (!cr.inUse()) {
 						isRouteReservedAndUnused = true;
-					}
-					else {
+					} else {
 						isRouteReservedAndUnused = false;
 					}
 
@@ -693,60 +716,89 @@ public class CFUiUtil {
 			}
 
 			if (!isFound) {
-				// If the route was not found in the getRoutes(...) list, then
-				// attempt to reserve it
+				// If the route was not found in the getRoutes(...) list, then attempt to reserve it
 
-				isRouteReservedAndUnused = server.getBehaviour().reserveRouteIfAvailable(cloudUrl.getSubdomain(),
-						cloudUrl.getDomain(), monitor);
+				isRouteReservedAndUnused = server.getBehaviour().reserveRouteIfAvailable(cloudApplUrl.getSubdomain(),
+						cloudApplUrl.getDomain(), monitor);
 				isRouteCreated = isRouteReservedAndUnused;
 			}
 
 			if (isRouteReservedAndUnused) {
 				result = new UniqueSubdomain();
 				result.setRouteCreated(isRouteCreated);
-				result.setCloudUrl(cloudUrl);
+				result.setCloudUrl(cloudApplUrl);
+				result.setUrlSuffix(urlSuffix);
 
 				// break or just set boolean to true
 				isUniqueURL = true;
 
-			}
-			else {
-				intSuffix ++;   
-				// The route is taken (as determined either by checking the
-				// route list, or by attempting to reserve)
+			} else {
+				intSuffix++;   
+				// The route is taken (as determined either by checking the route list, or by attempting to reserve)
 
 				isUniqueURL = false;
-				StringBuilder sb = new StringBuilder(url);
-				String subdomain = cloudUrl.getSubdomain();
 				
-				if (intSuffix == 0) {  // First attempt at a suggested unused name
-					sb = new StringBuilder(url);
-					subdomain = cloudUrl.getSubdomain();    // Example: MyApp1-23526.  If app is actually called MyApp1-23526, then it will be MyApp1-23526-23526
-					url = sb.insert(sb.indexOf(subdomain) + subdomain.length(), "-" + hashString).toString();
-				} else if (intSuffix == 1) { // Second attempt
-					int beginning = subdomain.indexOf(hashString) - 1; // -1 for the dash
-					int length = hashString.length() + 1; // +1 for the dash
-					url = sb.replace(beginning, beginning + length, "-" + hashString + "-1").toString(); // Example: MyApp1-23526-1
-				} else { // All subsequent attempts to find an unused name
-					int beginning = subdomain.indexOf(hashString) - 1; // -1 for the leading dash
-					int length = hashString.length() + 2 + String.valueOf(intSuffix - 1).length(); // + 2 for the two dashes
-					url = sb.replace(beginning, beginning + length, "-" + hashString + "-" + intSuffix).toString(); // Example: MyApp1-23526-2
+				int domainUrlComponentIndex = initialUrl.indexOf("."+domainUrlComponent);
+				if(domainUrlComponentIndex != -1) {
+					// If the initialUrl still contains the domain (eg cfapps.io), then strip the domain out of initialUrl.
+					initialUrl = initialUrl.substring(0, domainUrlComponentIndex);
+				}
+				
+				if (intSuffix == 0) {  // First attempt at suggesting an  unused name. example: MyApp-19291
+					urlSuffix = "-"+hashString;
+					url = initialUrl+urlSuffix+"."+domainUrlComponent;
+				} else  { // All attempts after the first to find an unused name. example: MyApp-19291-1, MyApp-19291-2, etc
+					urlSuffix = "-"+hashString+"-"+intSuffix;
+					url = initialUrl+urlSuffix+"."+domainUrlComponent;
 				}
 			}
-
-		} while (!isUniqueURL && intSuffix < Integer.MAX_VALUE - 1 && !monitor.isCanceled()); // Support
-																								// suffix
-																								// up
-																								// to
-																								// the
-																								// number
-																								// 2^31
-																								// -
-																								// 1
+			
+			// Support suffix up to the number 2^31 - 1
+		} while (!isUniqueURL && intSuffix < Integer.MAX_VALUE - 1 && !monitor.isCanceled()); 
 
 		return result;
 	}
 
+	
+	private static final Pattern VALID_CHARS = Pattern.compile("[A-Za-z\\$_0-9\\-\\.]+"); //$NON-NLS-1$
+	
+	public static IStatus validateAppName(String appName, CloudFoundryApplicationModule module, CloudFoundryServer server) {
+		
+		IStatus status = Status.OK_STATUS;
+		if (StringUtils.isEmpty(appName)) {
+			status = CloudFoundryPlugin.getStatus(Messages.CloudFoundryApplicationWizardPage_ERROR_MISSING_APPNAME,
+					IStatus.ERROR);
+		}
+		else {
+			Matcher matcher = VALID_CHARS.matcher(appName);
+			if (!matcher.matches()) {
+				status = CloudFoundryPlugin
+						.getErrorStatus(Messages.CloudFoundryApplicationWizardPage_ERROR_INVALID_CHAR);
+			}
+			else if(module != null && server != null) {
+				ModuleCache moduleCache = CloudFoundryPlugin.getModuleCache();
+				ServerData data = moduleCache.getData(server.getServerOriginal());
+				Collection<CloudFoundryApplicationModule> applications = data.getExistingCloudModules();
+				boolean duplicate = false;
+
+				for (CloudFoundryApplicationModule application : applications) {
+					if (application != module && application.getDeployedApplicationName().equals(appName)) {
+						duplicate = true;
+						break;
+					}
+				}
+
+				if (duplicate) {
+					status = CloudFoundryPlugin
+							.getErrorStatus(Messages.CloudFoundryApplicationWizardPage_ERROR_NAME_CONFLICT);
+				}
+			}
+		}
+
+		return status;
+
+	}
+	
 	/**
 	 * Run the host name validator in the context of the wizard container
 	 * 
@@ -878,6 +930,11 @@ public class CFUiUtil {
 
 		private boolean routeCreated = false;
 
+		/** The unique subdomain generation algorithm will append a suffix (eg 25190 or 25190-1) to the initial
+		 * application name (MyApp). If the algorithm genering a new unique subdomain containing a suffix,
+		 * then this field will contain that suffix.*/
+		private String urlSuffix = null;
+
 		public CloudApplicationURL getCloudUrl() {
 			return cloudUrl;
 		}
@@ -892,6 +949,14 @@ public class CFUiUtil {
 
 		public void setRouteCreated(boolean routeCreated) {
 			this.routeCreated = routeCreated;
+		}
+
+		public void setUrlSuffix(String urlSuffix) {
+			this.urlSuffix = urlSuffix;
+		}
+		
+		public String getUrlSuffix() {
+			return urlSuffix;
 		}
 
 	}

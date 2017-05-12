@@ -522,6 +522,9 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 			// application types that require a URL.
 			String appName = descriptor.getDeploymentInfo().getDeploymentName();
 
+			// When transferring the appname to the url, remove any dots.
+			appName = appName.replace(".", "");
+			
 			urlPart.setSubdomain(appName);
 		}
 	}

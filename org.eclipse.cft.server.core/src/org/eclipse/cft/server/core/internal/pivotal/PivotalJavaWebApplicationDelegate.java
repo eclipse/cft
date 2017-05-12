@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -63,8 +63,13 @@ public class PivotalJavaWebApplicationDelegate extends JavaWebApplicationDelegat
 		// Set a default URL for the application.
 		if ((info.getUris() == null || info.getUris().isEmpty()) && info.getDeploymentName() != null) {
 			CloudFoundryServer cloudServer = getCloudServer(server);
+			
+			// When transferring the deployment name to the URL, remove any periods.
+			String deploymentName = info.getDeploymentName();
+			deploymentName = deploymentName.replace(".", "");
+			
 			CloudApplicationURL url = ApplicationUrlLookupService.update(cloudServer, monitor)
-					.getDefaultApplicationURL(info.getDeploymentName());
+					.getDefaultApplicationURL(deploymentName);
 			info.setUris(Arrays.asList(url.getUrl()));
 		}
 		return info;
