@@ -27,6 +27,7 @@ import java.util.Map;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.CFServiceInstance;
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
@@ -34,7 +35,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.wst.server.core.IModule;
 import org.eclipse.wst.server.core.IServer;
 
 /**
@@ -83,15 +83,8 @@ public class UpdateAllOperation extends CFOperation {
 		List<CloudApplication> applications = updateBasicListOfApps(cloudServer, subMonitor.newChild(30));
 		ServerEventHandler.getDefault().fireModulesUpdated(cloudServer, cloudServer.getServer().getModules());
 
-		if (isCanceled(subMonitor)) {
-			return;
-		}
-
 		// 2. Slower update of apps with stats, service bindings, etc..
 		updateCompleteApps(applications, cloudServer, subMonitor.newChild(70));
-		// Fire again to notify that modules with complete information has been
-		// updated
-		ServerEventHandler.getDefault().fireModulesUpdated(cloudServer, cloudServer.getServer().getModules());
 
 		subMonitor.worked(20);
 	}
@@ -122,29 +115,29 @@ public class UpdateAllOperation extends CFOperation {
 
 	protected void updateCompleteApps(List<CloudApplication> applications, CloudFoundryServer cloudServer,
 			SubMonitor subMonitor) throws CoreException {
-		Map<String, CloudApplication> deployedApplicationsByName = new LinkedHashMap<String, CloudApplication>();
-		Map<String, ApplicationStats> stats = new LinkedHashMap<String, ApplicationStats>();
-
-		for (CloudApplication toUpdate : applications) {
-			CFV1Application updatedApplication = getBehaviour().getCompleteApplication(toUpdate, subMonitor);
-			if (updatedApplication.getStats() != null) {
-				stats.put(toUpdate.getName(), updatedApplication.getStats());
+		if (applications == null) {
+			return;
+		}
+		applications.parallelStream().forEach((cloudApp) -> {
+			if (isCanceled(subMonitor)) {
+				return;
 			}
-			deployedApplicationsByName.put(toUpdate.getName(), updatedApplication.getApplication());
+			try {
+				CFV1Application updatedApplication = getBehaviour().getCompleteApplication(cloudApp, subMonitor);
+				if (updatedApplication != null && updatedApplication.getStats() != null) {
+					CloudFoundryApplicationModule appModule = cloudServer.updateModule(
+							updatedApplication.getApplication(), updatedApplication.getApplication().getName(),
+							updatedApplication.getStats(), subMonitor);
+					if (appModule != null) {
+						appModule.validateAndUpdateStatus();
+						ServerEventHandler.getDefault().fireModuleUpdated(cloudServer, appModule.getLocalModule());
+					}
+				}
+			}
+			catch (CoreException e) {
+				CloudFoundryPlugin.logError(e);
+			}
 			subMonitor.worked(1);
-		}
-
-		cloudServer.addAndDeleteModules(deployedApplicationsByName, stats);
-
-		// Skip modules that are starting
-		cloudServer.updateModulesState(new int[] { IServer.STATE_STARTING });
-
-		// Clear publish error
-		for (IModule module : cloudServer.getServer().getModules()) {
-			CloudFoundryApplicationModule appModule = cloudServer.getExistingCloudModule(module);
-			if (appModule != null) {
-				appModule.validateAndUpdateStatus();
-			}
-		}
+		});
 	}
 }
