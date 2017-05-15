@@ -20,7 +20,6 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
@@ -165,8 +164,6 @@ public class PushApplicationOperation extends StartOperation {
 			// variables
 			// and instances
 			String buildpack = appModule.getDeploymentInfo().getBuildpack();
-			List<String> uris = appModule.getDeploymentInfo().getUris() != null
-					? appModule.getDeploymentInfo().getUris() : new ArrayList<String>(0);
 			List<String> services = appModule.getDeploymentInfo().asServiceBindingList();
 			List<EnvironmentVariable> variables = appModule.getDeploymentInfo().getEnvVariables();
 			int instances = appModule.getDeploymentInfo().getInstances();		
@@ -185,7 +182,7 @@ public class PushApplicationOperation extends StartOperation {
 			SubMonitor subMonitor = SubMonitor.convert(monitor, 50);
 			subMonitor.subTask(creatingAppLabel);
 			try {
-				client.createApplication(appName, staging, appModule.getDeploymentInfo().getDiskQuota(), appModule.getDeploymentInfo().getMemory(), uris, services);
+				client.createApplication(appName, staging, appModule.getDeploymentInfo().getDiskQuota(), appModule.getDeploymentInfo().getMemory(), appModule.getDeploymentInfo().getUris(), services);
 			}
 			catch (Exception e) {
 				String hostTaken = CloudErrorUtil.getHostTakenError(e);

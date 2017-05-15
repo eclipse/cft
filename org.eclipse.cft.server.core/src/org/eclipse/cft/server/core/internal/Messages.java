@@ -115,8 +115,6 @@ public class Messages extends NLS {
 
 	public static String ERROR_APPLICATION_LOG_LISTENER;
 
-	public static String ERROR_NO_MAPPED_APPLICATION_URLS;
-
 	public static String ERROR_HOST_TAKEN;
 
 	public static String INVALID_CHARACTERS_ERROR;
@@ -345,8 +343,6 @@ public class Messages extends NLS {
 	public static String EMPTY_URL_ERROR;
 
 	public static String JavaWebApplicationDelegate_ERROR_FILE_NOT_FOUND_MANIFEST_YML;
-
-	public static String JavaWebApplicationDelegate_ERROR_NO_MAPPED_APP_URL;
 
 	public static String ModuleResourceApplicationArchive_ERROR_NO_DEPLOYABLE_RES_FOUND;
 

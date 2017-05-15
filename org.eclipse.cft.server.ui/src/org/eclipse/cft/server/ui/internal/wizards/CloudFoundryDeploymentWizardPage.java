@@ -443,7 +443,9 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 	 * Sets the application URL in the deployment descriptor
 	 */
 	protected void setUrlInDescriptor(String url) {
-		if (url != null) {
+		// Bug fix: don't set empty url in list of URLs. Ensure it has a non-empty value before setting in list
+		// Otherwise the cf Java client may throw exception if it tries to parse a non-empty list that contains an empty URL
+		if (!StringUtils.isEmpty(url)) {
 			List<String> urls = new ArrayList<String>();
 			urls.add(url);
 			descriptor.getDeploymentInfo().setUris(urls);

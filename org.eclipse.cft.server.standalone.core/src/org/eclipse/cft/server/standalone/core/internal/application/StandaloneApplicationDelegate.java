@@ -58,19 +58,6 @@ public class StandaloneApplicationDelegate extends ModuleResourceApplicationDele
 		return false;
 	}
 
-	@Override
-	public IStatus validateDeploymentInfo(ApplicationDeploymentInfo deploymentInfo) {
-
-		IStatus status = super.validateDeploymentInfo(deploymentInfo);
-		if (status.isOK() && ((deploymentInfo.getUris() == null || deploymentInfo.getUris().isEmpty()))) {
-			String errorMessage = Messages.JavaWebApplicationDelegate_ERROR_NO_MAPPED_APP_URL;
-			status = CloudFoundryPlugin.getStatus(errorMessage, IStatus.WARNING);
-		}
-
-		return status;
-
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * 
