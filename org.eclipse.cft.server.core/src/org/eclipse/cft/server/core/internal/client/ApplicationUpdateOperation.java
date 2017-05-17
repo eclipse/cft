@@ -43,6 +43,10 @@ public class ApplicationUpdateOperation extends ModulesOperation {
 	@Override
 	public void runOnVerifiedModule(IProgressMonitor monitor) throws CoreException {
 		request.run(monitor);
+		updateApplicationModule(monitor);
+	}
+
+	protected void updateApplicationModule(IProgressMonitor monitor) throws CoreException {
 		getBehaviour().asyncUpdateDeployedModule(getFirstModule());
 	}
 
