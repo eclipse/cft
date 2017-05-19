@@ -20,11 +20,11 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.cloudfoundry.client.lib.domain.HealthCheckType;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.cft.server.core.CFApplicationArchive;
 import org.eclipse.cft.server.core.EnvironmentVariable;
@@ -165,17 +165,25 @@ public class PushApplicationOperation extends StartOperation {
 			// variables
 			// and instances
 			String buildpack = appModule.getDeploymentInfo().getBuildpack();
-			List<String> uris = appModule.getDeploymentInfo().getUris() != null
-					? appModule.getDeploymentInfo().getUris() : new ArrayList<String>(0);
 			List<String> services = appModule.getDeploymentInfo().asServiceBindingList();
 			List<EnvironmentVariable> variables = appModule.getDeploymentInfo().getEnvVariables();
 			int instances = appModule.getDeploymentInfo().getInstances();		
 			String stack = appModule.getDeploymentInfo().getStack();
 			Integer timeout = appModule.getDeploymentInfo().getTimeout();
 			String command = appModule.getDeploymentInfo().getCommand();
+			String healthCheckTypeVal = appModule.getDeploymentInfo().getHealthCheckType();
+			String healthCheckHttpEndpoint = appModule.getDeploymentInfo().getHealthCheckHttpEndpoint();
+			HealthCheckType healthCheckType = HealthCheckType.from(healthCheckTypeVal);
 
-			Staging staging = new Staging(command, buildpack, stack, timeout);
-			
+			Staging staging = Staging.builder()
+					.command(command)
+					.buildpack(buildpack)
+					.stack(stack)
+					.healthCheckTimeout(timeout)
+					.healthCheckType(healthCheckType)
+					.healthCheckHttpEndpoint(healthCheckHttpEndpoint)
+					.build();
+								
 			CoreException cloudAppCreationClientError = null;
 
 			// Guard against host taken errors and other errors that may
@@ -185,7 +193,7 @@ public class PushApplicationOperation extends StartOperation {
 			SubMonitor subMonitor = SubMonitor.convert(monitor, 50);
 			subMonitor.subTask(creatingAppLabel);
 			try {
-				client.createApplication(appName, staging, appModule.getDeploymentInfo().getDiskQuota(), appModule.getDeploymentInfo().getMemory(), uris, services);
+				client.createApplication(appName, staging, appModule.getDeploymentInfo().getDiskQuota(), appModule.getDeploymentInfo().getMemory(), appModule.getDeploymentInfo().getUris(), services);
 			}
 			catch (Exception e) {
 				String hostTaken = CloudErrorUtil.getHostTakenError(e);

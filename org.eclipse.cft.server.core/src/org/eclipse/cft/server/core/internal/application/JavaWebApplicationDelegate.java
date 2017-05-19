@@ -49,8 +49,8 @@ public class JavaWebApplicationDelegate extends ApplicationDelegate {
 	}
 
 	public boolean requiresURL() {
-		// All Java Web applications require a URL when pushed to a CF server
-		return true;
+		// Bug 515594 - Allow any web app to be deployed without URL as to conform with "no-route" option as supported by cf CLI
+		return false;
 	}
 
 	public boolean providesApplicationArchive(IModule module) {
@@ -72,19 +72,6 @@ public class JavaWebApplicationDelegate extends ApplicationDelegate {
 			IProgressMonitor monitor) throws CoreException {
 		return ApplicationRegistry.getArchiverFactory().getWarApplicationArchiver().getApplicationArchive(module,
 				server, moduleResources, monitor);
-	}
-
-	@Override
-	public IStatus validateDeploymentInfo(ApplicationDeploymentInfo deploymentInfo) {
-
-		IStatus status = super.validateDeploymentInfo(deploymentInfo);
-		if (status.isOK() && ((deploymentInfo.getUris() == null || deploymentInfo.getUris().isEmpty()))) {
-			String errorMessage = Messages.JavaWebApplicationDelegate_ERROR_NO_MAPPED_APP_URL;
-			status = CloudFoundryPlugin.getErrorStatus(errorMessage);
-		}
-
-		return status;
-
 	}
 
 	/*

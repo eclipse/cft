@@ -105,6 +105,14 @@ public class ApplicationDeploymentInfo extends Observable {
 	public String getCommand() {
 		return (String)deploymentInfoMap.get(ManifestConstants.COMMAND_PROP);
 	}
+	
+	public String getHealthCheckType() {
+		return (String)deploymentInfoMap.get(ManifestConstants.HEALTH_CHECK_TYPE);
+	}
+	
+	public String getHealthCheckHttpEndpoint() {
+		return (String)deploymentInfoMap.get(ManifestConstants.HEALTH_CHECK_HTTP_ENDPOINT);
+	}
 
 	public void setDeploymentName(String name) {
 		setStringValue(ManifestConstants.NAME_PROP, name);

@@ -932,10 +932,10 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	 * <p/>
 	 * To do a full update of modules including update of module state, use
 	 * {@link #updateModules(Map, Map)}
-	 * @param deployedApplications
+	 * @param existingCloudApplications
 	 * @throws CoreException
 	 */
-	public void addAndDeleteModules(Map<String, CloudApplication> deployedApplications, Map<String, ApplicationStats> applicationStats) throws CoreException {
+	public void addAndDeleteModules(Map<String, CloudApplication> existingCloudApplications, Map<String, ApplicationStats> applicationStats, boolean updateCloudMappingInExistingModules) throws CoreException {
 		Server server = (Server) getServer();
 
 		final Set<CloudFoundryApplicationModule> allModules = new HashSet<CloudFoundryApplicationModule>();
@@ -957,15 +957,16 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 			// maps to a WST Module and CloudApplication.
 
 			// This refresh mechanism will make sure all three are updated and
-			// synchronised
+			// synchronised in two stages
 
-			// Iterate through the local WST modules, and update them based on
-			// which are external (have no accessible workspace resources),
-			// which
-			// have no corresponding deployed application .
-			// Note that some IModules may also be in the process of being
-			// deleted. DO NOT recreate cloud application modules for these
-			// CHANGE
+			// First stage: iterate through any EXISTING
+			// modules in the server and find those that map to Cloud
+			// applications. Update the module's app mappings so that the
+			// modules contain
+			// uptodate Cloud app information. Any module that no longer has an
+			// associated Cloud application
+			// is a candidate to be deleted from the server, as it probably
+			// means the application no longer exists.
 			for (IModule module : server.getModules()) {
 				// Find the corresponding Cloud Foundry application module for
 				// the given WST server IModule
@@ -980,13 +981,15 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 
 				// Now process the deployed application, and re-categorise it if
 				// necessary (i.e. whether it's external or not)
-				CloudApplication actualApplication = deployedApplications.remove(cloudModule
+				CloudApplication actualApplication = existingCloudApplications.remove(cloudModule
 						.getDeployedApplicationName());
 
 				// Update the cloud module mapping to the cloud application,
 				// such that the cloud module
 				// has the latest cloud application reference.
-				cloudModule.setCloudApplication(actualApplication);
+	            if (updateCloudMappingInExistingModules) {
+					cloudModule.setCloudApplication(actualApplication);
+	            }
 
 				// the modules maps to an existing application
 				if (actualApplication != null) {
@@ -1005,9 +1008,10 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 				}
 			}
 
-			// create modules for new applications
+			// Second stage: any remaining Cloud applications that do not have any associated existing modules require
+			// a module to be created.
 			if (getData() != null) {
-				for (CloudApplication application : deployedApplications.values()) {
+				for (CloudApplication application : existingCloudApplications.values()) {
 					CloudFoundryApplicationModule appModule = getData().createModule(application);
 					externalModules.add(appModule);
 					allModules.add(appModule);
@@ -1101,7 +1105,8 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	 * @throws CoreException
 	 */
 	public void updateModules(Map<String, CloudApplication> deployedApplications, Map<String, ApplicationStats> applicationStats) throws CoreException {
-		addAndDeleteModules(deployedApplications, applicationStats);
+		boolean updateCloudMappingInExistingModules = true;
+		addAndDeleteModules(deployedApplications, applicationStats, updateCloudMappingInExistingModules);
 		updateModulesState();
 	}
 

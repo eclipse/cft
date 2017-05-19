@@ -128,7 +128,17 @@ public class CloudBehaviourOperations {
 			throws CoreException {
 		return new ApplicationUpdateOperation(
 				behaviour.getRequestFactory().getUpdateApplicationMemoryRequest(appModule, memory), behaviour,
-				appModule);
+				appModule) {
+
+			@Override
+			protected void updateApplicationModule(IProgressMonitor monitor) throws CoreException {
+				// [513416] - Memory update results in obsolete module in UI
+				// still showing old memory value, therefore
+				// to fix this issue, make sure the module is updated
+				// synchronously
+				getBehaviour().updateDeployedModule(getFirstModule(), monitor);
+			}
+		};
 	}
 
 	

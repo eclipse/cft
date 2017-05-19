@@ -63,4 +63,9 @@ public class ManifestConstants {
 	public static final String COMMAND_PROP = "command"; //$NON-NLS-1$
 	
 	public static final String INHERIT_PROP = "inherit"; //$NON-NLS-1$
+
+	public static final String HEALTH_CHECK_TYPE = "health-check-type"; //$NON-NLS-1$
+	
+	public static final String HEALTH_CHECK_HTTP_ENDPOINT = "health-check-http-endpoint"; //$NON-NLS-1$
+	
 }
