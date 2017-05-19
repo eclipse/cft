@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015 IBM Corporation and others 
+ * Copyright (c) 2015,2017 IBM Corporation and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -39,6 +39,8 @@ public class CloudFoundryBrandingUIExtensionPoint extends CloudFoundryBrandingEx
 
 	public static String ATTR_WIZ_BAN = "wizardBanner"; //$NON-NLS-1$
 
+	public static String ATTR_IS_SHOW_STACK_UI = "isShowStackUI"; //$NON-NLS-1$
+
 	public static String POINT_ID = "org.eclipse.cft.server.ui.brandingUI"; //$NON-NLS-1$
 
 	private static Map<String, IConfigurationElement> brandingUIDefinitions = new HashMap<String, IConfigurationElement>();
@@ -60,18 +62,8 @@ public class CloudFoundryBrandingUIExtensionPoint extends CloudFoundryBrandingEx
 					String serverId = config.getAttribute(ATTR_SERVER_TYPE_ID);
 					String name = config.getAttribute(ATTR_NAME);
 					if (serverId != null && serverId.trim().length() > 0 && name != null && name.trim().length() > 0) {
-						// Do the same checks as in CloudFoundryBrandingExtensionPoint#readBrandingDefinitions()
-						IConfigurationElement coreConfig = CloudFoundryBrandingExtensionPoint.getConfigurationElement(serverId);
-						if (coreConfig != null) {
-							IConfigurationElement[] defaultUrl = coreConfig.getChildren(ELEM_DEFAULT_URL);
-							IConfigurationElement[] cloudUrls = coreConfig.getChildren(ELEM_CLOUD_URL);
-							String urlProviderClass = coreConfig.getAttribute(ATTR_URL_PROVIDER_CLASS);
-							if ((defaultUrl != null && defaultUrl.length > 0)
-									|| (cloudUrls != null && cloudUrls.length > 0) || urlProviderClass != null) {
-								brandingUIDefinitions.put(serverId, config);
-								brandingUIServerTypeIds.add(serverId);
-							}
-						}
+						brandingUIDefinitions.put(serverId, config);
+						brandingUIServerTypeIds.add(serverId);
 					}
 				}
 			}
@@ -109,4 +101,16 @@ public class CloudFoundryBrandingUIExtensionPoint extends CloudFoundryBrandingEx
 		return null;
 	}
 
+	public static boolean isShowStackUI(String serverTypeId) {
+		if (!read) {
+			readBrandingUIDefinitions();
+		}
+		IConfigurationElement config = brandingUIDefinitions.get(serverTypeId);
+		if (config != null) {
+			String curIsShowStackUIStr = config.getAttribute(ATTR_IS_SHOW_STACK_UI);
+			// Default value is true.
+			return curIsShowStackUIStr == null ? true : Boolean.valueOf(config.getAttribute(ATTR_IS_SHOW_STACK_UI));
+		}
+		return true;
+	}
 }

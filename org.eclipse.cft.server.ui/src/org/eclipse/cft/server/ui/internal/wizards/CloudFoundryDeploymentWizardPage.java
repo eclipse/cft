@@ -39,6 +39,7 @@ import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.application.ManifestParser;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.ui.internal.CloudApplicationUrlPart;
+import org.eclipse.cft.server.ui.internal.CloudFoundryBrandingUIExtensionPoint;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.ICoreRunnable;
 import org.eclipse.cft.server.ui.internal.IEventSource;
@@ -310,6 +311,17 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 	}
 	
 	protected void createStackArea(Composite parent) {
+		// Check extension to see if the stack area is supported by the branding extension on 
+		// that server type.
+		try {
+			if (!CloudFoundryBrandingUIExtensionPoint.isShowStackUI(server.getServer().getServerType().getId())) {
+				return;
+			}
+		} catch (Exception e) {
+			if (Logger.WARNING) {
+				Logger.println(Logger.WARNING_LEVEL, this.getClass(), "createStackArea", "Failed to check isShowStackUI from branding UI extension: " + server);
+			}
+		}
 		Label label = new Label(parent, SWT.NONE);
 		label.setText(Messages.COMMONTXT_STACK);
 		GridDataFactory.fillDefaults().grab(false, false).align(SWT.FILL, SWT.CENTER).applyTo(label);
