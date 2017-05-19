@@ -417,7 +417,7 @@ public class ManifestParser {
 		try {
 			ApplicationUrlLookupService urlLookup = ApplicationUrlLookupService.update(cloudServer, monitor);
 
-			if (subdomain == null) {
+			if (subdomain == null && appName != null) {
 				// If subdomain is not specified, use the app name but remove unsupported characters.
 				subdomain = appName.replace(".", "");
 			}
