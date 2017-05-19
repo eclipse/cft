@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,11 +25,11 @@ import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.wst.server.core.IModule;
 
 /**
- * A lower-level, internal wrapper around an application on Cloud Foundry, as
- * represented by the v1 CF Java client. This lower-level model of a CF
- * application is an aggregate of different components that define an CF
- * application, for example the actual application as well as application
- * instances (i.e. stats).
+ * 
+ * The CFV1Application is a wrapper around a cloud application WITHOUT instances info, and OPTIONALLY, if it is
+ * available, the application stats which CFT uses to derive instances information and run state. For example, Cloud apps that are not correctly started
+ * may not have running instances information, but it should not prevent at least fetching cloud app info from CF for properties
+ * that are independent of the app's run state.
  * <p/>
  * This is a wrapper only used to address shortcomings of v1 CF client
  * {@link CloudApplication} type.

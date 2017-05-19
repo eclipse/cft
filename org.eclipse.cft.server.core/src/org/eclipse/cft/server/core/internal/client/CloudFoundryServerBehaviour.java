@@ -39,7 +39,6 @@ import org.cloudfoundry.client.lib.ApplicationLogListener;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
-import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
@@ -148,8 +147,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	private CloudFoundryOperations client;
 	
 	private CFClient hybridClient;
-
-	private AdditionalV1Operations additionalClientSupport;
 
 	private UpdateOperationsScheduler operationsScheduler;
 
@@ -805,7 +802,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	protected void internalResetClient() {
 		client = null;
 		hybridClient = null;
-		additionalClientSupport = null;
 		applicationUrlLookup = null;
 		cloudBehaviourOperations = null;
 		operationsScheduler = null;
@@ -1149,39 +1145,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		}
 	}
 
-	private synchronized AdditionalV1Operations getAdditionalV1ClientOperations(CloudFoundryOperations client)
-			throws CoreException {
-		if (additionalClientSupport != null) {
-			return additionalClientSupport;
-		}
-
-		CloudFoundryServer server = getCloudFoundryServer();
-		HttpProxyConfiguration httpProxyConfiguration = server.getProxyConfiguration();
-		CloudSpace sessionSpace = null;
-		CloudFoundrySpace storedSpace = server.getCloudFoundrySpace();
-
-		// Fetch the session spac if it is not available from the server, as it
-		// is required for the additional v1 operations
-		if (storedSpace != null) {
-			sessionSpace = storedSpace.getSpace();
-			if (sessionSpace == null && storedSpace.getOrgName() != null && storedSpace.getSpaceName() != null) {
-				CloudOrgsAndSpaces spacesFromCF = internalGetCloudSpaces(client);
-				if (spacesFromCF != null) {
-					sessionSpace = spacesFromCF.getSpace(storedSpace.getOrgName(), storedSpace.getSpaceName());
-				}
-			}
-		}
-
-		if (sessionSpace == null) {
-			throw CloudErrorUtil.toCoreException("No Cloud space resolved for " + server.getServer().getId() //$NON-NLS-1$
-					+ ". Please verify that the server is connected and refreshed and try again."); //$NON-NLS-1$
-		}
-		additionalClientSupport = getRequestFactory().createAdditionalV1Operations(client, sessionSpace,
-				getRequestFactory().getCloudInfo(), httpProxyConfiguration, server.isSelfSigned());
-
-		return additionalClientSupport;
-	}
-
 	/**
 	 * 
 	 * @param monitor
@@ -1190,20 +1153,6 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 */
 	public CloudFoundryOperations getClient(IProgressMonitor monitor) throws CoreException {
 		return getClient((CloudCredentials) null, false, monitor);
-	}
-
-	/**
-	 * For internal framework use only. Must not be called outside of internal
-	 * CFT framework.
-	 * @deprecated
-	 * @param monitor
-	 * @return
-	 * @throws CoreException
-	 */
-	public synchronized AdditionalV1Operations getAdditionalV1ClientOperations(IProgressMonitor monitor)
-			throws CoreException {
-		CloudFoundryOperations client = getClient(monitor);
-		return getAdditionalV1ClientOperations(client);
 	}
 
 	@Override
