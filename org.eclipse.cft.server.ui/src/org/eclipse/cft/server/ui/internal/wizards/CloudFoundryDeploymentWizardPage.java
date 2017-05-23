@@ -531,9 +531,8 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 	}
 
 	protected void updateApplicationURLFromAppName() {
-		if (shouldSetDefaultUrl()) {
-			// When the app name changes, the URL also changes, but only for
-			// application types that require a URL.
+		if (suggestUrl()) {
+			// When the app name changes, the URL also changes
 			String appName = descriptor.getDeploymentInfo().getDeploymentName();
 
 			// When transferring the appname to the url, remove any dots.
@@ -544,16 +543,16 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 	}
 
 	protected boolean requiresUrl() {
-		// By default, applications require a URL, unless specified by the
+		// By default, applications do not require a URL to allow for "no route" option, unless specified by the
 		// delegate
-		return wizardDelegate == null || wizardDelegate.getApplicationDelegate() == null
-				|| wizardDelegate.getApplicationDelegate().requiresURL();
+		return wizardDelegate != null && wizardDelegate.getApplicationDelegate() != null
+				&& wizardDelegate.getApplicationDelegate().requiresURL();
 
 	}
 
-	protected boolean shouldSetDefaultUrl() {
+	protected boolean suggestUrl() {
 		return wizardDelegate == null
-				|| ApplicationRegistry.shouldSetDefaultUrl(wizardDelegate.getApplicationDelegate(), module);
+				|| ApplicationRegistry.suggestUrl(wizardDelegate.getApplicationDelegate(), module);
 	}
 
 	class MemoryPart extends UIPart {
