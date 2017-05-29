@@ -23,6 +23,7 @@
 package org.eclipse.cft.server.core.internal.client;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
@@ -227,7 +228,12 @@ public class StartOperation extends RestartOperation {
 	 */
 	protected void pushApplication(CloudFoundryOperations client, final CloudFoundryApplicationModule appModule,
 			CFApplicationArchive applicationArchive, final IProgressMonitor monitor) throws CoreException {
+		updateIfManifestChanged(client, appModule, monitor);
+		pushArchive(client, appModule, applicationArchive, monitor);
+	}
 
+	protected void pushArchive(CloudFoundryOperations client, final CloudFoundryApplicationModule appModule,
+			CFApplicationArchive applicationArchive, final IProgressMonitor monitor) throws CoreException {
 		String appName = appModule.getDeploymentInfo().getDeploymentName();
 
 		// [95636410] - verify that the application actually exists.
@@ -335,6 +341,27 @@ public class StartOperation extends RestartOperation {
 							appModule.getDeploymentInfo().getDeploymentName() + " due to " + e.getMessage(), //$NON-NLS-1$
 					e));
 		}
-
+	}
+	
+	protected void updateIfManifestChanged(CloudFoundryOperations client, CloudFoundryApplicationModule appModule,
+			IProgressMonitor monitor)  {
+		// See if the information in the existing Cloud app has changed compared to the info in the appModule
+		try {
+			CloudApplication app = getBehaviour().getCloudApplication(appModule.getDeployedApplicationName(), monitor);
+			if (app == null) {
+				// App no longer exists. Nothing to update
+				return;
+			} else {
+				List<String> changedProps = V1CFPropertiesUpdateFromManifest.v1UpdateFromManifest(client, getBehaviour().getCloudFoundryServer(), appModule, app, monitor);
+			    if (changedProps != null && !changedProps.isEmpty()) {
+					getBehaviour().printlnToConsole(appModule,
+							NLS.bind(Messages.StartOperation_MANIFEST_PROPERTIES_CHANGED,
+									changedProps.toString()));
+			    }
+			}
+		}
+		catch (Throwable e) {
+			CloudFoundryPlugin.logError(e);
+		}
 	}
 }

@@ -243,8 +243,8 @@ public class PushApplicationOperation extends StartOperation {
 				throw cloudAppCreationClientError;
 			}
 
-		}
-		super.pushApplication(client, appModule, applicationArchive, monitor);
+		} 
+		pushArchive(client, appModule, applicationArchive, monitor);
 	}
 
 	@Override

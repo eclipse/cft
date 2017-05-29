@@ -128,6 +128,20 @@ public class Messages extends NLS {
 	public static String TunnelServiceCommandStore_ERROR_VALUE_CANNOT_SERILIZE;
 	
 	public static String CFOperation_WARNING_RESTART_APP;
+	
+	public static String CFPropertiesUpdateFromManifest_TITLE_QUESTION_CONFIRM_UPDATES; 
+	
+	public static String CFPropertiesUpdateFromManifest_CONFIRM_UPDATES;
+	
+	public static String CFPropertiesUpdateFromManifest_CHANGES_DETECTED;
+	
+	public static String CFPropertiesUpdateFromManifest_MANIFEST_LABEL;
+	
+	public static String CFPropertiesUpdateFromManifest_CLOUD_LABEL;
+
+	public static String CFPropertiesUpdateFromManifest_UPDATES_CANCELED;
+	
+	public static String CFPropertiesUpdateFromManifest_ERROR_UPDATING_PROPERTY;
 
 	public static String ClientRequest_RETRY_REQUEST;
 
@@ -318,6 +332,8 @@ public class Messages extends NLS {
 
 	public static String RestartOperation_STARTING_APP;
 	
+	public static String StartOperation_MANIFEST_PROPERTIES_CHANGED;
+
 	public static String ERROR_StartOperation_UNSUPPORTED_MODULE_TYPE;
 	
 	public static String PUBLISHING_MODULE;

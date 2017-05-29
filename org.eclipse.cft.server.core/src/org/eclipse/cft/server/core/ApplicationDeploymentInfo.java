@@ -133,6 +133,10 @@ public class ApplicationDeploymentInfo extends Observable {
 	public List<CFServiceInstance> getServices() {
 		return (List<CFServiceInstance>)deploymentInfoMap.get(ManifestConstants.SERVICES_PROP);
 	}
+	
+	public boolean hasProperty(String property) {
+		return deploymentInfoMap.containsKey(property);
+	}
 
 	/**
 	 * 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -123,6 +123,10 @@ public abstract class CloudFoundryCallback {
 	}
 
 	public boolean prompt(final String title, final String message) {
+		return false;
+	}
+	
+	public boolean question(final String title, final String message) {
 		return false;
 	}
 

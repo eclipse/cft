@@ -248,6 +248,21 @@ public class CloudFoundryUiCallback extends CloudFoundryCallback {
 		});
 		return shouldContinue[0];
 	}
+	
+	public boolean question(final String title, final String message) {
+		final boolean[] shouldContinue = new boolean[] { false };
+		Display.getDefault().syncExec(new Runnable() {
+
+			public void run() {
+
+				Shell shell = CFUiUtil.getShell();
+				if (shell != null) {
+					shouldContinue[0] = MessageDialog.openQuestion(shell, title, message);
+				}
+			}
+		});
+		return shouldContinue[0];
+	}
 
 	@Override
 	public CFRebelServerIntegration getJRebelServerIntegration() {
