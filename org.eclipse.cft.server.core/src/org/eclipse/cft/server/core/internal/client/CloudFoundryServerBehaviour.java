@@ -2136,10 +2136,12 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 			CloudFoundryServer cloudServer = getCloudFoundryServer();
 			CFCloudCredentials credentials = CloudServerUtil.getCredentials(cloudServer);
 			CloudFoundrySpace cloudFoundrySpace = cloudServer.getCloudFoundrySpace();
-			CFClient otherClient = clientProvider.getClient(cloudServer.getServer(), credentials, cloudFoundrySpace,
-					monitor);
-			if (otherClient != null) {
-				hybridClient = new HybridClient(v1Client, otherClient);
+			if (cloudFoundrySpace != null) {
+				CFClient otherClient = clientProvider.getClient(cloudServer.getServer(), credentials, cloudFoundrySpace.getOrgName(), cloudFoundrySpace.getSpaceName()
+						, monitor);
+				if (otherClient != null) {
+					hybridClient = new HybridClient(v1Client, otherClient);
+				}
 			}
 		}
 

@@ -20,6 +20,8 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal;
 
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +31,8 @@ import org.cloudfoundry.client.lib.CloudCredentials;
 import org.eclipse.cft.server.core.internal.client.CFCloudCredentials;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.V1CloudCredentials;
+import org.eclipse.core.net.proxy.IProxyData;
+import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
@@ -182,5 +186,33 @@ public class CloudServerUtil {
 			v1Credentials = new CloudCredentials(userName, password);
 		}
 		return new V1CloudCredentials(v1Credentials);
+	}
+
+	public static IProxyData getProxy(URL url) {
+		if (url == null) {
+			return null;
+		}
+		// In certain cases, the activator would have stopped and the plugin may
+		// no longer be available. Usually onl happens on shutdown.
+		CloudFoundryPlugin plugin = CloudFoundryPlugin.getDefault();
+		if (plugin != null) {
+			IProxyService proxyService = plugin.getProxyService();
+			if (proxyService != null) {
+				try {
+					IProxyData[] selectedProxies = proxyService.select(url.toURI());
+
+					// No proxy configured or not found
+					if (selectedProxies == null || selectedProxies.length == 0) {
+						return null;
+					}
+
+					return selectedProxies[0];
+				}
+				catch (URISyntaxException e) {
+					// invalid url (protocol, ...) => proxy will be null
+				}
+			}
+		}
+		return null;
 	}
 }
