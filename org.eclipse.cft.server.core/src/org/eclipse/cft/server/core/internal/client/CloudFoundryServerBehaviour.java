@@ -147,6 +147,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	private CloudFoundryOperations client;
 	
 	private CFClient hybridClient;
+	
+	private boolean logStreamWebsocketError = false;
 
 	private UpdateOperationsScheduler operationsScheduler;
 
@@ -403,6 +405,9 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * @throws CoreException
 	 */
 	public void disconnect(IProgressMonitor monitor) throws CoreException {
+		
+		logStreamWebsocketError = false;
+
 		CloudFoundryPlugin.getCallback().disconnecting(getCloudFoundryServer());
 
 		Server server = (Server) getServer();
@@ -805,6 +810,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		applicationUrlLookup = null;
 		cloudBehaviourOperations = null;
 		operationsScheduler = null;
+		logStreamWebsocketError = false;
 	}
 
 	@Override
@@ -858,7 +864,8 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 	 * instead.
 	 */
 	public StreamingLogToken addApplicationLogListener(final String appName, final ApplicationLogListener listener) {
-		if (appName != null && listener != null) {
+		// Log websocket exception only once to avoid bloating error log and unnecessary reattempts.
+		if (!this.logStreamWebsocketError && appName != null && listener != null) {
 			try {
 				return new BehaviourRequest<StreamingLogToken>(Messages.ADDING_APPLICATION_LOG_LISTENER, this) {
 					@Override
@@ -870,6 +877,9 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 				}.run(new NullProgressMonitor());
 			}
 			catch (CoreException e) {
+				if (CloudErrorUtil.isWebsocketDeploymentException(e)) {
+					this.logStreamWebsocketError = true;
+				}
 				CloudFoundryPlugin.logError(NLS.bind(Messages.ERROR_APPLICATION_LOG_LISTENER, appName, e.getMessage()),
 						e);
 			}
