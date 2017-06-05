@@ -61,8 +61,9 @@ public class CFPropertiesUpdateFromManifest {
 		return this.wc;
 	}
 
-	public void load(IProgressMonitor monitor) throws CoreException {
+	public ApplicationDeploymentInfo load(IProgressMonitor monitor) throws CoreException {
 		this.wc = parser.load(monitor);
+		return this.wc;
 	}
 
 	public CFPropertiesUpdateFromManifest memory(int memory, CFConsumer<Integer> consumer) throws CoreException {

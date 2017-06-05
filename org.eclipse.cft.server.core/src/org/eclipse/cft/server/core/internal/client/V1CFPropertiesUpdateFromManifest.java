@@ -25,6 +25,7 @@ import java.util.List;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.Staging;
+import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.application.ManifestParser;
 import org.eclipse.core.runtime.CoreException;
@@ -38,19 +39,24 @@ public class V1CFPropertiesUpdateFromManifest {
 		String appName = currentApplication.getName();
 		ManifestParser parser = new ManifestParser(appModule, cloudServer);
 		CFPropertiesUpdateFromManifest updater = new CFPropertiesUpdateFromManifest(parser);
-		updater.load(progMon);
-		Staging staging = currentApplication.getStaging();
-		if (staging == null) {
-			staging = new Staging();
+		if (parser.hasManifest()) {
+			ApplicationDeploymentInfo wc = updater.load(progMon);
+			if (wc != null) {
+				Staging staging = currentApplication.getStaging();
+				if (staging == null) {
+					staging = new Staging();
+				}
+				return updater
+						.memory(currentApplication.getMemory(),
+								(memory, monitor) -> client.updateApplicationMemory(appName, memory))
+						.instances(currentApplication.getInstances(),
+								(instances, monitor) -> client.updateApplicationInstances(appName, instances))
+						.diskQuota(currentApplication.getDiskQuota(),
+								(diskQuota, monitor) -> client.updateApplicationDiskQuota(appName, diskQuota))
+						.v1Staging(staging, (stg, monitor) -> client.updateApplicationStaging(appName, stg))
+						.update(progMon);
+			}
 		}
-
-		return updater
-				.memory(currentApplication.getMemory(),
-						(memory, monitor) -> client.updateApplicationMemory(appName, memory))
-				.instances(currentApplication.getInstances(),
-						(instances, monitor) -> client.updateApplicationInstances(appName, instances))
-				.diskQuota(currentApplication.getDiskQuota(),
-						(diskQuota, monitor) -> client.updateApplicationDiskQuota(appName, diskQuota))
-				.v1Staging(staging, (stg, monitor) -> client.updateApplicationStaging(appName, stg)).update(progMon);
+		return null;
 	}
 }
