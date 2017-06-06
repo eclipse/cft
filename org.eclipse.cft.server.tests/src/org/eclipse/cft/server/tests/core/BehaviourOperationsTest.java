@@ -100,9 +100,31 @@ public class BehaviourOperationsTest extends AbstractAsynchCloudTest {
 
 		cloudServer.getBehaviour().operations().memoryUpdate(appModule, changedMemory).run(new NullProgressMonitor());
 
-		// Get updated module
-		appModule = cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
-				new NullProgressMonitor());
+		// NOTE: in CFT, a "deployed" module is an a application that exists in Cloud
+		// Foundry and has a
+		// KNOWN run state. Apps with UNKNOWN state are not considered "deployed".
+		// The issue to take into account when testing memory update, is that any
+		// changes to memory require
+		// app restaging on the Cloud Foundry side (on newer Cloud Foundry, restaging is
+		// automatically done after
+		// a memory update). However, during restaging, the app may be in "UNKNOWN"
+		// state, so fetching an updated deployed
+		// module below (commented out) may result in a NULL module right after
+		// performing the memory update above.
+		// To check that memory changes took effect and are reflected in the module
+		// after
+		// the memory update operation above,
+		// simply fetch the existing module again and check the memory
+		//
+		// ISSUE: the commented code below may result in null module if app is in the
+		// middle of re-staging
+		// due to memory changes above
+		// appModule =
+		// cloudServer.getBehaviour().updateDeployedModule(appModule.getLocalModule(),
+		// new NullProgressMonitor());
+
+		appModule = cloudServer.getExistingCloudModule(appModule.getLocalModule());
+
 		// Verify that the same module has been updated
 		assertEquals(changedMemory, appModule.getDeploymentInfo().getMemory());
 		assertEquals(changedMemory, appModule.getApplication().getMemory());
