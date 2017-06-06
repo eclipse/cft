@@ -46,6 +46,9 @@ import org.eclipse.cft.server.core.internal.application.ManifestConstants;
 public class ApplicationDeploymentInfo extends Observable {
 
 	private List<String> uris;
+	//[514869-BEGIN] allow application URL specification with "routes" in manifest.yml
+	private List<String> routes;
+	//[514869-END]
 
 	private HashMap<Object, Object> deploymentInfoMap = new HashMap<Object, Object>();
 
@@ -120,6 +123,20 @@ public class ApplicationDeploymentInfo extends Observable {
 	public List<String> getUris() {
 		return uris;
 	}
+	
+	//[514869-BEGIN] allow application URL specification with "routes" in manifest.yml
+	//setting routes is just a different way of passing application URLs
+	//routes should not overwrite uri's provided
+	//however, when creating the app in CF the routes need to be passed
+	//in addition to the uri's
+	public void setRoutes(List<String> routes){
+		this.routes = routes;
+	}
+	
+	public List<String> getRoutes(){
+		return routes;
+	}
+	//[514869-END]
 
 	@SuppressWarnings("unchecked")
 	public List<CFServiceInstance> getServices() {
@@ -222,6 +239,11 @@ public class ApplicationDeploymentInfo extends Observable {
 		else {
 			setUris(null);
 		}
+		//[514869-BEGIN] allow application URL specification with "routes" in manifest.yml
+		if (info.getRoutes() != null){
+			setRoutes(new ArrayList<String>(info.getRoutes()));
+		}
+		//[514869-END]
 
 		if (info.getEnvVariables() != null) {
 			setEnvVariables(new ArrayList<EnvironmentVariable>(info.getEnvVariables()));
@@ -260,6 +282,11 @@ public class ApplicationDeploymentInfo extends Observable {
 		if (getUris() != null) {
 			info.setUris(new ArrayList<String>(getUris()));
 		}
+		//[514869-BEGIN] allow application URL specification with "routes" in manifest.yml
+		if (getRoutes() != null){
+			info.setRoutes(new ArrayList<String>(getRoutes()));
+		}
+		//[514869-END]
 
 		if (getEnvVariables() != null) {
 			ArrayList<EnvironmentVariable> curEnvVaris = new ArrayList<EnvironmentVariable>();

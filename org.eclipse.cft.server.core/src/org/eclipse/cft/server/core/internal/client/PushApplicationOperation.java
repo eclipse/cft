@@ -167,6 +167,11 @@ public class PushApplicationOperation extends StartOperation {
 			String buildpack = appModule.getDeploymentInfo().getBuildpack();
 			List<String> uris = appModule.getDeploymentInfo().getUris() != null
 					? appModule.getDeploymentInfo().getUris() : new ArrayList<String>(0);
+			//[514869-BEGIN] allow application URL specification with "routes" in manifest.yml
+			//append Routes to the uris when existing
+			if (appModule.getDeploymentInfo().getRoutes() != null)
+					uris.addAll(appModule.getDeploymentInfo().getRoutes());
+			//[514869-END]
 			List<String> services = appModule.getDeploymentInfo().asServiceBindingList();
 			List<EnvironmentVariable> variables = appModule.getDeploymentInfo().getEnvVariables();
 			int instances = appModule.getDeploymentInfo().getInstances();		
