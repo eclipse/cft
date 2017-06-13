@@ -396,7 +396,7 @@ public class CloudFoundryTestFixture {
 		 * @return generate an CF app name given a test name
 		 */
 		public String getWebAppName(String testName) {
-			Random random = new Random(100);
+			Random random = new Random();
 			int randomVal = Math.abs(random.nextInt(1000000));
 			return getCFTAppPrefix() + '_' + testName + '_' + randomVal;
 		}
