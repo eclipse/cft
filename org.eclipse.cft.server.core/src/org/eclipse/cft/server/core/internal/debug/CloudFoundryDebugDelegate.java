@@ -118,11 +118,11 @@ public abstract class CloudFoundryDebugDelegate extends AbstractJavaLaunchConfig
 
 	protected void setSourceLocator(ILaunch launch) throws CoreException {
 		ILaunchConfiguration configuration = launch.getLaunchConfiguration();
-		if (launch.getSourceLocator() == null) {
+		if (configuration != null && launch.getSourceLocator() == null) {
 			ISourceLookupDirector sourceLocator = new JavaSourceLookupDirector();
 			ISourcePathComputer locator = getLaunchManager().getSourcePathComputer(SOURCE_LOCATOR);
 			if (locator != null) {
-				sourceLocator.setSourcePathComputer(locator); // $NON-NLS-1$
+				sourceLocator.setSourcePathComputer(locator); 
 				sourceLocator.initializeDefaults(configuration);
 				launch.setSourceLocator(sourceLocator);
 			}
