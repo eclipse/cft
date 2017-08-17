@@ -51,7 +51,7 @@ import com.jcraft.jsch.Session;
 public class FileSshSessionConnPool {
 
 	/** Synchronize when accessing, key and value are thread-safe */
-	private final HashMap<MapKey /** CloudApplication+Instance Index*/, MapValue> sessionMap = new HashMap<>();
+	private final HashMap<CloudAppIndexKey /** CloudApplication+Instance Index*/, SessionList> sessionMap = new HashMap<>();
 	
 	private final CloudFoundryServerBehaviour behaviour;
 	
@@ -75,15 +75,15 @@ public class FileSshSessionConnPool {
 	/** Thread-safe; processes the file request, and returns the file/dir contents (if possible, otherwise a CoreException is thrown.) */
 	public String processSshSessionRequest(CloudApplication app, int instanceIndex, final String path, final boolean isDir, IProgressMonitor monitor) throws CoreException {
 		
-		MapKey key = new MapKey(app, instanceIndex);
+		CloudAppIndexKey key = new CloudAppIndexKey(app, instanceIndex);
 
-		MapValue value;
+		SessionList value;
 		synchronized(sessionMap) {
 			value = sessionMap.get(key);
 		}
 
 		if(value == null) {
-			value = new MapValue();
+			value = new SessionList();
 			synchronized(sessionMap) {
 				sessionMap.put(key, value);
 			}
@@ -94,7 +94,7 @@ public class FileSshSessionConnPool {
 	}
 	
 	/** Process the request with an available SSH session, otherwise establish a new one (if not above max connections limit).*/
-	private String runWithSession(MapKey key, MapValue value, IProgressMonitor monitor, final String path, final boolean isDir) throws CoreException {
+	private String runWithSession(CloudAppIndexKey key, SessionList value, IProgressMonitor monitor, final String path, final boolean isDir) throws CoreException {
 		
 		String fileResult = null; // This value should not be read unless requestProcessed is true.
 		boolean requestProcessed = false;
@@ -176,7 +176,7 @@ public class FileSshSessionConnPool {
 	}
 	
 	/** Call JSCH to retrieve the file, and handle cleanup if an error occurs */
-	private RequestResult runWithSessionInner(MapValue value, Session session, String path, boolean isDir) {
+	private RequestResult runWithSessionInner(SessionList value, Session session, String path, boolean isDir) {
 
 		boolean processed = false; // Whether the user's session request completed w/o error.
 		boolean errorOccured = false; // Whether a jsch error occurred at any point.
@@ -288,12 +288,13 @@ public class FileSshSessionConnPool {
 		
 	}
 	
-	/** Combination of CloudApplication and index to create a single map key; Thread-safe. */
-	private static class MapKey {
+	/** Combination of CloudApplication and app index to create a single map key; Thread-safe. */
+	private static class CloudAppIndexKey {
+		
 		private final CloudApplication app;
 		private final int index;
 		
-		public MapKey(CloudApplication app, int index) {
+		public CloudAppIndexKey(CloudApplication app, int index) {
 			this.app = app;
 			this.index = index;
 		}
@@ -313,7 +314,7 @@ public class FileSshSessionConnPool {
 		
 		@Override
 		public boolean equals(Object o) {
-			MapKey other = (MapKey)o;
+			CloudAppIndexKey other = (CloudAppIndexKey)o;
 			if(!other.app.equals(app)) {
 				return false;
 			}
@@ -323,12 +324,12 @@ public class FileSshSessionConnPool {
 	}
 	
 	/** List of SSH sessions that are available to be reused; Thread-safe .*/
-	private static class MapValue {
+	private static class SessionList {
 
 		/** Synchronize on access */
 		private final List<Session> availableSessions = new ArrayList<Session>();
 		
-		public MapValue() {
+		public SessionList() {
 		}
 		
 		public Optional<Session> acquireSessionIfAvailable() {
