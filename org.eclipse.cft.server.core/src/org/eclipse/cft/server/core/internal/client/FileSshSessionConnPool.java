@@ -45,7 +45,7 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
 /** 
- * A simple thread-safe connection pool for SSH sessions used by the CloudFoundryServerBehaviour.getFile(..) method. 
+ * A simple thread-safe connection pool for SSH sessions used by the DiegoRequestFactory.getFile(..) method. 
  *  
  **/
 public class FileSshSessionConnPool {
@@ -72,7 +72,7 @@ public class FileSshSessionConnPool {
 	}
 	
 		
-	/** Thread-safe; processes the file request and return's the file/dir contents (if possible), otherwise a CoreException is thrown. */
+	/** Thread-safe; processes the file request, and returns the file/dir contents (if possible, otherwise a CoreException is thrown.) */
 	public String processSshSessionRequest(CloudApplication app, int instanceIndex, final String path, final boolean isDir, IProgressMonitor monitor) throws CoreException {
 		
 		MapKey key = new MapKey(app, instanceIndex);
@@ -93,10 +93,13 @@ public class FileSshSessionConnPool {
 		
 	}
 	
+	/** Process the request with an available SSH session, otherwise establish a new one (if not above max connections limit).*/
 	private String runWithSession(MapKey key, MapValue value, IProgressMonitor monitor, final String path, final boolean isDir) throws CoreException {
 		
 		String fileResult = null; // This value should not be read unless requestProcessed is true.
 		boolean requestProcessed = false;
+		
+		Exception lastExceptionThrown = null;
 		
 		Session session = null;
 	
@@ -108,16 +111,16 @@ public class FileSshSessionConnPool {
 				
 			if(session != null) {
 				// If there is already a connection in the pool, then use it
-				
+
 				RequestResult result = runWithSessionInner(value, session, path, isDir);
 				
 				requestProcessed = result.isRequestProcessed();
 				fileResult = result.getResult();
+				lastExceptionThrown = result.getLastExceptionThrown().orElse(null);
 				
 			} else {
 				
 				// If there is not already a connection in the pool, then establish a new connection
-
 				boolean areWeOverConnLimit = false;
 				synchronized(numberOfActiveConnections) {
 					if(numberOfActiveConnections.get() >= MAX_ACTIVE_CONNECTIONS) {
@@ -142,11 +145,12 @@ public class FileSshSessionConnPool {
 						RequestResult result = runWithSessionInner(value, session, path, isDir);
 						requestProcessed = result.isRequestProcessed();
 						fileResult = result.getResult();
+						lastExceptionThrown = result.getLastExceptionThrown().orElse(null);
 												
 					} catch (CoreException e) {
-						/* ignore */
+						/* ignore, this is thrown by getSshClientSupport; we will try to establish the connection again after a short delay. */
+						lastExceptionThrown = e;
 					}
-					
 					
 				} else {
 					/** We have too many active connections, so just wait for one to finish. */
@@ -156,24 +160,28 @@ public class FileSshSessionConnPool {
 			if(!requestProcessed) {
 								
 				// Wait between failures.
-				try { Thread.sleep(2000); } catch (InterruptedException e) { throw new RuntimeException(e); }
+				try { Thread.sleep(1000); } catch (InterruptedException e) { throw new RuntimeException(e); }
 				
 			}
 			
 		}
 		
 		if(!requestProcessed) {
-			throw new CoreException(CloudFoundryPlugin.getErrorStatus(Messages.SshFileSessionPool_UNABLE_TO_ESTABLISH_CONNECTION));
+			//  If the request was never successsfully processed, throw a status that includes the most recent thrown exception
+			throw new CoreException(CloudFoundryPlugin.getErrorStatus(Messages.SshFileSessionPool_UNABLE_TO_ESTABLISH_CONNECTION, lastExceptionThrown));
 		}
 		
 		return fileResult;
 		
 	}
 	
+	/** Call JSCH to retrieve the file, and handle cleanup if an error occurs */
 	private RequestResult runWithSessionInner(MapValue value, Session session, String path, boolean isDir) {
 
 		boolean processed = false; // Whether the user's session request completed w/o error.
 		boolean errorOccured = false; // Whether a jsch error occurred at any point.
+		
+		Exception lastExceptionThrown = null; // For diagnostic purposes only
 		
 		String result = null;
 		try {
@@ -195,12 +203,11 @@ public class FileSshSessionConnPool {
 				channel.disconnect();
 			}
 			
-		} catch (JSchException e) {
-			/* ignore, it will be not be reused. */
+		} catch(Exception e) {
+			/* This will be either JSchException or IOException, but every exception should be caught here, to avoid failing to trigger the cleanup logic.
+			 * Any exceptions we will safely ignore, and the SSH session will be terminated and not reused. */
 			errorOccured = true;
-		} catch(IOException e) {
-			/* ignore, it will be not be reused. */
-			errorOccured = true;			
+			lastExceptionThrown = e;
 		}
 
 		if(errorOccured) {
@@ -214,10 +221,11 @@ public class FileSshSessionConnPool {
 			value.releaseSession(session);
 		}
 		
-		return new RequestResult(processed, result);
+		return new RequestResult(processed, result, lastExceptionThrown);
 		
 	}
 
+	/** Read JSch Channel into String */
 	private static String getContent(Channel channel) throws IOException, JSchException {
 		InputStream in = null;
 		OutputStream outStream = null;
@@ -255,13 +263,15 @@ public class FileSshSessionConnPool {
 	// Inner Classes ----------------------
 	
 	private static class RequestResult {
-		private boolean requestProcessed;
-		private String userResult; // May be null, if the user returned null.
+		private final boolean requestProcessed;
+		private final String userResult; // May be null, if the user returned null.
 		
-		public RequestResult(boolean requestProcessed, String userResult) {
-			super();
+		private final Exception lastExceptionThrown;
+		
+		public RequestResult(boolean requestProcessed, String userResult, Exception lastExceptionThrown) {
 			this.requestProcessed = requestProcessed;
 			this.userResult = userResult;
+			this.lastExceptionThrown = lastExceptionThrown;
 		}
 		
 		public boolean isRequestProcessed() {
@@ -270,6 +280,10 @@ public class FileSshSessionConnPool {
 		
 		public String getResult() {
 			return userResult;
+		}
+		
+		public Optional<Exception> getLastExceptionThrown() {
+			return Optional.ofNullable(lastExceptionThrown);
 		}
 		
 	}
