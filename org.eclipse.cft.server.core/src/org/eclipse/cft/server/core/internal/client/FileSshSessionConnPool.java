@@ -175,11 +175,11 @@ public class FileSshSessionConnPool {
 		
 	}
 	
-	/** Call JSCH to retrieve the file, and handle cleanup if an error occurs */
+	/** Call JSch API to retrieve the file, and handle cleanup if an error occurs */
 	private RequestResult runWithSessionInner(SessionList value, Session session, String path, boolean isDir) {
 
 		boolean processed = false; // Whether the user's session request completed w/o error.
-		boolean errorOccured = false; // Whether a jsch error occurred at any point.
+		boolean errorOccurred = false; // Whether a jsch error occurred at any point.
 		
 		Exception lastExceptionThrown = null; // For diagnostic purposes only
 		
@@ -206,11 +206,11 @@ public class FileSshSessionConnPool {
 		} catch(Exception e) {
 			/* This will be either JSchException or IOException, but every exception should be caught here, to avoid failing to trigger the cleanup logic.
 			 * Any exceptions we will safely ignore, and the SSH session will be terminated and not reused. */
-			errorOccured = true;
+			errorOccurred = true;
 			lastExceptionThrown = e;
 		}
 
-		if(errorOccured) {
+		if(errorOccurred) {
 			try { session.disconnect(); } catch(Exception e2) { /* ignore */ }
 
 			synchronized(numberOfActiveConnections) {
