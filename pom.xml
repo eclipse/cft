@@ -8,7 +8,7 @@
 
   <groupId>org.eclipse.cft.server</groupId>
   <artifactId>org.eclipse.cft.server.parent</artifactId>
-  <version>1.1.0-SNAPSHOT</version>
+  <version>1.1.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <scm>
@@ -80,7 +80,7 @@
 
     <tycho-version>0.22.0</tycho-version>
     <tycho-extras-version>${tycho-version}</tycho-extras-version>
-    
+
 
     <maven.test.error.ignore>true</maven.test.error.ignore>
     <maven.test.failure.ignore>true</maven.test.failure.ignore>
@@ -99,7 +99,7 @@
       <properties>
         <dist.target>e4.3</dist.target>
         <dist.platform.name>Kepler</dist.platform.name>
-        <dist.platform.id>kepler</dist.platform.id>		
+        <dist.platform.id>kepler</dist.platform.id>
         <dist.platform.version>4.3</dist.platform.version>
         <package.qualifierPrefix>e43</package.qualifierPrefix>
       </properties>
@@ -149,7 +149,7 @@
 			</repository>
 		</repositories>
 	</profile>
-	
+
 	<profile>
 		<id>e47</id>
 		<properties>
@@ -174,7 +174,7 @@
 			</repository>
 		</repositories>
 	</profile>
-		
+
     <profile>
       <id>osx</id>
       <activation>
@@ -187,7 +187,7 @@
         <test.osvmargs>-Dosgi.ws=cocoa -XstartOnFirstThread</test.osvmargs>
       </properties>
     </profile>
-    
+
      <profile>
         <id>eclipse-sign</id>
         <build>
@@ -251,7 +251,7 @@
       <url>http://repo.exist.com/maven2</url>
     </repository>
   </repositories>
-  
+
   <pluginRepositories>
     <!-- required for Maven and Ant AWS dependency -->
     <pluginRepository>
@@ -326,7 +326,7 @@
           <resolver>p2</resolver>
         </configuration>
       </plugin>
-		
+
     </plugins>
     <pluginManagement>
       <plugins>
@@ -402,23 +402,23 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
           <version>1.6</version>
-          <dependencies>  
-            <dependency>  
-              <groupId>ant-contrib</groupId>  
-              <artifactId>ant-contrib</artifactId>  
-              <version>1.0b3</version>  
-              <exclusions>  
-                <exclusion>  
-                  <groupId>ant</groupId>  
-                  <artifactId>ant</artifactId>  
-                </exclusion>  
-              </exclusions>  
-            </dependency>  
-            <dependency>  
-              <groupId>org.apache.ant</groupId>  
-              <artifactId>ant-nodeps</artifactId>  
-              <version>1.8.1</version>  
-            </dependency>  
+          <dependencies>
+            <dependency>
+              <groupId>ant-contrib</groupId>
+              <artifactId>ant-contrib</artifactId>
+              <version>1.0b3</version>
+              <exclusions>
+                <exclusion>
+                  <groupId>ant</groupId>
+                  <artifactId>ant</artifactId>
+                </exclusion>
+              </exclusions>
+            </dependency>
+            <dependency>
+              <groupId>org.apache.ant</groupId>
+              <artifactId>ant-nodeps</artifactId>
+              <version>1.8.1</version>
+            </dependency>
             <dependency>
               <groupId>org.springframework.build</groupId>
               <artifactId>org.springframework.build.aws.ant</artifactId>
@@ -473,7 +473,7 @@
           <artifactId>tycho-surefire-plugin</artifactId>
           <version>${tycho-version}</version>
           <configuration>
-            <skip>${test.skip}</skip> 
+            <skip>${test.skip}</skip>
             <useUIThread>${test.useUIThread}</useUIThread>
             <useUIHarness>true</useUIHarness>
             <forkedProcessTimeoutInSeconds>7200</forkedProcessTimeoutInSeconds>
