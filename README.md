@@ -84,8 +84,8 @@
 
 ## Installation
 
-  Java 7 is a minimum execution environment required to install and run CFT.
-  Please make sure that your Eclipse is using Java 7 or higher.
+  Java 8 is a minimum execution environment required to install and run CFT.
+  Please make sure that your Eclipse is using Java 8 or higher.
 
 ## Offline Installation
 
