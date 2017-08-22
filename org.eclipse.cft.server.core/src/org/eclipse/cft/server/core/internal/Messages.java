@@ -115,8 +115,6 @@ public class Messages extends NLS {
 
 	public static String ERROR_APPLICATION_LOG_LISTENER;
 
-	public static String ERROR_NO_MAPPED_APPLICATION_URLS;
-
 	public static String ERROR_HOST_TAKEN;
 
 	public static String INVALID_CHARACTERS_ERROR;
@@ -130,6 +128,20 @@ public class Messages extends NLS {
 	public static String TunnelServiceCommandStore_ERROR_VALUE_CANNOT_SERILIZE;
 	
 	public static String CFOperation_WARNING_RESTART_APP;
+	
+	public static String CFPropertiesUpdateFromManifest_TITLE_QUESTION_CONFIRM_UPDATES; 
+	
+	public static String CFPropertiesUpdateFromManifest_CONFIRM_UPDATES;
+	
+	public static String CFPropertiesUpdateFromManifest_CHANGES_DETECTED;
+	
+	public static String CFPropertiesUpdateFromManifest_MANIFEST_LABEL;
+	
+	public static String CFPropertiesUpdateFromManifest_CLOUD_LABEL;
+
+	public static String CFPropertiesUpdateFromManifest_UPDATES_CANCELED;
+	
+	public static String CFPropertiesUpdateFromManifest_ERROR_UPDATING_PROPERTY;
 
 	public static String ClientRequest_RETRY_REQUEST;
 
@@ -320,6 +332,8 @@ public class Messages extends NLS {
 
 	public static String RestartOperation_STARTING_APP;
 	
+	public static String StartOperation_MANIFEST_PROPERTIES_CHANGED;
+
 	public static String ERROR_StartOperation_UNSUPPORTED_MODULE_TYPE;
 	
 	public static String PUBLISHING_MODULE;
@@ -346,8 +360,6 @@ public class Messages extends NLS {
 
 	public static String JavaWebApplicationDelegate_ERROR_FILE_NOT_FOUND_MANIFEST_YML;
 
-	public static String JavaWebApplicationDelegate_ERROR_NO_MAPPED_APP_URL;
-
 	public static String ModuleResourceApplicationArchive_ERROR_NO_DEPLOYABLE_RES_FOUND;
 
 	public static String OPERATION_CANCELED;
@@ -373,6 +385,8 @@ public class Messages extends NLS {
 	public static String UpdateServicesOperation_OPERATION_MESSAGE;
 	
 	public static String SshClientSupport_NO_CLOUD_APP;
+	
+	public static String SshFileSessionPool_UNABLE_TO_ESTABLISH_CONNECTION;
 
 
 	private static final String BUNDLE_NAME = CloudFoundryPlugin.PLUGIN_ID + ".internal.Messages"; //$NON-NLS-1$

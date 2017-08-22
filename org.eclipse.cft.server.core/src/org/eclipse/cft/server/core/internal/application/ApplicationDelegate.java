@@ -68,6 +68,20 @@ public abstract class ApplicationDelegate extends AbstractApplicationDelegate {
 		return CloudUtil
 				.parseApplicationDeploymentInfo(getCloudFoundryApplicationModule(module, server).getApplication());
 	}
+	
+	/**
+	 * NOTE: For INTERNAL use only. By default this is true. Note that this is
+	 * distinct from {@link #requiresURL()}. Suggest URL determines if the
+	 * framework should generate a suggested URL for the application when
+	 * deploying the application for the first time, but does not enforce it's
+	 * requirement.
+	 * @param appModule
+	 * @return true if default URL should be set. False otherwise
+	 */
+	public boolean suggestUrl(CloudFoundryApplicationModule appModule) {
+		return true;
+	}
+
 
 	protected CloudFoundryServer getCloudServer(IServer server) throws CoreException {
 		return CloudServerUtil.getCloudServer(server);

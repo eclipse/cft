@@ -39,6 +39,7 @@ import org.eclipse.cft.server.core.internal.application.ApplicationRegistry;
 import org.eclipse.cft.server.core.internal.application.ManifestParser;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.ui.internal.CloudApplicationUrlPart;
+import org.eclipse.cft.server.ui.internal.CloudFoundryBrandingUIExtensionPoint;
 import org.eclipse.cft.server.ui.internal.CloudFoundryImages;
 import org.eclipse.cft.server.ui.internal.ICoreRunnable;
 import org.eclipse.cft.server.ui.internal.IEventSource;
@@ -310,6 +311,17 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 	}
 	
 	protected void createStackArea(Composite parent) {
+		// Check extension to see if the stack area is supported by the branding extension on 
+		// that server type.
+		try {
+			if (!CloudFoundryBrandingUIExtensionPoint.isShowStackUI(server.getServer().getServerType().getId())) {
+				return;
+			}
+		} catch (Exception e) {
+			if (Logger.WARNING) {
+				Logger.println(Logger.WARNING_LEVEL, this.getClass(), "createStackArea", "Failed to check isShowStackUI from branding UI extension: " + server);
+			}
+		}
 		Label label = new Label(parent, SWT.NONE);
 		label.setText(Messages.COMMONTXT_STACK);
 		GridDataFactory.fillDefaults().grab(false, false).align(SWT.FILL, SWT.CENTER).applyTo(label);
@@ -443,7 +455,9 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 	 * Sets the application URL in the deployment descriptor
 	 */
 	protected void setUrlInDescriptor(String url) {
-		if (url != null) {
+		// Bug fix: don't set empty url in list of URLs. Ensure it has a non-empty value before setting in list
+		// Otherwise the cf Java client may throw exception if it tries to parse a non-empty list that contains an empty URL
+		if (!StringUtils.isEmpty(url)) {
 			List<String> urls = new ArrayList<String>();
 			urls.add(url);
 			descriptor.getDeploymentInfo().setUris(urls);
@@ -517,9 +531,8 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 	}
 
 	protected void updateApplicationURLFromAppName() {
-		if (shouldSetDefaultUrl()) {
-			// When the app name changes, the URL also changes, but only for
-			// application types that require a URL.
+		if (suggestUrl()) {
+			// When the app name changes, the URL also changes
 			String appName = descriptor.getDeploymentInfo().getDeploymentName();
 
 			// When transferring the appname to the url, remove any dots.
@@ -530,16 +543,16 @@ public class CloudFoundryDeploymentWizardPage extends AbstractURLWizardPage impl
 	}
 
 	protected boolean requiresUrl() {
-		// By default, applications require a URL, unless specified by the
+		// By default, applications do not require a URL to allow for "no route" option, unless specified by the
 		// delegate
-		return wizardDelegate == null || wizardDelegate.getApplicationDelegate() == null
-				|| wizardDelegate.getApplicationDelegate().requiresURL();
+		return wizardDelegate != null && wizardDelegate.getApplicationDelegate() != null
+				&& wizardDelegate.getApplicationDelegate().requiresURL();
 
 	}
 
-	protected boolean shouldSetDefaultUrl() {
+	protected boolean suggestUrl() {
 		return wizardDelegate == null
-				|| ApplicationRegistry.shouldSetDefaultUrl(wizardDelegate.getApplicationDelegate(), module);
+				|| ApplicationRegistry.suggestUrl(wizardDelegate.getApplicationDelegate(), module);
 	}
 
 	class MemoryPart extends UIPart {

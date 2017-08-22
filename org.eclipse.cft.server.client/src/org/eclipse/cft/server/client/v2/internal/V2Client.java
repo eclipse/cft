@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,14 +20,15 @@
  ********************************************************************************/
 package org.eclipse.cft.server.client.v2.internal;
 
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 import org.cloudfoundry.client.CloudFoundryClient;
-import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.doppler.LogMessage;
 import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.operations.DefaultCloudFoundryOperations;
@@ -39,7 +40,9 @@ import org.cloudfoundry.reactor.doppler.ReactorDopplerClient;
 import org.cloudfoundry.reactor.tokenprovider.PasswordGrantTokenProvider;
 import org.cloudfoundry.reactor.uaa.ReactorUaaClient;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+import org.eclipse.cft.server.core.internal.CloudServerUtil;
 import org.eclipse.cft.server.core.internal.client.CFClient;
 import org.eclipse.cft.server.core.internal.client.CFCloudCredentials;
 import org.eclipse.cft.server.core.internal.log.AppLogUtil;
@@ -47,7 +50,7 @@ import org.eclipse.cft.server.core.internal.log.CFApplicationLogListener;
 import org.eclipse.cft.server.core.internal.log.CFStreamingLogToken;
 import org.eclipse.cft.server.core.internal.log.CloudLog;
 import org.eclipse.cft.server.core.internal.log.LogContentType;
-import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
+import org.eclipse.core.net.proxy.IProxyData;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 
@@ -59,20 +62,22 @@ public class V2Client implements CFClient {
 	public static final String HTTP_KEEP_ALIVE_SYSTEM_PROPERTY = "http.keepAlive"; //$NON-NLS-1$
 	private CFCloudCredentials credentials;
 	private CloudFoundryServer cloudServer;
-	private CloudFoundrySpace space;
+	private String orgName;
+	private String spaceName;
 	private CloudFoundryClient v2Client = null;
 	private CloudFoundryOperations v2Operations = null;
 
-	public V2Client(CloudFoundryServer cloudServer, CFCloudCredentials credentials, CloudFoundrySpace space) {
+	public V2Client(CloudFoundryServer cloudServer, CFCloudCredentials credentials, String orgName, String spaceName) {
 
 		Assert.isNotNull(cloudServer);
 		Assert.isNotNull(credentials);
-		Assert.isNotNull(space);
+		Assert.isNotNull(orgName);
+		Assert.isNotNull(spaceName);
 
 		this.credentials = credentials;
 		this.cloudServer = cloudServer;
-		this.space = space;
-
+		this.orgName = orgName;
+		this.spaceName = spaceName;
 	}
 
 	@Override
@@ -123,14 +128,19 @@ public class V2Client implements CFClient {
 	}
 
 	protected ProxyConfiguration getProxyConfiguration() {
-		HttpProxyConfiguration proxyConfig = cloudServer.getProxyConfiguration();
-		if (proxyConfig != null) {
-			int proxyPort = proxyConfig.getProxyPort();
-			String user = proxyConfig.getUsername();
-			String password = proxyConfig.getPassword();
-			return ProxyConfiguration.builder().host(proxyConfig.getProxyHost())
-					.port(proxyPort == -1 ? Optional.empty() : Optional.of(proxyPort))
-					.username(Optional.ofNullable(user)).password(Optional.ofNullable(password)).build();
+		try {
+			IProxyData proxyData = CloudServerUtil.getProxy(new URL(cloudServer.getUrl()));
+			if (proxyData != null) {
+				String proxyHost = proxyData.getHost();
+				int proxyPort = proxyData.getPort();
+				String user = proxyData.getUserId();
+				String password = proxyData.getPassword();
+				return ProxyConfiguration.builder().host(proxyHost)
+						.port(proxyPort == -1 ? Optional.empty() : Optional.of(proxyPort))
+						.username(Optional.ofNullable(user)).password(Optional.ofNullable(password)).build();
+			}
+		} catch (MalformedURLException e) {
+			CloudFoundryPlugin.logError(e);
 		}
 		return null;
 	}
@@ -161,8 +171,8 @@ public class V2Client implements CFClient {
 						.tokenProvider(tokenProvider).build();
 
 				this.v2Operations = DefaultCloudFoundryOperations.builder().cloudFoundryClient(v2Client)
-						.dopplerClient(dopplerClient).uaaClient(uaaClient).organization(space.getOrgName())
-						.space(space.getSpaceName()).build();
+						.dopplerClient(dopplerClient).uaaClient(uaaClient).organization(orgName).space(spaceName)
+						.build();
 
 			} catch (Throwable e) {
 				throw CloudErrorUtil.toCoreException(e);

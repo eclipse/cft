@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. 
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,7 +30,6 @@ import java.util.List;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.eclipse.cft.server.core.ISshClientSupport;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
@@ -41,19 +40,23 @@ import org.eclipse.cft.server.core.internal.client.CFInfo;
 import org.eclipse.cft.server.core.internal.client.ClientRequestFactory;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
+import org.eclipse.cft.server.core.internal.client.FileSshSessionConnPool;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.osgi.util.NLS;
 
 import com.jcraft.jsch.Channel;
-import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
 
 public class DiegoRequestFactory extends ClientRequestFactory {
 
+	/** Connection pool which reuses SSH sessions (and retries failures) when acquiring files through Diego's SSH API.*/
+	private final FileSshSessionConnPool fileSshConnectionPool;
+
 	public DiegoRequestFactory(CloudFoundryServerBehaviour behaviour) {
 		super(behaviour);
+		 fileSshConnectionPool = new FileSshSessionConnPool(behaviour);
 	}
 
 	@Override
@@ -71,7 +74,7 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 					// instances throws 503 due to
 					// CF backend error
 					if (CloudErrorUtil.is503Error(e)) {
-						return behaviour.getAdditionalV1ClientOperations(progress).getBasicApplication(appName);
+						return client.getAdditionalRestOperations().getBasicApplication(appName);
 					}
 					else {
 						throw e;
@@ -101,7 +104,7 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 					// instances throws 503 due to
 					// CF backend error
 					if (CloudErrorUtil.is503Error(e)) {
-						return behaviour.getAdditionalV1ClientOperations(progress).getBasicApplications();
+						return client.getAdditionalRestOperations().getBasicApplications();
 					}
 					else {
 						throw e;
@@ -124,8 +127,8 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 					// instances throws 503 due to
 					// CF backend error
 					if (CloudErrorUtil.is503Error(e)) {
-						behaviour.getAdditionalV1ClientOperations(progress)
-								.stopApplication(cloudModule.getDeployedApplicationName());
+						client.getAdditionalRestOperations()
+								.stopApplicationUsingBasicApp(cloudModule.getDeployedApplicationName());
 					}
 					else {
 						throw e;
@@ -156,31 +159,10 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 				if (path == null) {
 					return null;
 				}
-				
-				ISshClientSupport ssh = behaviour.getSshClientSupport(progress);
-				if (ssh == null) {
-					return null;
-				}
-				
-				Session session = ssh.connect(app.getName(), instanceIndex, cloudServer.getServer(), progress);
 
-				String command = isDir ? "ls -p " + path //$NON-NLS-1$
-						// Basic work-around to scp which doesn't appear to work
-						// well. Returns empty content for existing files.
-						: "cat " + path; //$NON-NLS-1$
+				// Returns file/directory contents on success, or throws CoreException on failure.
+				return fileSshConnectionPool.processSshSessionRequest(app, instanceIndex, path, isDir, new NullProgressMonitor());				
 
-				try {
-					Channel channel = session.openChannel("exec"); //$NON-NLS-1$
-					((ChannelExec) channel).setCommand(command);
-
-					return getContent(channel);
-				}
-				catch (JSchException e) {
-					throw CloudErrorUtil.toCoreException(e);
-				}
-				finally {
-					session.disconnect();
-				}
 			}
 		};
 	}

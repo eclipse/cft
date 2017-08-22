@@ -78,6 +78,13 @@
                </appInfo>
             </annotation>
          </attribute>
+         <attribute name="isShowStackUI" type="boolean">
+            <annotation>
+               <documentation>
+                  Set to true if the server type needs to show the stack setting UI; otherwise, the stack setting will not show the stack UI. Default value is true if not specified.
+               </documentation>
+            </annotation>
+         </attribute>
       </complexType>
    </element>
 
@@ -122,7 +129,7 @@
          <meta.section type="copyright"/>
       </appInfo>
       <documentation>
-         Copyright (c) 2015 IBM Corporation and others
+         Copyright (c) 2015,2017 IBM Corporation and others
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0

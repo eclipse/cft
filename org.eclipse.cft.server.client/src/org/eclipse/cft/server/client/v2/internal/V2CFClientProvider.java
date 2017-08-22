@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -28,8 +28,7 @@ import org.eclipse.cft.server.core.internal.ProviderPriority;
 import org.eclipse.cft.server.core.internal.client.CFClient;
 import org.eclipse.cft.server.core.internal.client.CFClientProvider;
 import org.eclipse.cft.server.core.internal.client.CFCloudCredentials;
-import org.eclipse.cft.server.core.internal.client.CFInfo;
-import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
+import org.eclipse.cft.server.core.internal.client.CloudInfo;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.wst.server.core.IServer;
@@ -39,16 +38,16 @@ public class V2CFClientProvider implements CFClientProvider {
 
 	@Override
 	public ProviderPriority getPriority() {
-		return ProviderPriority.HIGH;
+		return ProviderPriority.LOW;
 	}
 
 	@Override
-	public boolean supports(String serverUrl, CFInfo info) {
+	public boolean supports(String serverUrl, CloudInfo info) {
 		return info != null && info.getDopplerUrl() != null && supportsVersion(info.getCCApiVersion());
 	}
 
 	@Override
-	public CFClient getClient(IServer cloudServer, CFCloudCredentials credentials, CloudFoundrySpace cloudFoundrySpace,
+	public CFClient getClient(IServer cloudServer, CFCloudCredentials credentials, String orgName, String spaceName,
 			IProgressMonitor monitor) throws CoreException {
 		// Passcode not supported yet
 		if (credentials.isPasscodeSet()) {
@@ -57,7 +56,7 @@ public class V2CFClientProvider implements CFClientProvider {
 		}
 		CloudFoundryServer cfServer = CloudServerUtil.getCloudServer(cloudServer);
 		if (cfServer != null) {
-			return new V2Client(cfServer, credentials, cloudFoundrySpace);
+			return new V2Client(cfServer, credentials, orgName, spaceName);
 		}
 		return null;
 	}

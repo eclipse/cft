@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -85,7 +85,7 @@ public class CFClientProviderRegistry {
 	 * @return client provider, or null if none registered for the given
 	 * serverUrl
 	 */
-	public CFClientProvider getClientProvider(String serverUrl, CFInfo info) throws CoreException {
+	public CFClientProvider getClientProvider(String serverUrl, CloudInfo info) throws CoreException {
 
 		load();
 

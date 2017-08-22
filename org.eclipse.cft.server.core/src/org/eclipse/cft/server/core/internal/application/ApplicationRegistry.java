@@ -333,19 +333,17 @@ public class ApplicationRegistry {
 	}
 
 	/**
-	 * Determines if the application requires a URL. By default, applications
-	 * are required to have at least one mapped URL, unless otherwise specified
-	 * by the application's delegate.
+	 * Determines if a URL should be generated for the application
+	 * by the application's delegate. By default this is true, unless the delegate says otherwise
 	 * @param delegate
 	 * @param appModule
 	 * @return true if application URL is required for the given application.
 	 * False otherwise.
 	 */
-	public static boolean shouldSetDefaultUrl(AbstractApplicationDelegate delegate,
+	public static boolean suggestUrl(AbstractApplicationDelegate delegate,
 			CloudFoundryApplicationModule appModule) {
-		return delegate == null || (delegate instanceof ModuleResourceApplicationDelegate
-				? ((ModuleResourceApplicationDelegate) delegate).shouldSetDefaultUrl(appModule)
-				: delegate.requiresURL());
+		return !(delegate instanceof ApplicationDelegate) || 
+				((ApplicationDelegate) delegate).suggestUrl(appModule);
 	}
 
 }

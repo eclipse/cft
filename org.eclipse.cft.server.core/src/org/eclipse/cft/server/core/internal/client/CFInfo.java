@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,7 +30,7 @@ import org.eclipse.cft.server.core.internal.ssh.SshHost;
 import org.osgi.framework.Version;
 import org.springframework.web.client.RestTemplate;
 
-public class CFInfo {
+public class CFInfo implements CloudInfo {
 
 	protected final RestTemplate restTemplate;
 
@@ -43,18 +43,34 @@ public class CFInfo {
 		this.ccUrl = url;
 	}
 
+	/* (non-Javadoc)
+	 * @see org.eclipse.cft.server.core.internal.client.CloudInfo#getAuthorizationUrl()
+	 */
+	@Override
 	public String getAuthorizationUrl() {
 		return getProp("authorization_endpoint"); //$NON-NLS-1$
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.eclipse.cft.server.core.internal.client.CloudInfo#getTokenUrl()
+	 */
+	@Override
 	public String getTokenUrl() {
 		return getProp("token_endpoint"); //$NON-NLS-1$
 	}
 
+	/* (non-Javadoc)
+	 * @see org.eclipse.cft.server.core.internal.client.CloudInfo#getCloudControllerUrl()
+	 */
+	@Override
 	public String getCloudControllerUrl() {
 		return this.ccUrl;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.eclipse.cft.server.core.internal.client.CloudInfo#getDopplerUrl()
+	 */
+	@Override
 	public String getDopplerUrl() {
 		return getProp("doppler_logging_endpoint"); //$NON-NLS-1$
 	}
@@ -67,6 +83,10 @@ public class CFInfo {
 		return getProp("api_version"); //$NON-NLS-1$
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.eclipse.cft.server.core.internal.client.CloudInfo#getCCApiVersion()
+	 */
+	@Override
 	public Version getCCApiVersion() {
 		String version  = getCloudControllerApiVersion();
 		if (version != null) {
@@ -84,10 +104,18 @@ public class CFInfo {
 		return null;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.eclipse.cft.server.core.internal.client.CloudInfo#getSshClientId()
+	 */
+	@Override
 	public String getSshClientId() {
 		return getProp("app_ssh_oauth_client"); //$NON-NLS-1$
 	}
 
+	/* (non-Javadoc)
+	 * @see org.eclipse.cft.server.core.internal.client.CloudInfo#getSshHost()
+	 */
+	@Override
 	public SshHost getSshHost() {
 		String fingerPrint = getProp("app_ssh_host_key_fingerprint"); //$NON-NLS-1$
 		String host = getProp("app_ssh_endpoint"); //$NON-NLS-1$

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,16 +21,19 @@
 package org.eclipse.cft.server.core.internal.client;
 
 import org.eclipse.cft.server.core.internal.ProviderPriority;
-import org.eclipse.cft.server.core.internal.spaces.CloudFoundrySpace;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.wst.server.core.IServer;
 
+/**
+ * NOTE: Internal use only. This API is changing and is used for internal v2 CF Java client contribution into CFT.
+ *
+ */
 public interface CFClientProvider {
 
 	public ProviderPriority getPriority();
 
-	public boolean supports(String serverUrl, CFInfo info);
+	public boolean supports(String serverUrl, CloudInfo info);
 
 	/**
 	 * Creates a non-null {@link CFClient} which is associated with the given
@@ -41,7 +44,7 @@ public interface CFClientProvider {
 	 * @return non-null client
 	 * @throws CoreException if client failed to be created
 	 */
-	public CFClient getClient(IServer cloudServer, CFCloudCredentials credentials, CloudFoundrySpace cloudFoundrySpace,
+	public CFClient getClient(IServer cloudServer, CFCloudCredentials credentials, String orgName, String spaceName,
 			IProgressMonitor monitor) throws CoreException;
 
 }

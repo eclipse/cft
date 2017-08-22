@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.websocket.DeploymentException;
 
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.eclipse.core.runtime.CoreException;
@@ -71,6 +72,14 @@ public class CloudErrorUtil {
 		}
 
 		return error;
+	}
+	
+	public static boolean isWebsocketDeploymentException(CoreException e) {
+		if (e == null || e.getCause() == null) {
+			return false;
+		}
+		Throwable t = e.getCause();
+		return t instanceof DeploymentException || t.getCause() instanceof DeploymentException;
 	}
 
 	public static CoreException checkRestException(Throwable t) {

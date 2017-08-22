@@ -3,18 +3,18 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	
+
 	<parent>
 		<groupId>org.eclipse.cft.server</groupId>
 		<artifactId>org.eclipse.cft.server.parent</artifactId>
-		<version>1.1.0-SNAPSHOT</version>
+		<version>1.1.1-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>org.eclipse.cft.server.site</artifactId>
 	<packaging>eclipse-repository</packaging>
 
 	<name>Cloud Foundry Tools</name>
-	
+
 	<properties>
 		<zip.name>org.eclipse.cft-${unqualifiedVersion}.${buildQualifier}</zip.name>
 	</properties>
@@ -29,7 +29,7 @@
 					<finalName>${zip.name}</finalName>
 				</configuration>
 			</plugin>
-			
+
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
 				<version>1.7</version>
@@ -45,11 +45,11 @@
 								<copy file="dev-compositeArtifacts.xml" tofile="target/compositeArtifacts.xml"/>
 								<copy file="dev-compositeContent.xml" tofile="target/compositeContent.xml"/>
 								<copy file="p2.index" todir="target/"/>
-								
+
 								<tstamp>
 									<format property="repo.timestamp" pattern="yyMMddHHmmss"/>
 								</tstamp>
-		
+
 								<replace file="target/compositeArtifacts.xml" token="%TIMESTAMP%" value="${repo.timestamp}" summary="yes" />
 								<replace file="target/compositeArtifacts.xml" token="%BUILD-ID%" value="${zip.name}" summary="yes" />
 
@@ -64,8 +64,8 @@
 
 				</executions>
 			</plugin>
-			
-			
+
+
 		</plugins>
 	</build>
 

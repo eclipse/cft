@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: %Bundle-Name
 Bundle-SymbolicName: org.eclipse.cft.server.core;singleton:=true
-Bundle-Version: 1.2.1.qualifier
+Bundle-Version: 1.2.3.qualifier
 Bundle-Vendor: %Bundle-Vendor
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.resources,
@@ -17,13 +17,12 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.externaltools,
  com.jcraft.jsch,
  org.apache.commons.codec;bundle-version="1.6.0",
- org.apache.commons.logging;bundle-version="1.1.1",
  org.apache.httpcomponents.httpclient;bundle-version="4.3.6",
  org.apache.httpcomponents.httpcore;bundle-version="4.3.3"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,
- lib/cloudfoundry-client-lib-1.1.4.20170421.jar,
+ lib/cloudfoundry-client-lib-1.1.4.20170519.jar,
  lib/commons-io-2.1.jar,
  lib/jackson-core-asl-1.9.13.jar,
  lib/jackson-mapper-asl-1.9.13.jar,
@@ -47,7 +46,8 @@ Bundle-ClassPath: .,
  lib/tomcat-embed-websocket-8.0.33.jar,
  lib/yamlbeans-1.06.jar,
  lib/commons-logging-1.1.3.jar,
- lib/tomcat-embed-logging-juli-8.0.33.jar
+ lib/tomcat-embed-logging-juli-8.0.33.jar,
+ lib/aopalliance-1.0.jar
 Bundle-Activator: org.eclipse.cft.server.core.internal.CloudFoundryPlugin
 Export-Package: org.cloudfoundry.client.lib,
  org.cloudfoundry.client.lib.archive,

@@ -31,7 +31,6 @@ import java.util.Map;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
-import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
@@ -40,7 +39,6 @@ import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
-import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.CFServiceOffering;
@@ -507,8 +505,7 @@ public class ClientRequestFactory {
 			@Override
 			protected List<CloudApplication> doRun(CloudFoundryOperations client, SubMonitor progress)
 					throws CoreException {
-				AdditionalV1Operations externalClient = behaviour.getAdditionalV1ClientOperations(progress);
-				return externalClient.getBasicApplications();
+				return client.getAdditionalRestOperations().getBasicApplications();
 			}
 
 		};
@@ -526,8 +523,21 @@ public class ClientRequestFactory {
 
 			@Override
 			protected CFV1Application doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
-				AdditionalV1Operations externalClient = behaviour.getAdditionalV1ClientOperations(progress);
-				return externalClient.getCompleteApplication(application);
+				// the CFV1Application is a wrapper around a cloud application WITHOUT instances info, and optionally, if it is
+				// available, the application stats which CFT uses to derive instances information and run state.
+				CloudApplication app = client.getAdditionalRestOperations().getApplicationWithoutInstances(application.getName());
+				ApplicationStats stats = null;
+				
+				try {
+					stats = client.getAdditionalRestOperations().getApplicationStats(app);
+				}
+				catch (Throwable e) {
+					// Ignore if not available, but do not propagate error if the Cloud app above was still obtained
+					if (!CloudErrorUtil.is503Error(e)) {
+						CloudFoundryPlugin.logError(e);
+					}
+				}
+				return new CFV1Application(stats, app);
 			}
 		};
 
@@ -607,8 +617,7 @@ public class ClientRequestFactory {
 			@Override
 			protected List<String> doRun(CloudFoundryOperations client, SubMonitor progress)
 					throws CoreException {
-				AdditionalV1Operations externalClient = behaviour.getAdditionalV1ClientOperations(progress);
-				return externalClient.getStacks();
+				return client.getAdditionalRestOperations().getStacks();
 			}
 
 		};
@@ -744,10 +753,4 @@ public class ClientRequestFactory {
 	public boolean supportsSsh() {
 		return false;
 	}
-
-	public AdditionalV1Operations createAdditionalV1Operations(CloudFoundryOperations client, CloudSpace sessionSpace,
-			CFInfo cloudInfo, HttpProxyConfiguration httpProxyConfiguration, boolean selfSigned) throws CoreException {
-		return new AdditionalV1Operations(client, sessionSpace, getCloudInfo(), httpProxyConfiguration, behaviour.getCloudFoundryServer(), selfSigned);
-	}
-
 }

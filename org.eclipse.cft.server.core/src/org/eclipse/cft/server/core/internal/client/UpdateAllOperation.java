@@ -105,7 +105,11 @@ public class UpdateAllOperation extends CFOperation {
 			deployedApplicationsByName.put(application.getName(), application);
 		}
 
-		cloudServer.addAndDeleteModules(deployedApplicationsByName, stats);
+		// [496759] - In two-stage refresh, do not update the cloud app mapping in existing modules as the cloud apps
+		// in the first "basic" stage has incomplete information and may result in the associated module having validation errors
+		// on incomplete information. Instead, wait for the second stage to do a complete Cloud app update in existing modules
+		boolean updateCloudMappingInExistingModules = false;
+		cloudServer.addAndDeleteModules(deployedApplicationsByName, stats, updateCloudMappingInExistingModules);
 
 		// Skip modules that are starting
 		cloudServer.updateModulesState(new int[] { IServer.STATE_STARTING });

@@ -6,11 +6,11 @@
   <parent>
     <groupId>org.eclipse.cft.server</groupId>
     <artifactId>org.eclipse.cft.server.parent</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.1.1-SNAPSHOT</version>
   </parent>
   <artifactId>org.eclipse.cft.server.core.feature</artifactId>
   <packaging>eclipse-feature</packaging>
-  <version>1.2.1-SNAPSHOT</version>
+  <version>1.2.3-SNAPSHOT</version>
 	<build>
 		<plugins>
 			<plugin>

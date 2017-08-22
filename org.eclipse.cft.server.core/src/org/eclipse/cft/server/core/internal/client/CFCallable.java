@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,27 +20,11 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import java.util.List;
-
-import org.eclipse.cft.server.core.internal.log.CFApplicationLogListener;
-import org.eclipse.cft.server.core.internal.log.CFStreamingLogToken;
-import org.eclipse.cft.server.core.internal.log.CloudLog;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 
-/**
- * NOTE: Internal use only. This API is changing and is used for internal v2 CF Java client contribution into CFT.
- *
- */
-public interface CFClient {
+@FunctionalInterface
+public interface CFCallable {
 
-	/**
-	 * 
-	 * @throws CoreException if failed to login.
-	 */
-	public String login() throws CoreException;
-
-	public CFStreamingLogToken streamLogs(String appName, CFApplicationLogListener listener) throws CoreException;
-
-	public List<CloudLog> getRecentLogs(String appName) throws CoreException;
-
+	void call(IProgressMonitor monitor) throws CoreException;
 }

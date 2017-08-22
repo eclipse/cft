@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2013, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ package org.eclipse.cft.server.core.internal.application;
 import java.util.Arrays;
 
 import org.eclipse.cft.server.core.CFApplicationArchive;
-import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.wst.server.core.IModule;
@@ -44,16 +43,6 @@ public abstract class ModuleResourceApplicationDelegate extends ApplicationDeleg
 
 	public boolean providesApplicationArchive(IModule module) {
 		return true;
-	}
-
-	/**
-	 * NOTE: For INTERNAL use only. API may change. Framework adopters should
-	 * not override or invoke.
-	 * @param appModule
-	 * @return true if default URL should be set. False otherwise
-	 */
-	public boolean shouldSetDefaultUrl(CloudFoundryApplicationModule appModule) {
-		return requiresURL();
 	}
 
 	/*

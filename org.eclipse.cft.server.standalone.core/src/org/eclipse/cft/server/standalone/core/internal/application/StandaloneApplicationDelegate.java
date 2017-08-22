@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -49,26 +49,13 @@ public class StandaloneApplicationDelegate extends ModuleResourceApplicationDele
 	}
 
 	@Override
-	public boolean shouldSetDefaultUrl(CloudFoundryApplicationModule appModule) {
+	public boolean suggestUrl(CloudFoundryApplicationModule appModule) {
 		return CloudFoundryProjectUtil.isSpringBoot(appModule);
 	}
 
 	public boolean requiresURL() {
 		// URLs are optional for Java standalone applications
 		return false;
-	}
-
-	@Override
-	public IStatus validateDeploymentInfo(ApplicationDeploymentInfo deploymentInfo) {
-
-		IStatus status = super.validateDeploymentInfo(deploymentInfo);
-		if (status.isOK() && ((deploymentInfo.getUris() == null || deploymentInfo.getUris().isEmpty()))) {
-			String errorMessage = Messages.JavaWebApplicationDelegate_ERROR_NO_MAPPED_APP_URL;
-			status = CloudFoundryPlugin.getStatus(errorMessage, IStatus.WARNING);
-		}
-
-		return status;
-
 	}
 
 	/*
