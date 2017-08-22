@@ -451,9 +451,11 @@ public class ManifestParser {
 			List<?> routeListFromYaml = (List<?>) yamlElementObj;
 			Set<String> addedRoutes = new HashSet<String>();
 			List<String> appRoutes = new ArrayList<String>();
-			for (Object routeNameObj : routeListFromYaml) {
-				if (routeNameObj instanceof String && !addedRoutes.contains(routeNameObj)) {
-					String routeName = (String) routeNameObj;
+			
+			for (Object mapObj : routeListFromYaml) {
+				if (mapObj instanceof Map<?, ?>) {
+					Map<?, ?> route = (Map<?, ?>) mapObj;
+					String routeName = getStringValue(route, ManifestConstants.ROUTE_PROP);
 					addedRoutes.add(routeName);
 					appRoutes.add(routeName);
 				}

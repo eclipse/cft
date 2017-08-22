@@ -65,6 +65,7 @@ public class ManifestConstants {
 	public static final String INHERIT_PROP = "inherit"; //$NON-NLS-1$
 	//[514869] allow application URL specification with "routes" in manifest.yml 
 	public static final String ROUTES_PROP = "routes"; //$NON-NLS-1$
+	public static final String ROUTE_PROP = "route"; //$NON-NLS-1$
 
 	public static final String HEALTH_CHECK_TYPE = "health-check-type"; //$NON-NLS-1$
 	
