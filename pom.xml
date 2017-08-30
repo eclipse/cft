@@ -159,18 +159,42 @@
 			<repository>
 				<id>platform-e47</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/eclipse/updates/4.7milestones/</url>
+				<url>http://download.eclipse.org/eclipse/updates/4.7/</url>
 			</repository>
 			<repository>
 				<id>oxygen</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/staging/oxygen/</url>
+				<url>http://download.eclipse.org/releases/oxygen/</url>
 			</repository>
 			<repository>
 				<id>orbit-oxygen</id>
 				<layout>p2</layout>
-				<!-- NOTE: Still using Neon until Oxygen drops are available -->
-				<url>http://download.eclipse.org/tools/orbit/downloads/drops/R20160520211859/repository/</url>
+				<url>http://download.eclipse.org/tools/orbit/R-builds/R20170516192513/repository/</url>
+			</repository>
+		</repositories>
+	</profile>
+	
+	<profile>
+		<id>e48</id>
+		<properties>
+			<p2.repository.name>CFT for Eclipse 4.8</p2.repository.name>
+		</properties>
+		<repositories>
+			<repository>
+				<id>platform-e48</id>
+				<layout>p2</layout>
+				<url>http://download.eclipse.org/eclipse/updates/4.8milestones/</url>
+			</repository>
+			<repository>
+				<id>photon</id>
+				<layout>p2</layout>
+				<url>http://download.eclipse.org/staging/photon/</url>
+			</repository>
+			<repository>
+				<id>orbit-oxygen</id>
+				<layout>p2</layout>
+				<!-- NOTE: Still using Oxygen -->
+				<url>http://download.eclipse.org/tools/orbit/R-builds/R20170516192513/repository/</url>
 			</repository>
 		</repositories>
 	</profile>
