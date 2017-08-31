@@ -444,6 +444,27 @@ public class ManifestParser {
 		}
 	}
 
+	//[514869-BEGIN] allow application URL specification with "routes" in manifest.yml
+	protected void readRoutes(Map<?, ?> application, DeploymentInfoWorkingCopy workingCopy){
+		Object yamlElementObj = application.get(ManifestConstants.ROUTES_PROP);
+		if (yamlElementObj instanceof List<?>) {
+			List<?> routeListFromYaml = (List<?>) yamlElementObj;
+			Set<String> addedRoutes = new HashSet<String>();
+			List<String> appRoutes = new ArrayList<String>();
+			
+			for (Object mapObj : routeListFromYaml) {
+				if (mapObj instanceof Map<?, ?>) {
+					Map<?, ?> route = (Map<?, ?>) mapObj;
+					String routeName = getStringValue(route, ManifestConstants.ROUTE_PROP);
+					addedRoutes.add(routeName);
+					appRoutes.add(routeName);
+				}
+			}
+			workingCopy.setRoutes(appRoutes);
+		}
+	}
+	//[514869-END]
+	
 	protected void readMemory(Map<?, ?> application, DeploymentInfoWorkingCopy workingCopy) {
 		Integer memoryVal = getIntegerValue(application, ManifestConstants.MEMORY_PROP);
 
