@@ -1,7 +1,7 @@
 # Eclipse Tools for Cloud Foundry
 
   Eclipse Tools for Cloud Foundry (CFT) is a framework that provides first-class support for the [Cloud Foundry
-  PaaS] (http://docs.cloudfoundry.org). It allows users to directly deploy applications from their Eclipse
+  PaaS](http://docs.cloudfoundry.org). It allows users to directly deploy applications from their Eclipse
   workspace to a running Cloud Foundry server instance, as well as view and manage deployed applications and services.
 
   Cloud Foundry vendors can also contribute their own Cloud Foundry target definitions for users of the tools
