@@ -20,6 +20,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
