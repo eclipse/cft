@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2012, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -272,6 +272,12 @@ public class CloudFoundryUiCallback extends CloudFoundryCallback {
 
 	public ApplicationDebugLauncher getDebugLauncher(CloudFoundryServer cloudServer) {
 		return new ApplicationDebugUILauncher();
+	}
+	
+	public void syncRunInUi(Runnable runnable) {
+		if (runnable != null) {
+			Display.getDefault().syncExec(runnable);
+		}
 	}
 
 	@Override

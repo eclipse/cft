@@ -270,8 +270,6 @@ public class Messages extends NLS {
 	
 	public static String CFRebelServerIntegration_ERROR_INCOMPATIBLE_JREBEL;
 	
-	public static String CFRebelServerIntegration_NO_URL_UPDATES_PERFORMED;
-
 	public static String CloudServerUtil_NOT_CLOUD_SERVER_ERROR;
 	
 	public static String CloudServerUtil_NO_CLOUD_MODULE_FOUND;

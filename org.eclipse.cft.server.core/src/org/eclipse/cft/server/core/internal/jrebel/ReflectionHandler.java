@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
 
@@ -146,7 +147,11 @@ public class ReflectionHandler {
 
 	}
 
-	public boolean addServerUrl(Method addServerUrlsMethod, Map<String, URI> serverUrls) {
+	public void addServerUrl(Method addServerUrlsMethod, Map<String, URI> serverUrls, Runnable onSuccess) {
+		CloudFoundryPlugin.getCallback().syncRunInUi(() -> addUrl(addServerUrlsMethod, serverUrls, onSuccess));
+	}
+	
+	protected void addUrl(Method addServerUrlsMethod, Map<String, URI> serverUrls, Runnable onSuccess) {
 		if (serverUrls != null && !serverUrls.isEmpty()) {
 			Throwable t = null;
 
@@ -156,7 +161,9 @@ public class ReflectionHandler {
 				for (Entry<String, URI> entry : serverUrls.entrySet()) {
 					addServerUrlsMethod.invoke(null, entry.getValue(), entry.getKey());
 				}
-				return true;
+				if (onSuccess != null) {
+					onSuccess.run();
+				}
 			}
 			catch (Throwable e) {
 				t = e;
@@ -166,11 +173,13 @@ public class ReflectionHandler {
 				handleError(addServerUrlsMethod.getName(), addServerUrlsMethod.getDeclaringClass().getName(), t);
 			}
 		}
-
-		return false;
 	}
-
-	public boolean removeServerUrl(Method removeServerUrlMethod, List<URI> uris) {
+	
+	public void removeServerUrl(Method removeServerUrlMethod, List<URI> uris, Runnable onSuccess) {
+		CloudFoundryPlugin.getCallback().syncRunInUi(() -> removeUrl(removeServerUrlMethod, uris, onSuccess));
+	}
+	
+	protected void removeUrl(Method removeServerUrlMethod, List<URI> uris, Runnable onSuccess) {
 		if (uris != null && !uris.isEmpty()) {
 			Throwable t = null;
 
@@ -179,7 +188,9 @@ public class ReflectionHandler {
 				for (URI uri : uris) {
 					removeServerUrlMethod.invoke(null, uri);
 				}
-				return true;
+				if (onSuccess != null) {
+					onSuccess.run();
+				}
 			}
 			catch (Throwable e) {
 				t = e;
@@ -189,8 +200,5 @@ public class ReflectionHandler {
 				handleError(removeServerUrlMethod.getName(), removeServerUrlMethod.getDeclaringClass().getName(), t);
 			}
 		}
-
-		return false;
 	}
-
 }

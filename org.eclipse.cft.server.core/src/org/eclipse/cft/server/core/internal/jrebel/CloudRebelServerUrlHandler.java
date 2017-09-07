@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -77,7 +77,7 @@ public class CloudRebelServerUrlHandler implements CFRebelServerUrlHandler {
 			this.reflectionHandler.addErrorHandler(this);
 		}
 
-		private boolean doReflectionUpdateUrls(Bundle bundle, boolean updated, Class<?> providerClass)
+		private boolean doReflectionUpdateUrls(Bundle bundle, Class<?> providerClass)
 				throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 			Method getRemotingProject = reflectionHandler.getRemotingProject(providerClass);
 
@@ -98,19 +98,14 @@ public class CloudRebelServerUrlHandler implements CFRebelServerUrlHandler {
 					return false;
 				}
 
-				updated = removeUrls(updated, integrationClass);
-				updated = addUrls(updated, integrationClass);
+				removeUrls(integrationClass);
+				addUrls(integrationClass);
+				return true;
 			}
-
-			if (!updated) {
-				CFRebelConsoleUtil.printToConsole(module, cloudServer,
-						Messages.CFRebelServerIntegration_NO_URL_UPDATES_PERFORMED);
-			}
-
-			return updated;
+			return false;
 		}
 
-		private boolean addUrls(boolean updated, Class<?> integrationClass) {
+		private void addUrls(Class<?> integrationClass) {
 			if (currentUrls != null && !currentUrls.isEmpty()) {
 
 				Method addServerUrlsMethod = reflectionHandler.getAddServerUrlMethod(integrationClass);
@@ -127,17 +122,14 @@ public class CloudRebelServerUrlHandler implements CFRebelServerUrlHandler {
 						}
 					}
 
-					if (reflectionHandler.addServerUrl(addServerUrlsMethod, serverUrls)) {
-						updated = true;
-						CFRebelConsoleUtil.printToConsole(module, cloudServer,
-								NLS.bind(Messages.CFRebelServerIntegration_UPDATED_URL, currentUrls));
-					}
+					reflectionHandler.addServerUrl(addServerUrlsMethod, serverUrls,
+							() -> CFRebelConsoleUtil.printToConsole(module, cloudServer,
+									NLS.bind(Messages.CFRebelServerIntegration_UPDATED_URL, currentUrls)));
 				}
 			}
-			return updated;
 		}
 
-		private boolean removeUrls(boolean updated, Class<?> integrationClass) {
+		private void removeUrls(Class<?> integrationClass) {
 			if (oldUrls != null && !oldUrls.isEmpty()) {
 				Collection<String> toRemove = toRemove(oldUrls, currentUrls);
 
@@ -156,15 +148,13 @@ public class CloudRebelServerUrlHandler implements CFRebelServerUrlHandler {
 							}
 						}
 
-						if (reflectionHandler.removeServerUrl(removeServerUrlsMethod, urisToRemove)) {
-							CFRebelConsoleUtil.printToConsole(module, cloudServer,
-									NLS.bind(Messages.CFRebelServerIntegration_REMOVED_URL, toRemove));
-							updated = true;
-						}
+						reflectionHandler.removeServerUrl(removeServerUrlsMethod, urisToRemove,
+								() -> CFRebelConsoleUtil.printToConsole(module, cloudServer,
+										NLS.bind(Messages.CFRebelServerIntegration_REMOVED_URL, toRemove))
+						);
 					}
 				}
 			}
-			return updated;
 		}
 
 		protected Collection<String> toRemove(List<String> old, List<String> current) {
@@ -196,7 +186,7 @@ public class CloudRebelServerUrlHandler implements CFRebelServerUrlHandler {
 					Class<?> providerClass = reflectionHandler.getRebelRemotingProvider(bundle);
 
 					if (providerClass != null) {
-						updated = doReflectionUpdateUrls(bundle, updated, providerClass);
+						updated = doReflectionUpdateUrls(bundle, providerClass);
 					}
 				}
 				catch (SecurityException e) {

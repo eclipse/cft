@@ -138,6 +138,10 @@ public abstract class CloudFoundryCallback {
 		return null;
 	}
 	
+	public void syncRunInUi(Runnable runnable) {
+		
+	}
+	
 	/** Returns true if login succeeds, false otherwise.*/
 	public abstract boolean ssoLoginUserPrompt(CloudFoundryServer cloudServer);
 }
