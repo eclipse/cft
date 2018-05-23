@@ -127,11 +127,11 @@
   Note that this description is targeted at users of Spring Tool Suite, but similar steps apply for
   other Eclipse JEE users.
 
-## Hudson Builds
+## Jenkins Builds
 
-  We build CFT nightly, milestones, and releases using Hudson:
+  We build CFT nightly, milestones, and releases using Jenkins:
 
-  https://hudson.eclipse.org/cft/
+  https://ci.eclipse.org/cft/
 
 ## Building the project
 
