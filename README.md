@@ -138,7 +138,7 @@
   The CFT uses Maven Tycho to do continuous integration builds and
   to produce p2 repos and update sites. To build the tooling yourself, you can execute:
 
-  mvn -Pe43 package
+  mvn clean package -Pe48
 
   Check the parent pom in master branch for additional profiles under "profiles". We build against the latest Eclipse, so you
   should be able to find a profile for the latest Eclipse that you can pass to mvn:
