@@ -28,12 +28,12 @@
 
 ## CLA and Third-Party Pull Requests
 
-  All third-party contributors are required to sign an Eclipse CLA before Pull Requests are merged into the repository,
+  All third-party contributors are required to sign an Eclipse ECA before Pull Requests are merged into the repository,
   pending review and acceptance of the submitted Pull Request.
 
-  https://wiki.eclipse.org/CLA
+  https://www.eclipse.org/legal/ECA.php
 
-  In addition to signing the Eclipse CLA, your Pull Request must not have merge conflicts with the master branch, so please be sure to
+  In addition to signing the Eclipse ECA, your Pull Request must not have merge conflicts with the master branch, so please be sure to
   synchronize with master branch before creating your Pull Request.
 
 ## Update Sites
