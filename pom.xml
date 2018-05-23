@@ -193,8 +193,8 @@
 			<repository>
 				<id>orbit-oxygen</id>
 				<layout>p2</layout>
-				<!-- NOTE: Still using Oxygen -->
-				<url>http://download.eclipse.org/tools/orbit/R-builds/R20170516192513/repository/</url>
+				<!-- NOTE: Using Photon M7 Orbit build -->
+				<url>http://download.eclipse.org/tools/orbit/downloads/drops/S20180504181223/repository</url>
 			</repository>
 		</repositories>
 	</profile>
