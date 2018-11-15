@@ -56,8 +56,8 @@
   </issueManagement>
 
   <ciManagement>
-    <url>https://build.spring.io/browse/CFECLIPSE</url>
-    <system>BAMBOO</system>
+    <url>https://ci.eclipse.org/cft</url>
+    <system>JENKINS</system>
   </ciManagement>
 
 
