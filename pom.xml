@@ -199,6 +199,30 @@
 		</repositories>
 	</profile>
 
+  <profile>
+		<id>e410</id>
+		<properties>
+			<p2.repository.name>CFT for Eclipse 2018-12</p2.repository.name>
+		</properties>
+		<repositories>
+			<repository>
+				<id>platform-e410</id>
+				<layout>p2</layout>
+				<url>http://download.eclipse.org/eclipse/updates/4.10/</url>
+			</repository>
+			<repository>
+				<id>2018-12</id>
+				<layout>p2</layout>
+				<url>http://download.eclipse.org/releases/2018-12/</url>
+			</repository>
+			<repository>
+				<id>orbit-2018-12</id>
+				<layout>p2</layout>
+				<url>http://download.eclipse.org/tools/orbit/downloads/drops/S20181031145145/repository</url>
+			</repository>
+		</repositories>
+	</profile>
+
     <profile>
       <id>osx</id>
       <activation>
@@ -379,18 +403,8 @@
               <environment>
                 <os>win32</os>
                 <ws>win32</ws>
-                <arch>x86</arch>
-              </environment>
-              <environment>
-                <os>win32</os>
-                <ws>win32</ws>
                 <arch>x86_64</arch>
-              </environment>
-              <environment>
-                <os>linux</os>
-                <ws>gtk</ws>
-                <arch>x86</arch>
-              </environment>
+              </environment> 
               <environment>
                 <os>linux</os>
                 <ws>gtk</ws>
