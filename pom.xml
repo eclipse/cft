@@ -183,7 +183,7 @@
 			<repository>
 				<id>platform-e48</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/eclipse/updates/4.8milestones/</url>
+				<url>http://download.eclipse.org/releases/photon/</url>
 			</repository>
 			<repository>
 				<id>photon</id>
@@ -193,8 +193,7 @@
 			<repository>
 				<id>orbit-oxygen</id>
 				<layout>p2</layout>
-				<!-- NOTE: Using Photon M7 Orbit build -->
-				<url>http://download.eclipse.org/tools/orbit/downloads/drops/S20180504181223/repository</url>
+				<url>http://download.eclipse.org/tools/orbit/downloads/drops/R20180606145124/repository</url>
 			</repository>
 		</repositories>
 	</profile>
