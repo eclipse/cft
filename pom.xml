@@ -227,7 +227,7 @@
 		<properties>
 			<p2.repository.name>CFT for Eclipse 2019-03</p2.repository.name>
 		</properties>
-		<repositories> -->
+		<repositories>
 			<repository>
 				<id>2019-03-staging</id>
 				<layout>p2</layout>
