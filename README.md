@@ -38,13 +38,9 @@
 
 ## Update Sites
 
-  The nightly CFT driver can be installed using this URL:
+  The nightly CFT driver built on the latest Eclipse can be installed using this URL:
 
-  Oxygen:
-  http://download.eclipse.org/cft/oxygen/nightly/
-
-  Photon:
-  http://download.eclipse.org/cft/photon/nightly/
+  https://download.eclipse.org/cft/current/nightly/
 
   (place this URL into the "Install New Software" dialog of your Eclipse)
 
@@ -138,7 +134,7 @@
   The CFT uses Maven Tycho to do continuous integration builds and
   to produce p2 repos and update sites. To build the tooling yourself, you can execute:
 
-  mvn clean package -Pe48
+  mvn clean package -Pe411
 
   Check the parent pom in master branch for additional profiles under "profiles". We build against the latest Eclipse, so you
   should be able to find a profile for the latest Eclipse that you can pass to mvn:
