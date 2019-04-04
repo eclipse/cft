@@ -135,17 +135,17 @@
 			<repository>
 				<id>platform-e46</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/eclipse/updates/4.6/</url>
+				<url>https://download.eclipse.org/eclipse/updates/4.6/</url>
 			</repository>
 			<repository>
 				<id>neon</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/releases/neon/</url>
+				<url>https://download.eclipse.org/releases/neon/</url>
 			</repository>
 			<repository>
 				<id>orbit-neon</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/tools/orbit/downloads/drops/R20160520211859/repository/</url>
+				<url>https://download.eclipse.org/tools/orbit/downloads/drops/R20160520211859/repository/</url>
 			</repository>
 		</repositories>
 	</profile>
@@ -159,17 +159,17 @@
 			<repository>
 				<id>platform-e47</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/eclipse/updates/4.7/</url>
+				<url>https://download.eclipse.org/eclipse/updates/4.7/</url>
 			</repository>
 			<repository>
 				<id>oxygen</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/releases/oxygen/</url>
+				<url>https://download.eclipse.org/releases/oxygen/</url>
 			</repository>
 			<repository>
 				<id>orbit-oxygen</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/tools/orbit/R-builds/R20170516192513/repository/</url>
+				<url>https://download.eclipse.org/tools/orbit/R-builds/R20170516192513/repository/</url>
 			</repository>
 		</repositories>
 	</profile>
@@ -183,17 +183,17 @@
 			<repository>
 				<id>platform-e48</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/releases/photon/</url>
+				<url>https://download.eclipse.org/releases/photon/</url>
 			</repository>
 			<repository>
 				<id>photon</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/staging/photon/</url>
+				<url>https://download.eclipse.org/staging/photon/</url>
 			</repository>
 			<repository>
 				<id>orbit-oxygen</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/tools/orbit/downloads/drops/R20180606145124/repository</url>
+				<url>https://download.eclipse.org/tools/orbit/downloads/drops/R20180606145124/repository</url>
 			</repository>
 		</repositories>
 	</profile>
@@ -207,17 +207,17 @@
 			<repository>
 				<id>platform-e410</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/eclipse/updates/4.10/</url>
+				<url>https://download.eclipse.org/eclipse/updates/4.10/</url>
 			</repository>
 			<repository>
 				<id>2018-12</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/releases/2018-12/</url>
+				<url>https://download.eclipse.org/releases/2018-12/</url>
 			</repository>
 			<repository>
 				<id>orbit-2018-12</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/tools/orbit/downloads/drops/S20181031145145/repository</url>
+				<url>https://download.eclipse.org/tools/orbit/downloads/drops/S20181031145145/repository</url>
 			</repository>
 		</repositories>
 	</profile>
@@ -229,14 +229,14 @@
 		</properties>
 		<repositories>
 			<repository>
-				<id>2019-03-staging</id>
+				<id>2019-03</id>
 				<layout>p2</layout>
-				<url>http://download.eclipse.org/staging/2019-03/</url>
+				<url>https://download.eclipse.org/releases/2019-03/</url>
 			</repository>
 			<repository>
 				<id>orbit</id>
 				<layout>p2</layout>
-				<url>https://download.eclipse.org/tools/orbit/downloads/drops/S20190108164448/repository</url>
+				<url>https://download.eclipse.org/tools/orbit/downloads/drops/R20190226160451/repository</url>
 			</repository>
 		</repositories>
 	</profile>
@@ -246,7 +246,7 @@
       <activation>
         <property>
           <name>java.vendor.url</name>
-          <value>http://www.apple.com/</value>
+          <value>https://www.apple.com/</value>
         </property>
       </activation>
       <properties>
@@ -305,7 +305,7 @@
     <repository>
       <id>springsource-maven-release</id>
       <name>SpringSource Maven Release Repository</name>
-      <url>http://repository.springsource.com/maven/bundles/release</url>
+      <url>https://repository.springsource.com/maven/bundles/release</url>
     </repository>
     <!-- required for commons-cli dependency in c.s.sts.grails.core -->
     <repository>
@@ -314,7 +314,7 @@
     </repository>
     <repository>
       <id>maven-mirror</id>
-      <url>http://repo.exist.com/maven2</url>
+      <url>https://repo.exist.com/maven2</url>
     </repository>
   </repositories>
 
@@ -323,12 +323,12 @@
     <pluginRepository>
       <id>spring-maven-release</id>
       <name>Spring Maven Release Repository</name>
-      <url>http://maven.springframework.org/release</url>
+      <url>https://maven.springframework.org/release</url>
     </pluginRepository>
     <pluginRepository>
       <id>springsource-maven-release</id>
       <name>SpringSource Maven Release Repository</name>
-      <url>http://repository.springsource.com/maven/bundles/release</url>
+      <url>https://repository.springsource.com/maven/bundles/release</url>
     </pluginRepository>
     <pluginRepository>
         <id>repo.eclipse.org.cbi-releases</id>
