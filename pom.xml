@@ -260,6 +260,26 @@
 		</repositories>
 	</profile>
 
+
+	<profile>
+		<id>e414</id>
+		<properties>
+			<p2.repository.name>CFT for Eclipse 2019-12</p2.repository.name>
+		</properties>
+		<repositories>
+			<repository>
+				<id>2019-12</id>
+				<layout>p2</layout>
+				<url>https://download.eclipse.org/staging/2019-12/</url>
+			</repository>
+			<repository>
+				<id>orbit</id>
+				<layout>p2</layout>
+				<url>https://download.eclipse.org/tools/orbit/downloads/drops/S20191025144108/repository</url>
+			</repository>
+		</repositories>
+	</profile>
+
     <profile>
       <id>osx</id>
       <activation>
